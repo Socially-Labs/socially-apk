@@ -1,0 +1,20 @@
+{
+  "original": "original.png",
+  "originalPreserved": true,
+  "tool": "built-in image_gen",
+  "layers": [
+    {
+      "file": "water-plate.png",
+      "prompt": "Use case: precise-object-edit. Asset type: background clean plate for layered mobile splash animation. Edit target: attached image, 841x1871 portrait. Remove ONLY the single sailboat (all sails, mast, hull, rigging) at x approximately 499–657, y 836–1142, and its water reflection at x 497–666, y1140–1365. Fill its former place with the same existing softly shaded cool gray sky and calm water/horizon that would naturally be behind it. Preserve the ENTIRE rest of the original image pixel-faithfully: left monumental white arch, columns, foreground glossy steps and platform, bollards, rope, distant right arcade, its reflection, sky lighting, gray tones, exact geometry, camera, framing and aspect ratio. Do not redraw or reinterpret the scene; no new objects, no text. Match the input dimensions and full portrait framing. Only the boat and its own reflection must disappear. The architecture and all other reflections remain completely unchanged."
+    },
+    {
+      "file": "boat.png",
+      "prompt": "Precisely extract the sailboat from this image with alpha transparency. The output canvas MUST KEEP the EXACT same 841x1871 portrait dimensions and framing as the input. Do NOT zoom, resize, reposition or enhance the boat: retain its exact tiny size and its exact pixel location in this image. The complete sailboat spans x499–657 and y836–1140. Keep the boat's existing pixels and tiny original three sails, hull and rigging, unchanged. Every other pixel in the entire canvas must be fully transparent (sky, water, architecture, everything). NO water reflection included. Only the original tiny boat at its original scale and location, occupying less than 20% of the image width, on a full-size transparent 841x1871 portrait canvas. This is a production compositing layer, NOT an illustration: do not add new rigging or details, do not draw a larger boat. Keep transparent space between sails. Keep the mast at x585 y842, left sail apex x541 y948, right small sail at x639 y1012 and waterline at y1138. Original geometry and original gray-white shading."
+    },
+    {
+      "file": "reflection.png",
+      "prompt": "Use case: background-extraction. Production animation layer. Extract ONLY the existing sailboat's pale watery reflection from the original attached image. Keep the exact 841x1871 portrait canvas and exact alignment; DO NOT zoom, rescale or reposition. Only the boat's inverted reflection in the water at x499–662, y1140–1364 must remain visible. Preserve original wavy and broken reflection appearance and original color. Remove ALL other pixels to genuine transparent alpha: original boat above y1140, ALL architecture/reflections of architecture, sky, foreground, and surrounding base gray water. Feather the reflection outer edges to fully transparent so it composites seamlessly over matching calm gray water. Reflection is pale fragmented whitish cool gray sails/hull, naturally distorted into delicate horizontal ripple bands, gently fading at its bottom. No solid rectangular patch of water; no new boat, text or objects. MUST remain tiny in its existing exact position, below waterline y1140. Everything outside that little reflection area is completely transparent. Retain existing small reflected sails rather than inventing a new reflection."
+    }
+  ],
+  "preparation": "scripts/prepare-voyage-assets.cjs crops the generated layers, matches plate lighting, feathers edges, and masks the foreground. The original image is copied unchanged."
+}

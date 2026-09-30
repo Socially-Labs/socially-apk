@@ -1,0 +1,19 @@
+/*
+ * Inter is loaded by `useFonts` in src/app/_layout.tsx, which emits one
+ * `@font-face` per weight using the family names from src/constants/fonts.ts
+ * ('Inter-Regular', 'Inter-Bold', ...). Naming each weight separately means CSS
+ * cannot select a weight with `font-weight` alone — pick the family by name.
+ *
+ * These variables only carry the fallback stack. They are what `Fonts.serif`,
+ * `Fonts.rounded` and `Fonts.mono` resolve to on web, plus a safety net for
+ * anything styled in raw CSS.
+ */
+:root {
+  --font-display:
+    'Inter-Regular', 'Inter', Spline Sans, ui-sans-serif, system-ui, sans-serif,
+    Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+}
