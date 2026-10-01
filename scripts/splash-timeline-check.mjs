@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {
   transition, traitsOf, progress, buildTimeline, sceneFrame,
   boatMotion, reflectionMotion, SCENE, REFLECTION_BANDS,
-} from '../src/components/splash-timeline.ts';
+} from '../src/components/auth/splash/splash-timeline.ts';
 
 const full = buildTimeline({ reduceMotion: false });
 const reduced = buildTimeline({ reduceMotion: true });

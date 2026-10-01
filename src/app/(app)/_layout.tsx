@@ -1,4 +1,4 @@
-import AppTabs from '@/components/app-tabs';
+import AppTabs from '@/components/shared/navigation/app-tabs';
 
 export default function AppLayout() {
   return <AppTabs />;

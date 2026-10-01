@@ -5,8 +5,9 @@ import { ActivityIndicator, BackHandler, Keyboard, StyleSheet, Text, TextInput, 
 import Animated, { Easing, FadeIn, FadeOut, LinearTransition, useReducedMotion, type SharedValue } from 'react-native-reanimated';
 
 import { policyUrls } from '@/auth/config';
-import { AuthIcon } from '@/components/auth-icons';
-import { AuthButton, AuthReveal } from '@/components/auth-motion';
+import { AUTH_TEST_MODE, useTestAccess } from '@/auth/test-access';
+import { AuthIcon } from '@/components/auth/auth-icons';
+import { AuthButton, AuthReveal } from '@/components/shared/motion';
 import { InterFont } from '@/constants/fonts';
 import { AuthPanel } from '@/constants/theme';
 import { useEmailAuth } from '@/hooks/use-email-auth';
@@ -22,15 +23,16 @@ export function SignInPanel({ progress, testIDPrefix = 'auth', onFocusChange }: 
   onFocusChange?: (focused: boolean) => void;
 }) {
   const auth = useEmailAuth();
+  const { enterTestApp } = useTestAccess();
   const reduceMotion = useReducedMotion();
   const input = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
-  const verifying = auth.stage === 'code';
-  const busy = auth.pending !== null || auth.oauthPending || !auth.isReady;
-  const disabled = busy || (verifying ? auth.code.length !== 6 : !auth.email.trim());
+  const verifying = !AUTH_TEST_MODE && auth.stage === 'code';
+  const busy = !AUTH_TEST_MODE && (auth.pending !== null || auth.oauthPending || !auth.isReady);
+  const disabled = !AUTH_TEST_MODE && (busy || (verifying ? auth.code.length !== 6 : !auth.email.trim()));
   const { changeEmail } = auth;
-  const error = auth.error || linkError;
+  const error = (AUTH_TEST_MODE ? null : auth.error) || linkError;
   const layout = reduceMotion ? undefined : LinearTransition.duration(280).easing(EASE_OUT);
   const enter = reduceMotion ? undefined : FadeIn.duration(200);
   const exit = reduceMotion ? undefined : FadeOut.duration(120);
@@ -49,14 +51,20 @@ export function SignInPanel({ progress, testIDPrefix = 'auth', onFocusChange }: 
   }, [verifying, busy, changeEmail]);
 
   function submit() {
+    if (AUTH_TEST_MODE) {
+      Keyboard.dismiss();
+      enterTestApp();
+      return;
+    }
     if (verifying) void auth.submitCode();
     else void auth.requestCode();
   }
-  const buttonLabel = !auth.isReady ? 'Getting ready…'
+  const buttonLabel = AUTH_TEST_MODE ? 'Continue'
+    : !auth.isReady ? 'Getting ready…'
     : auth.pending === 'send' ? 'Sending code…'
     : auth.pending === 'verify' ? 'Verifying…'
     : verifying ? 'Verify & continue' : 'Continue';
-  const emailBusy = auth.pending === 'send' || auth.pending === 'verify' || !auth.isReady;
+  const emailBusy = !AUTH_TEST_MODE && (auth.pending === 'send' || auth.pending === 'verify' || !auth.isReady);
 
   function openPolicy(url: string | undefined) {
     if (!url?.startsWith('https://')) return;
@@ -87,7 +95,7 @@ export function SignInPanel({ progress, testIDPrefix = 'auth', onFocusChange }: 
           <TextInput
             ref={input} testID={`${testIDPrefix}-${verifying ? 'code' : 'email'}`}
             accessibilityLabel={verifying ? '6-digit verification code' : 'Email address'}
-            accessibilityHint={verifying ? 'Enter the code from your email' : 'Sign in or create an account. We will email you a code.'}
+            accessibilityHint={AUTH_TEST_MODE ? 'Optional for this app preview' : verifying ? 'Enter the code from your email' : 'Sign in or create an account. We will email you a code.'}
             style={[styles.input, verifying && styles.codeInput]}
             value={verifying ? auth.code : auth.email}
             onChangeText={verifying ? auth.updateCode : auth.updateEmail}
@@ -157,7 +165,11 @@ export function SignInPanel({ progress, testIDPrefix = 'auth', onFocusChange }: 
               testID={`${testIDPrefix}-google`} accessibilityRole="button"
               accessibilityLabel="Continue with Google"
               accessibilityState={{ disabled: busy, busy: auth.pending === 'google' }}
-              disabled={busy} onPress={() => { Keyboard.dismiss(); void auth.requestSocial('google'); }}
+              disabled={busy} onPress={() => {
+                Keyboard.dismiss();
+                if (AUTH_TEST_MODE) enterTestApp();
+                else void auth.requestSocial('google');
+              }}
               style={styles.socialButton}>
               {auth.pending === 'google'
                 ? <ActivityIndicator color={AuthPanel.primary} size="small" />

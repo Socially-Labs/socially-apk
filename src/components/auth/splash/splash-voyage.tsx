@@ -6,7 +6,7 @@ import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reani
 import {
   BOAT, REFLECTION, REFLECTION_BANDS, WATER_PLATE,
   boatMotion, progress, reflectionMotion, sceneFrame, type Timeline,
-} from '@/components/splash-timeline';
+} from '@/components/auth/splash/splash-timeline';
 
 const ORIGINAL = require('@/assets/images/voyage/original.png');
 const PLATE_IMAGE = require('@/assets/images/voyage/water-plate.png');

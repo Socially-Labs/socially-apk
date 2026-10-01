@@ -7,8 +7,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { SignInPanel } from '@/components/sign-in-panel';
-import { SignInBrand } from '@/components/sign-in-brand';
+import { SignInPanel } from '@/components/auth/sign-in-panel';
+import { SignInBrand } from '@/components/auth/sign-in-brand';
 import { AuthPanel } from '@/constants/theme';
 
 /** The reference panel floats above the existing voyage artwork. */

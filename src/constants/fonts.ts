@@ -61,6 +61,18 @@ export const InterFontMap = {
   [InterFont.black]: require('@expo-google-fonts/inter/900Black/Inter_900Black.ttf'),
 } as const;
 
+/** The editorial serif is reserved for the Socially wordmark. */
+export const BrandFont = {
+  wordmark: 'CormorantGaramond-SemiBold',
+} as const;
+
+// Load the actual 600 cut, rather than asking a regular face for synthetic bold.
+// Bundled TTFs also make this work in Expo Go and existing development builds.
+export const AppFontMap = {
+  ...InterFontMap,
+  [BrandFont.wordmark]: require('@expo-google-fonts/cormorant-garamond/600SemiBold/CormorantGaramond_600SemiBold.ttf'),
+} as const;
+
 /** Every real weight Inter ships, in CSS terms. There is a true 600, so the
  * 600s in the existing styles resolve to SemiBold rather than snapping up to
  * Bold the way they had to with a 5-weight family. */

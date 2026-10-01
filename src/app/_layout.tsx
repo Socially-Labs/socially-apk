@@ -7,9 +7,10 @@ import { StyleSheet, View, useColorScheme } from 'react-native';
 
 import { AuthProvider } from '@/auth/auth-provider';
 import { useAuth } from '@/auth/session';
-import { SplashOverlay } from '@/components/splash-screen';
-import { IntroCompleteContext } from '@/components/intro-context';
-import { InterFontMap } from '@/constants/fonts';
+import { TestAccessProvider, useTestAccess } from '@/auth/test-access';
+import { SplashOverlay } from '@/components/auth/splash/splash-screen';
+import { IntroCompleteContext } from '@/components/auth/intro-context';
+import { AppFontMap } from '@/constants/fonts';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 // Expo Go owns its native splash and cannot customize the fade animation.
@@ -23,17 +24,19 @@ if (!isRunningInExpoGo()) {
 const FONTS_FAILSAFE_MS = 4000;
 
 export default function RootLayout() {
-  return <AuthProvider><AppLayout /></AuthProvider>;
+  return <TestAccessProvider><AuthProvider><AppLayout /></AuthProvider></TestAccessProvider>;
 }
 
 function AuthNavigator() {
   const { isAuthenticated } = useAuth();
+  const { hasTestAccess } = useTestAccess();
+  const canEnterApp = isAuthenticated || hasTestAccess;
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-      <Stack.Protected guard={!isAuthenticated}>
+      <Stack.Protected guard={!canEnterApp}>
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
-      <Stack.Protected guard={isAuthenticated}>
+      <Stack.Protected guard={canEnterApp}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
     </Stack>
@@ -47,7 +50,7 @@ function AppLayout() {
   // On native these are usually already embedded by the expo-font config plugin
   // (app.json), so this resolves fast. It is what makes them work on web and in
   // Expo Go, where the config plugin does not apply.
-  const [fontsLoaded, fontError] = useFonts(InterFontMap);
+  const [fontsLoaded, fontError] = useFonts(AppFontMap);
   const [fontsTimedOut, setFontsTimedOut] = useState(false);
 
   useEffect(() => {

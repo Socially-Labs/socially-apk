@@ -15,9 +15,9 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { IntroCompleteContext } from '@/components/intro-context';
-import { SignInBrand } from '@/components/sign-in-brand';
-import { SignInPanel } from '@/components/sign-in-panel';
+import { IntroCompleteContext } from '@/components/auth/intro-context';
+import { SignInBrand } from '@/components/auth/sign-in-brand';
+import { SignInPanel } from '@/components/auth/sign-in-panel';
 import { AuthPanel } from '@/constants/theme';
 
 const BACKGROUND = require('@/assets/images/auth/voyage-blue.png');

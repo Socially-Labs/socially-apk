@@ -47,9 +47,11 @@ These are the source of truth. This document describes them; it does not overrid
 | --- | --- |
 | Colours (light/dark) | `src/constants/theme.ts` → `Colors` |
 | Auth panel colours, shadows, type sizes | `src/constants/theme.ts` → `AuthPanel` |
+| Wallet surfaces, action colours, type sizes | `src/constants/theme.ts` → `WalletPalette` |
+| Floating detail sheet surfaces and motion | `src/constants/theme.ts` → `DashboardSheetTheme` |
 | Inter family names, weight map | `src/constants/fonts.ts` → `InterFont`, `InterWeightMap`, `interFamily()` |
 | Spacing scale, max measure | `src/constants/theme.ts` → `Spacing`, `MaxContentWidth` |
-| Type variants | `src/components/themed-text.tsx` |
+| Type variants | `src/components/shared/ui/themed-text.tsx` |
 | Web font stacks | `src/global.css` |
 
 **Why every Inter weight is its own `fontFamily`.** SDK 57 cannot interpolate
@@ -338,6 +340,26 @@ has done the work Butterick is asking for. **This is a deliberate decision, not 
 oversight.** Revisit if small-size legibility becomes a complaint.
 
 ### Complexity
+
+- `shared/dashboard/dashboard-sheet.tsx` adapts the October 2 modal reference to
+  the dashboard theme: 32px corners, 8px side insets, a grab handle, a centred
+  title, and a quiet inset body surface. The panel rises as one surface with a
+  360ms spring and slides out over 260ms. The native modal and its last visible
+  content stay mounted through the exit. The handle supports downward dragging,
+  with a short drag returning to rest. Reduced motion applies states instantly.
+  All existing dashboard callers inherit the shared treatment. Measurements and
+  platform adaptations are recorded in `docs/dashboard-sheet-motion.md`.
+
+- `wallet.tsx` uses the voyage artwork, a 40px balance, translucent asset cards,
+  and separate preview holdings. Its 18px title and 12px subtitle sit in the top
+  header, aligned like the home greeting. Deposit and Withdraw share the Receive
+  on Solana card, with a divider between its receiving row and the actions.
+  `wallet-actions.tsx` adapts the reference Pay/Request expansion to Deposit and
+  Withdraw: three pills, a reversible arrow-to-X morph, and brief
+  label crossfades. Opening takes 380ms and closing 320ms. Reduced motion applies
+  the final state immediately. Blur runs on web and Android 12+; iOS uses the
+  same crossfade and scale without unsupported blur. Motion measurements and
+  deliberate platform differences are recorded in `docs/wallet-motion.md`.
 
 - `auth-screen.tsx` follows the user's October 1, 2026 screenshot: white arches,
   pale blue sea and sky, and a compact translucent bottom panel. The generated

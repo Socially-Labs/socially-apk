@@ -12,10 +12,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { useAuth } from '@/auth/session';
-import { SplashSignInCard } from '@/components/splash-sign-in-card';
-import { buildTimeline, progress, traitsOf, transition, type SplashEvent } from '@/components/splash-timeline';
-import { VoyageScene } from '@/components/splash-voyage';
-import { InterFont } from '@/constants/fonts';
+import { AUTH_TEST_MODE, useTestAccess } from '@/auth/test-access';
+import { SplashSignInCard } from '@/components/auth/splash/splash-sign-in-card';
+import { buildTimeline, progress, traitsOf, transition, type SplashEvent } from '@/components/auth/splash/splash-timeline';
+import { VoyageScene } from '@/components/auth/splash/splash-voyage';
+import { BrandFont, InterFont } from '@/constants/fonts';
 
 const APP_NAME = (Constants.expoConfig?.name ?? 'Socially').trim().toUpperCase() || 'SOCIALLY';
 const ASSET_FAILSAFE_MS = 2000;
@@ -66,9 +67,11 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
   const motionClock = useDerivedValue(() => spatialMotionDisabled.get() ? frozenTime.get() : clock.get());
   const timeline = buildTimeline({ reduceMotion });
   const { isAuthenticated, isReady } = useAuth();
+  const { hasTestAccess } = useTestAccess();
+  const canEnterApp = isAuthenticated || hasTestAccess;
   const [authGraceOver, setAuthGraceOver] = useState(false);
   const card = useSharedValue(0);
-  const showCard = phase === 'waiting' && !isAuthenticated && (isReady || authGraceOver);
+  const showCard = phase === 'waiting' && !canEnterApp && (AUTH_TEST_MODE || isReady || authGraceOver);
   // Stays mounted through the exit fade once shown, so the card leaves with the scene.
   const [cardMounted, setCardMounted] = useState(false);
   if (showCard && !cardMounted) setCardMounted(true);
@@ -120,15 +123,15 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     if (phase !== 'waiting') return;
-    if (isAuthenticated) {
+    if (canEnterApp) {
       Keyboard.dismiss();
       dispatch('authenticated');
       return;
     }
-    if (isReady) return;
+    if (AUTH_TEST_MODE || isReady) return;
     const grace = setTimeout(() => setAuthGraceOver(true), AUTH_READY_GRACE_MS);
     return () => clearTimeout(grace);
-  }, [phase, isAuthenticated, isReady]);
+  }, [phase, canEnterApp, isReady]);
 
   useEffect(() => {
     if (!cardMounted) return;
@@ -141,7 +144,7 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
       if (state === 'active' || (phase !== 'performing' && phase !== 'leaving')) return;
       // Returning from a call or another app should reveal the app, never replay this intro.
       cancelAnimation(clock);
-      if (phase === 'performing' && !isAuthenticated) {
+      if (phase === 'performing' && !canEnterApp) {
         clock.set(timeline.exitAt);
         dispatch('performed');
         return;
@@ -152,7 +155,7 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
       dispatch('left');
     });
     return () => subscription.remove();
-  }, [clock, phase, isAuthenticated, timeline.exitAt, timeline.end]);
+  }, [clock, phase, canEnterApp, timeline.exitAt, timeline.end]);
 
   const rootStyle = useAnimatedStyle(() => ({ opacity: 1 - progress(clock.get(), timeline.exit) }));
   const lockupStyle = useAnimatedStyle(() => ({ opacity: 1 - Math.min(1, card.get() * 2.5) }));
@@ -217,8 +220,8 @@ const styles = StyleSheet.create({
   },
   icon: { width: 56, height: 56, marginBottom: 4 },
   name: {
-    fontFamily: InterFont.black, fontSize: 30, lineHeight: 36,
-    letterSpacing: 4, color: '#303A41', textAlign: 'center',
+    fontFamily: BrandFont.wordmark, fontSize: 34, lineHeight: 42,
+    letterSpacing: 4.5, color: '#303A41', textAlign: 'center',
   },
   tagline: {
     fontFamily: InterFont.light, fontSize: 10, lineHeight: 16,
