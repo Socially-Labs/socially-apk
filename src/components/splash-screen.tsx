@@ -3,14 +3,16 @@ import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { AccessibilityInfo, AppState, Modal, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, AppState, Keyboard, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing, ReduceMotion, cancelAnimation, useAnimatedStyle, useDerivedValue,
-  useReducedMotion, useSharedValue, withTiming, type SharedValue,
+  useReducedMotion, useSharedValue, withSpring, withTiming, type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { useAuth } from '@/auth/session';
+import { SplashSignInCard } from '@/components/splash-sign-in-card';
 import { buildTimeline, progress, traitsOf, transition, type SplashEvent } from '@/components/splash-timeline';
 import { VoyageScene } from '@/components/splash-voyage';
 import { InterFont } from '@/constants/fonts';
@@ -18,6 +20,9 @@ import { InterFont } from '@/constants/fonts';
 const APP_NAME = (Constants.expoConfig?.name ?? 'Socially').trim().toUpperCase() || 'SOCIALLY';
 const ASSET_FAILSAFE_MS = 2000;
 const CLOCK_FAILSAFE_SLACK_MS = 400;
+// A restored session may land just after the intro; wait briefly before offering sign-in.
+const AUTH_READY_GRACE_MS = 2500;
+const CARD_SPRING = { damping: 26, stiffness: 200, mass: 0.9, overshootClamping: true };
 
 function runClock(
   clock: SharedValue<number>, target: number, event: SplashEvent,
@@ -60,6 +65,13 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
   const spatialMotionDisabled = useSharedValue(initialReduceMotion);
   const motionClock = useDerivedValue(() => spatialMotionDisabled.get() ? frozenTime.get() : clock.get());
   const timeline = buildTimeline({ reduceMotion });
+  const { isAuthenticated, isReady } = useAuth();
+  const [authGraceOver, setAuthGraceOver] = useState(false);
+  const card = useSharedValue(0);
+  const showCard = phase === 'waiting' && !isAuthenticated && (isReady || authGraceOver);
+  // Stays mounted through the exit fade once shown, so the card leaves with the scene.
+  const [cardMounted, setCardMounted] = useState(false);
+  if (showCard && !cardMounted) setCardMounted(true);
 
   const sceneReady = useCallback((canAnimate: boolean) => {
     // Late display/error events cannot restart the splash or change its layers mid-flight.
@@ -107,73 +119,98 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
   }, [phase, clock, sceneReady, timeline.exitAt, timeline.end, onComplete]);
 
   useEffect(() => {
+    if (phase !== 'waiting') return;
+    if (isAuthenticated) {
+      Keyboard.dismiss();
+      dispatch('authenticated');
+      return;
+    }
+    if (isReady) return;
+    const grace = setTimeout(() => setAuthGraceOver(true), AUTH_READY_GRACE_MS);
+    return () => clearTimeout(grace);
+  }, [phase, isAuthenticated, isReady]);
+
+  useEffect(() => {
+    if (!cardMounted) return;
+    card.set(reduceMotion ? 1 : withSpring(1, CARD_SPRING));
+    return () => cancelAnimation(card);
+  }, [cardMounted, reduceMotion, card]);
+
+  useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active' || phase === 'mirroring' || phase === 'unveiling' || phase === 'gone') return;
+      if (state === 'active' || (phase !== 'performing' && phase !== 'leaving')) return;
       // Returning from a call or another app should reveal the app, never replay this intro.
       cancelAnimation(clock);
+      if (phase === 'performing' && !isAuthenticated) {
+        clock.set(timeline.exitAt);
+        dispatch('performed');
+        return;
+      }
       clock.set(timeline.end);
       dispatch('performed');
+      dispatch('authenticated');
       dispatch('left');
     });
     return () => subscription.remove();
-  }, [clock, phase, timeline.end]);
+  }, [clock, phase, isAuthenticated, timeline.exitAt, timeline.end]);
 
   const rootStyle = useAnimatedStyle(() => ({ opacity: 1 - progress(clock.get(), timeline.exit) }));
+  const lockupStyle = useAnimatedStyle(() => ({ opacity: 1 - Math.min(1, card.get() * 2.5) }));
   const traits = traitsOf(phase);
   if (!traits.render) return null;
 
   return (
-    <Modal
-      transparent
-      visible
-      animationType="none"
-      presentationStyle="overFullScreen"
-      statusBarTranslucent
-      navigationBarTranslucent
-      onRequestClose={() => {}}>
+    // An in-tree overlay covers the navigator without needing a separate window.
+    // The native launch screen stays visible until the scene is ready.
+    <Animated.View
+      style={[styles.root, rootStyle]}
+      testID="voyage-splash"
+      accessibilityViewIsModal
+      pointerEvents={traits.pointerEvents}
+      onLayout={({ nativeEvent: { layout: measured } }) => {
+        // Android's keyboard resizes the window; the scene behind the card stays still.
+        if (cardMounted) return;
+        setLayout((current) => current.width === measured.width && current.height === measured.height
+          ? current : { width: measured.width, height: measured.height });
+      }}>
+      <StatusBar style="dark" />
+      <VoyageScene
+        clock={clock}
+        motionClock={motionClock}
+        timeline={timeline}
+        width={layout.width}
+        height={layout.height}
+        motionEnabled={motionEnabled}
+        onReady={sceneReady}
+      />
       <Animated.View
-        style={[styles.root, rootStyle]}
-        testID="voyage-splash"
-        accessibilityViewIsModal
-        onLayout={({ nativeEvent: { layout: measured } }) => {
-          setLayout((current) => current.width === measured.width && current.height === measured.height
-            ? current : { width: measured.width, height: measured.height });
-        }}>
-        <StatusBar style="dark" />
-        <VoyageScene
-          clock={clock}
-          motionClock={motionClock}
-          timeline={timeline}
-          width={layout.width}
-          height={layout.height}
-          motionEnabled={motionEnabled}
-          onReady={sceneReady}
-        />
-        <View
-          style={[styles.lockup, { paddingBottom: Math.max(insets.bottom, 16) + 36 }]}
-          accessible
-          accessibilityRole="summary"
-          accessibilityLabel={`${APP_NAME}. Join the voyage.`}>
-          <View style={styles.icon}>
-            <Image
-              source={require('@/assets/images/icon.png')}
-              style={StyleSheet.absoluteFill}
-              contentFit="contain"
-              transition={0}
-              accessibilityElementsHidden
-              importantForAccessibility="no"
-            />
-          </View>
-          <Text style={styles.name} maxFontSizeMultiplier={1.2}>{APP_NAME}</Text>
-          <Text style={styles.tagline} maxFontSizeMultiplier={1.2}>JOIN THE VOYAGE</Text>
+        style={[styles.lockup, { paddingBottom: Math.max(insets.bottom, 16) + 36 }, lockupStyle]}
+        pointerEvents="none"
+        accessible={!cardMounted}
+        accessibilityElementsHidden={cardMounted}
+        importantForAccessibility={cardMounted ? 'no-hide-descendants' : 'auto'}
+        accessibilityRole="summary"
+        accessibilityLabel={`${APP_NAME}. Join the voyage.`}>
+        <View style={styles.icon}>
+          <Image
+            source={require('@/assets/images/splash-icon.png')}
+            style={StyleSheet.absoluteFill}
+            contentFit="contain"
+            transition={0}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          />
         </View>
+        <Text style={styles.name} maxFontSizeMultiplier={1.2}>{APP_NAME}</Text>
+        <Text style={styles.tagline} maxFontSizeMultiplier={1.2}>JOIN THE VOYAGE</Text>
       </Animated.View>
-    </Modal>
+      {cardMounted ? <SplashSignInCard reveal={card} /> : null}
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#D6DDE2', overflow: 'hidden' },
+  root: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#D6DDE2', overflow: 'hidden' },
   lockup: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
     alignItems: 'center', gap: 10, mixBlendMode: 'multiply',

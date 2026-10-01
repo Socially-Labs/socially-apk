@@ -1,10 +1,12 @@
-export type SplashPhase = 'mirroring' | 'unveiling' | 'performing' | 'leaving' | 'gone';
-export type SplashEvent = 'mirrorPainted' | 'nativeHidden' | 'performed' | 'left';
+export type SplashPhase = 'mirroring' | 'unveiling' | 'performing' | 'waiting' | 'leaving' | 'gone';
+export type SplashEvent = 'mirrorPainted' | 'nativeHidden' | 'performed' | 'authenticated' | 'left';
 
 const EDGES: Readonly<Record<SplashPhase, { on: SplashEvent; to: SplashPhase } | null>> = {
   mirroring: { on: 'mirrorPainted', to: 'unveiling' },
   unveiling: { on: 'nativeHidden', to: 'performing' },
-  performing: { on: 'performed', to: 'leaving' },
+  performing: { on: 'performed', to: 'waiting' },
+  // Signed-out visitors stay on the held scene until the sign-in card succeeds.
+  waiting: { on: 'authenticated', to: 'leaving' },
   leaving: { on: 'left', to: 'gone' },
   gone: null,
 };
@@ -17,7 +19,6 @@ export function transition(phase: SplashPhase, event: SplashEvent): SplashPhase 
 export function traitsOf(phase: SplashPhase) {
   return {
     pointerEvents: phase === 'gone' ? ('none' as const) : ('auto' as const),
-    modal: phase !== 'gone',
     render: phase !== 'gone',
   };
 }

@@ -74,3 +74,34 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+
+/** The fixed light auth panel sits over the voyage artwork in either theme. */
+export const AuthPanel = {
+  backdrop: '#D9E5EF',
+  surface: '#FFFFFF',
+  glass: ['rgba(255,255,255,0.94)', 'rgba(249,251,255,0.94)'] as const,
+  field: 'rgba(246,248,252,0.32)',
+  ink: '#191E43',
+  secondary: '#7D8DAC',
+  caption: '#94A2BF',
+  placeholder: '#66758C',
+  border: '#E1E6F0',
+  divider: '#D8DFEC',
+  focusBorder: '#8C9EB7',
+  primary: '#596C86',
+  primaryGradient: ['#60728A', '#576981'] as const,
+  disabled: '#748299',
+  clear: '#BDC5D3',
+  error: '#A3333F',
+  panelShadow: '0 18px 54px rgba(72, 95, 127, 0.12)',
+  buttonShadow: 'none',
+  // Measured against the supplied 853px reference at a 393pt phone width.
+  inputSize: 13,
+  codeSize: 26,
+  bodySize: 14,
+  captionSize: 10,
+  buttonSize: 13,
+  socialSize: 13,
+  panelRadius: 22,
+  controlRadius: 10,
+} as const;

@@ -1,0 +1,8 @@
+{
+  "asset": "assets/images/auth/voyage-blue.png",
+  "generator": "Built-in image_gen",
+  "sourceArtwork": "assets/images/voyage/original.png",
+  "reference": "User-provided sign-in screenshot, October 1, 2026",
+  "prompt": "Use case: lighting-weather. Asset type: full-bleed portrait mobile app background. Edit Image 1 to match Image 2's pale ice-blue sky and water, bright airy white architecture, faint distant mountains and delicate wispy clouds. Preserve Image 1's exact portrait aspect ratio, composition, huge white arch at left, white sailboat at center right, smaller right arches, steps, and water reflections. Keep it high-key, serene, photorealistic architectural 3D render with gentle cool blue light. Image 2 is a color and lighting reference only. Output ONLY the clean scenery as in Image 1, absolutely no UI, no panel, no input field, no button, no text, no logos, no status bar, no icons, no frame.",
+  "presentation": "A light white veil and lower gradient soften the scene to match the screenshot. The backdrop is reframed so the arch and sailboat remain visible above the bottom sheet."
+}

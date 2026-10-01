@@ -1,0 +1,18 @@
+{
+  "tool": "Built-in image_gen",
+  "reference": "reference.png",
+  "tileSource": "tile-source.png",
+  "emblemSource": "emblem-source.png",
+  "prompts": {
+    "tile": "Extract the entire rounded square app icon tile onto transparency. Preserve the original pirate portrait, three candlesticks, pale silver-blue palette, beveled geometry, highlights, and inner shading. Remove only the outer backdrop and cast shadow. Keep all tips and corners intact.",
+    "edgeRefinement": "Remove stray alpha specks and perimeter fringing only. Preserve the original interior artwork and soft physical bevel. Produce a clean, smooth transparent silhouette.",
+    "monochrome": "Extract only the pirate portrait emblem and its three candlesticks as a solid black silhouette on transparency. Preserve the contours, proportions, negative spaces, and relative positions. Remove the tile and backdrop."
+  },
+  "preparation": "node scripts/prepare-app-icons.cjs assets/images/branding/tile-source.png assets/images/branding/emblem-source.png",
+  "notes": [
+    "The tile source receives a traced, antialiased rounded-rectangle perimeter to remove residual extraction flecks.",
+    "Opaque launcher images retain the same silver-blue artwork in light and dark appearances.",
+    "Android foreground and monochrome artwork fit the circular 66dp safe zone on a 108dp canvas.",
+    "Splash and in-app artwork preserve corner transparency. The iOS tinted asset is grayscale."
+  ]
+}
