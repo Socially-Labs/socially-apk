@@ -1,17 +1,46 @@
+import { isRunningInExpoGo } from 'expo';
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View, useColorScheme } from 'react-native';
 
-import AppTabs from '@/components/app-tabs';
+import { AuthProvider } from '@/auth/auth-provider';
+import { useAuth } from '@/auth/session';
 import { SplashOverlay } from '@/components/splash-screen';
+import { IntroCompleteContext } from '@/components/intro-context';
 import { InterFontMap } from '@/constants/fonts';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
-SplashScreen.setOptions({ fade: true, duration: 200 });
+// Expo Go owns its native splash and cannot customize the fade animation.
+if (!isRunningInExpoGo()) {
+  SplashScreen.setOptions({ fade: true, duration: 200 });
+}
 
-export default function TabLayout() {
+// The fonts are embedded by the expo-font config plugin (app.json), so on native they
+// settle almost immediately. The cap only exists so a font that never resolves cannot
+// pin the native splash on screen forever.
+const FONTS_FAILSAFE_MS = 4000;
+
+export default function RootLayout() {
+  return <AuthProvider><AppLayout /></AuthProvider>;
+}
+
+function AuthNavigator() {
+  const { isAuthenticated } = useAuth();
+  return (
+    <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen name="sign-in" />
+      </Stack.Protected>
+      <Stack.Protected guard={isAuthenticated}>
+        <Stack.Screen name="(app)" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
+
+function AppLayout() {
   const colorScheme = useColorScheme();
   const [splashComplete, setSplashComplete] = useState(false);
   const completeSplash = useCallback(() => setSplashComplete(true), []);
@@ -19,24 +48,34 @@ export default function TabLayout() {
   // (app.json), so this resolves fast. It is what makes them work on web and in
   // Expo Go, where the config plugin does not apply.
   const [fontsLoaded, fontError] = useFonts(InterFontMap);
+  const [fontsTimedOut, setFontsTimedOut] = useState(false);
 
-  // Render nothing until the fonts resolve, otherwise the first frame paints with
-  // the system fallback and visibly reflows. The native splash stays up until
-  // SplashOverlay hides it.
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
+  useEffect(() => {
+    if (fontsLoaded || fontError || fontsTimedOut) return;
+    const failsafe = setTimeout(() => setFontsTimedOut(true), FONTS_FAILSAFE_MS);
+    return () => clearTimeout(failsafe);
+  }, [fontsLoaded, fontError, fontsTimedOut]);
 
+  const fontsSettled = fontsLoaded || fontError !== null || fontsTimedOut;
+
+  // Keep the navigator mounted while fonts load; the native splash covers it
+  // until the overlay is ready. Keep both native wrappers too: switching
+  // importantForAccessibility back to 'auto' otherwise allows Fabric to flatten
+  // the inner View and reparent NativeTabs. Android's fragment restoration can
+  // throw "[RNScreens] Unexpected fragment manager state" on that reattachment.
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <View style={styles.root}>
+      <View style={styles.root} collapsable={false}>
         <View
           style={styles.root}
+          collapsable={false}
           accessibilityElementsHidden={!splashComplete}
           importantForAccessibility={splashComplete ? 'auto' : 'no-hide-descendants'}>
-          <AppTabs />
+          <IntroCompleteContext.Provider value={splashComplete}>
+            <AuthNavigator />
+          </IntroCompleteContext.Provider>
         </View>
-        {!splashComplete && <SplashOverlay onComplete={completeSplash} />}
+        {fontsSettled && !splashComplete && <SplashOverlay onComplete={completeSplash} />}
       </View>
     </ThemeProvider>
   );
