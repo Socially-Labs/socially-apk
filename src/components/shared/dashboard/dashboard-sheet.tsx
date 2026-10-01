@@ -109,9 +109,12 @@ function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps 
         accessibilityViewIsModal testID="dashboard-sheet" pointerEvents={visible ? 'auto' : 'none'}>
         <LinearGradient colors={S.gradient} style={StyleSheet.absoluteFill} pointerEvents="none" />
         <GestureDetector gesture={pan}>
-          <View style={styles.handleArea} testID="dashboard-sheet-handle" accessible accessibilityRole="adjustable"
-            accessibilityLabel="Drag down to dismiss details" accessibilityActions={[{ name: 'escape', label: 'Close details' }]}
-            onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'escape') onClose(); }}>
+          <View style={styles.handleArea} testID="dashboard-sheet-handle" accessible accessibilityRole="button"
+            accessibilityLabel="Dismiss details with the grab handle"
+            accessibilityActions={[{ name: 'activate', label: 'Close details' }, { name: 'escape', label: 'Close details' }]}
+            onAccessibilityAction={event => {
+              if (event.nativeEvent.actionName === 'activate' || event.nativeEvent.actionName === 'escape') onClose();
+            }}>
             <View style={styles.handle} />
           </View>
         </GestureDetector>
