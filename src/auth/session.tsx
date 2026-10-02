@@ -7,6 +7,7 @@ export type AuthSession = {
   isConfigured: boolean;
   isAuthenticated: boolean;
   email: string | null;
+  accountId: string | null;
   sendCode: (email: string) => Promise<void>;
   verifyCode: (email: string, code: string) => Promise<void>;
   loginWithSocial: (provider: SocialProvider) => Promise<void>;
@@ -30,7 +31,7 @@ const unavailable = async () => {
 export function UnconfiguredAuthProvider({ children, isReady = true }: PropsWithChildren<{ isReady?: boolean }>) {
   return (
     <AuthContext.Provider value={{
-      isReady, isConfigured: false, isAuthenticated: false, email: null,
+      isReady, isConfigured: false, isAuthenticated: false, email: null, accountId: null,
       sendCode: unavailable, verifyCode: unavailable, loginWithSocial: unavailable,
       oauthPending: false, oauthError: null, logout: unavailable,
     }}>

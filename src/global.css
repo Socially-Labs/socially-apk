@@ -17,3 +17,10 @@
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
 }
+
+/* Pointer selection uses the tab's selected circle; keyboard focus keeps its rounded outline. */
+@supports selector(:focus-visible) {
+  #voyage-bottom-navigation [role='tab']:not(:focus-visible) {
+    outline-width: 0 !important;
+  }
+}

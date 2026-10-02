@@ -5,7 +5,7 @@ const EDGES: Readonly<Record<SplashPhase, { on: SplashEvent; to: SplashPhase } |
   mirroring: { on: 'mirrorPainted', to: 'unveiling' },
   unveiling: { on: 'nativeHidden', to: 'performing' },
   performing: { on: 'performed', to: 'waiting' },
-  // Signed-out visitors stay on the held scene until the sign-in card succeeds.
+  // Signed-out visitors stay on the animated scene until the sign-in card succeeds.
   waiting: { on: 'authenticated', to: 'leaving' },
   leaving: { on: 'left', to: 'gone' },
   gone: null,
@@ -65,6 +65,8 @@ export const BOAT = { x: 493, y: 831, width: 172, height: 310 } as const;
 export const REFLECTION = { x: 485, y: 1140, width: 190, height: 236 } as const;
 export const REFLECTION_BANDS = 12;
 export const REFLECTION_LAG_MS = 120;
+export const BOAT_DRIFT_PERIOD_MS = 24000;
+export const RIPPLE_PERIOD_MS = 6000;
 
 /** Same centered cover calculation as expo-image, shared by every layer. */
 export function sceneFrame(width: number, height: number) {
@@ -78,32 +80,46 @@ export function sceneFrame(width: number, height: number) {
   };
 }
 
-export function boatMotion(t: number, timeline: Timeline, travel = 18) {
+export function boatMotion(t: number, timeline: Timeline, travel = 5) {
   'worklet';
   if (timeline.reduceMotion) return { x: 0, y: 0, roll: 0 };
-  const elapsed = Math.max(0, Math.min(t, timeline.end) - timeline.voyage.from);
+  const elapsed = Math.max(0, t - timeline.voyage.from);
   if (elapsed === 0) return { x: 0, y: 0, roll: 0 };
-  const envelope = Math.min(1, elapsed / 700);
+  const envelope = Math.min(1, elapsed / 1600);
   return {
-    x: travel * progress(t, timeline.voyage),
-    // Both the value and velocity start at zero; one shallow bob, no loop.
-    y: -1.5 * (1 - Math.cos((elapsed / 6000) * Math.PI * 2)),
-    roll: 0.12 * envelope * Math.sin((elapsed / 7000) * Math.PI * 2),
+    // A slow bounded drift keeps the hull inside the clean plate, even during sign-in.
+    x: travel * (1 - Math.cos((elapsed / BOAT_DRIFT_PERIOD_MS) * Math.PI * 2)) / 2,
+    y: -1.2 * (1 - Math.cos((elapsed / 9000) * Math.PI * 2)),
+    roll: 0.18 * envelope * Math.sin((elapsed / 11000) * Math.PI * 2),
   };
 }
 
-/** Distort the existing reflection in narrow bands, without animating other water. */
-export function reflectionMotion(t: number, timeline: Timeline, band: number, travel = 18) {
+/** A traveling wave distorts the reflection independently of the boat's slow drift. */
+export function reflectionMotion(t: number, timeline: Timeline, band: number, travel = 5) {
   'worklet';
   const boat = boatMotion(t - REFLECTION_LAG_MS, timeline, travel);
   if (timeline.reduceMotion) return { x: 0, y: 0 };
-  const elapsed = Math.max(0, Math.min(t, timeline.end) - timeline.voyage.from - REFLECTION_LAG_MS);
+  const elapsed = Math.max(0, t - timeline.voyage.from - REFLECTION_LAG_MS);
   if (elapsed === 0) return { x: 0, y: 0 };
   const envelope = Math.min(1, elapsed / 800);
   const depth = (band + 1) / REFLECTION_BANDS;
-  const wave = Math.sin((elapsed / 3400) * Math.PI * 2 - band * 0.65);
+  const wave = Math.sin((elapsed / 4800) * Math.PI * 2 - band * 0.7);
   return {
-    x: boat.x + envelope * depth * wave * 0.9,
-    y: -boat.y * 0.08 + envelope * depth * wave * 0.15,
+    x: boat.x + envelope * depth * wave * 2.8,
+    y: -boat.y * 0.12 + envelope * depth * wave * 0.35,
+  };
+}
+
+/** Staggered elliptical ripples expand away from the hull without a visible reset. */
+export function rippleMotion(t: number, timeline: Timeline, index: number) {
+  'worklet';
+  const elapsed = Math.max(0, t - timeline.voyage.from);
+  const phase = ((elapsed / RIPPLE_PERIOD_MS + index / 3) % 1);
+  const envelope = timeline.reduceMotion ? 0 : Math.min(1, elapsed / 1000);
+  return {
+    rx: 28 + phase * 240,
+    ry: 3 + phase * 42,
+    cy: 1138 + phase * 40,
+    opacity: envelope * Math.sin(phase * Math.PI) ** 2 * 0.42,
   };
 }

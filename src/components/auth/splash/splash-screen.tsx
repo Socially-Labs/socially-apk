@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { AccessibilityInfo, AppState, Keyboard, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
-  Easing, ReduceMotion, cancelAnimation, useAnimatedStyle, useDerivedValue,
+  Easing, ReduceMotion, cancelAnimation, useAnimatedStyle, useFrameCallback,
   useReducedMotion, useSharedValue, withSpring, withTiming, type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,9 +62,15 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
   const [layout, setLayout] = useState({ width, height });
   const ready = useRef(false);
   const clock = useSharedValue(0);
-  const frozenTime = useSharedValue(0);
   const spatialMotionDisabled = useSharedValue(initialReduceMotion);
-  const motionClock = useDerivedValue(() => spatialMotionDisabled.get() ? frozenTime.get() : clock.get());
+  // Scene time continues through sign-in; the separate intro clock controls card/exit cues.
+  const motionClock = useSharedValue(0);
+  const sceneActive = useSharedValue(AppState.currentState === 'active');
+  const motionFrame = useFrameCallback(({ timeSincePreviousFrame }) => {
+    if (spatialMotionDisabled.get() || !sceneActive.get()) return;
+    // A delayed frame or app resume must never jump the boat across the water.
+    motionClock.set(motionClock.get() + Math.min(timeSincePreviousFrame ?? 0, 64));
+  }, false);
   const timeline = buildTimeline({ reduceMotion });
   const { isAuthenticated, isReady } = useAuth();
   const { hasTestAccess } = useTestAccess();
@@ -75,6 +81,12 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
   // Stays mounted through the exit fade once shown, so the card leaves with the scene.
   const [cardMounted, setCardMounted] = useState(false);
   if (showCard && !cardMounted) setCardMounted(true);
+
+  useEffect(() => {
+    motionFrame.setActive(motionEnabled && !reduceMotion
+      && (phase === 'performing' || phase === 'waiting' || phase === 'leaving'));
+    return () => motionFrame.setActive(false);
+  }, [motionFrame, motionEnabled, reduceMotion, phase]);
 
   const sceneReady = useCallback((canAnimate: boolean) => {
     // Late display/error events cannot restart the splash or change its layers mid-flight.
@@ -88,13 +100,12 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (reduce) => {
       if (reduce) {
-        frozenTime.set(clock.get());
         spatialMotionDisabled.set(true);
       }
       if (clock.get() === 0) setReduceMotion(reduce);
     });
     return () => subscription.remove();
-  }, [clock, frozenTime, spatialMotionDisabled]);
+  }, [clock, spatialMotionDisabled]);
 
   useEffect(() => {
     switch (phase) {
@@ -141,6 +152,7 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
+      sceneActive.set(state === 'active');
       if (state === 'active' || (phase !== 'performing' && phase !== 'leaving')) return;
       // Returning from a call or another app should reveal the app, never replay this intro.
       cancelAnimation(clock);
@@ -155,7 +167,7 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
       dispatch('left');
     });
     return () => subscription.remove();
-  }, [clock, phase, canEnterApp, timeline.exitAt, timeline.end]);
+  }, [clock, sceneActive, phase, canEnterApp, timeline.exitAt, timeline.end]);
 
   const rootStyle = useAnimatedStyle(() => ({ opacity: 1 - progress(clock.get(), timeline.exit) }));
   const lockupStyle = useAnimatedStyle(() => ({ opacity: 1 - Math.min(1, card.get() * 2.5) }));
@@ -171,7 +183,7 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
       accessibilityViewIsModal
       pointerEvents={traits.pointerEvents}
       onLayout={({ nativeEvent: { layout: measured } }) => {
-        // Android's keyboard resizes the window; the scene behind the card stays still.
+        // Android's keyboard resizes the window; keep the scene's framing stable.
         if (cardMounted) return;
         setLayout((current) => current.width === measured.width && current.height === measured.height
           ? current : { width: measured.width, height: measured.height });
