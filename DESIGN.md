@@ -48,6 +48,8 @@ These are the source of truth. This document describes them; it does not overrid
 | Colours (light/dark) | `src/constants/theme.ts` → `Colors` |
 | Auth panel colours, shadows, type sizes | `src/constants/theme.ts` → `AuthPanel` |
 | Wallet surfaces, action colours, type sizes | `src/constants/theme.ts` → `WalletPalette` |
+| Settings cards, profile badge, forms and type sizes | `src/constants/theme.ts` → `SettingsPalette` |
+| Splash water highlights and troughs | `src/constants/theme.ts` → `SplashWaterPalette` |
 | Floating detail sheet surfaces and motion | `src/constants/theme.ts` → `DashboardSheetTheme` |
 | Inter family names, weight map | `src/constants/fonts.ts` → `InterFont`, `InterWeightMap`, `interFamily()` |
 | Spacing scale, max measure | `src/constants/theme.ts` → `Spacing`, `MaxContentWidth` |
@@ -340,6 +342,21 @@ has done the work Butterick is asking for. **This is a deliberate decision, not 
 oversight.** Revisit if small-size legibility becomes a complaint.
 
 ### Complexity
+
+- `settings/settings-screen.tsx` follows the supplied Settings reference with a
+  profile card, grouped rows, 24px card corners, 28px heading, and 15px row titles.
+  Detail routes sit outside the bottom tabs and use a 44px back control. Profile
+  forms save per account on this device and update the home greeting and avatar.
+  Display preferences control wallet amounts, including asset details and spoken
+  labels. Logout uses the shared detail sheet, with confirmation and retry on failure.
+
+- `auth/splash/splash-water.tsx` keeps the voyage alive through the intro and
+  sign-in: three staggered hull ripples expand and fade over 6 seconds, nine
+  surface waves undulate, and clipped bands distort the arches' water reflections.
+  A separate scene clock runs on the UI thread while the intro clock controls
+  the card and exit. The boat drifts at most 5px over a 24-second cycle with a
+  shallow 9-second bob. Water is clipped to the sea so the stairs and arches stay
+  fixed. Motion pauses in the background and freezes for reduced motion.
 
 - `shared/dashboard/dashboard-sheet.tsx` adapts the October 2 modal reference to
   the dashboard theme: 32px corners, 8px side insets, a grab handle, a centred

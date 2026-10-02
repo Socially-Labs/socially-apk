@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   transition, traitsOf, progress, buildTimeline, sceneFrame,
-  boatMotion, reflectionMotion, SCENE, REFLECTION_BANDS,
+  boatMotion, reflectionMotion, rippleMotion, SCENE, REFLECTION_BANDS, RIPPLE_PERIOD_MS,
 } from '../src/components/auth/splash/splash-timeline.ts';
 
 const full = buildTimeline({ reduceMotion: false });
@@ -39,31 +39,47 @@ const checks = [
       }
     }
   }],
-  ['the boat moves in one direction without a loop or large bob', () => {
-    let lastX = 0;
-    for (let t = 0; t <= full.end; t++) {
+  ['the boat drifts slowly within its plate, including a long sign-in wait', () => {
+    let last = boatMotion(0, full);
+    for (let t = 0; t <= 60000; t += 16) {
       const motion = boatMotion(t, full);
-      assert.ok(motion.x >= lastX && motion.x <= 18);
-      assert.ok(motion.y >= -3 && motion.y <= 0);
-      assert.ok(Math.abs(motion.roll) <= 0.12);
-      lastX = motion.x;
+      assert.ok(motion.x >= 0 && motion.x <= 5);
+      assert.ok(motion.y >= -2.4 && motion.y <= 0);
+      assert.ok(Math.abs(motion.roll) <= 0.18);
+      assert.ok(Math.abs(motion.x - last.x) < 0.011, 'horizontal speed stays below 0.7 px/s');
+      last = motion;
     }
-    assert.equal(boatMotion(full.end, full).x, 18);
+    assert.ok(boatMotion(full.exitAt, full).x < 0.6, 'boat does not rush across the intro');
+    assert.notDeepEqual(boatMotion(full.end + 1000, full), boatMotion(full.end + 3000, full));
   }],
   ['reflection starts 120 ms behind the boat and stays close to it', () => {
     for (let band = 0; band < REFLECTION_BANDS; band++) {
       assert.equal(reflectionMotion(520, full, band).x, 0);
       for (let t = 521; t <= full.end; t += 50) {
         const reflection = reflectionMotion(t, full, band);
-        assert.ok(Math.abs(reflection.x - boatMotion(t - 120, full).x) <= 0.9);
+        assert.ok(Math.abs(reflection.x - boatMotion(t - 120, full).x) <= 2.8);
       }
     }
+  }],
+  ['ripples expand, fade seamlessly and continue after the intro clock stops', () => {
+    const origin = full.voyage.from;
+    assert.ok(rippleMotion(origin + 3500, full, 0).rx > rippleMotion(origin + 1500, full, 0).rx);
+    for (let t = origin + 1000; t <= 60000; t += 32) {
+      const ripples = [0, 1, 2].map(index => rippleMotion(t, full, index));
+      assert.ok(ripples.some(ripple => ripple.opacity >= 0.3), 'at least one ripple stays visible');
+      assert.ok(ripples.every(ripple => ripple.opacity >= 0 && ripple.opacity <= 0.42));
+    }
+    assert.ok(rippleMotion(origin + RIPPLE_PERIOD_MS - 1, full, 0).opacity < 0.00001);
+    assert.ok(rippleMotion(origin + RIPPLE_PERIOD_MS + 1, full, 0).opacity < 0.00001);
+    assert.notDeepEqual(rippleMotion(full.end + 1000, full, 0), rippleMotion(full.end + 2500, full, 0));
+    assert.notDeepEqual(reflectionMotion(full.end + 1000, full, 10), reflectionMotion(full.end + 2500, full, 10));
   }],
   ['reduced motion disables boat movement and all ripple distortion', () => {
     assert.ok(reduced.end < full.exitAt);
     for (let t = 0; t <= 4000; t += 10) {
       assert.deepEqual(boatMotion(t, reduced), { x: 0, y: 0, roll: 0 });
       assert.deepEqual(reflectionMotion(t, reduced, 8), { x: 0, y: 0 });
+      assert.equal(rippleMotion(t, reduced, 1).opacity, 0);
     }
   }],
   ['image and layers stay aligned on narrow phones, wide phones and tablets', () => {

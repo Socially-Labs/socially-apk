@@ -22,12 +22,14 @@ export function DashboardShell({ children, testID, variant = 'default' }: { chil
         <LinearGradient
           colors={['rgba(245,247,251,0)', 'rgba(245,247,251,0.84)', Dashboard.background]}
           locations={[0, 0.68, 1]}
-          style={[styles.fade, { top: Math.max(240, height * 0.32), height: height * 0.3 }]} />
+          style={[styles.fade, { top: Math.max(240, height * 0.32), height: height * 0.3 }, variant === 'wallet' && { top: height * 0.24, height: height * 0.28 }]} />
       </View>
       <ScrollView
+        keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
         style={styles.scroll} showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.content, {
-          paddingTop: Math.max(insets.top + 8, 54), paddingBottom: Math.max(insets.bottom + 120, 142),
+          paddingHorizontal: variant === 'wallet' ? 20 : 15,
+          paddingTop: Math.max(insets.top + 8, variant === 'wallet' ? 48 : 54), paddingBottom: Math.max(insets.bottom + 120, 142),
         }]}>
         <View style={styles.measure}>{children}</View>
       </ScrollView>

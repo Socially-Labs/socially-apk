@@ -127,13 +127,14 @@ export const Dashboard = {
 /** Wallet surfaces stay light so the voyage artwork reads through the cards. */
 export const WalletPalette = {
   ink: '#080D25', secondary: '#8390A8', surface: 'rgba(255,255,255,0.72)',
+  assetSurface: 'rgba(255,255,255,0.48)',
   border: 'rgba(220,226,235,0.75)', muted: 'rgba(231,237,244,0.74)',
   veil: 'rgba(255,255,255,0.28)',
   deposit: ['#43E299', '#2DD483'] as const,
   withdraw: ['#86CDFF', '#60B8FA'] as const,
-  selected: '#DCECFF', selectedInk: '#384963', white: '#FFFFFF', usdc: '#3284D5',
+  selected: '#CAE4FF', selectedInk: '#384963', white: '#FFFFFF', usdc: '#3284D5',
   shadow: '0 8px 24px rgba(87,110,145,0.07)',
-  headerTitleSize: 18, balanceSize: 40, bodySize: 15, actionLabelSize: 14, captionSize: 12,
+  headerTitleSize: 18, balanceSize: 39, bodySize: 15, actionLabelSize: 13, captionSize: 11,
 } as const;
 
 /** Rounded, inset detail sheets inherit the dashboard's cool white surfaces. */
@@ -153,4 +154,31 @@ export const DashboardSheetTheme = {
   inset: 8,
   openDuration: 360,
   closeDuration: 260,
+} as const;
+
+/** Water highlights and troughs sampled from the pale voyage artwork. */
+export const SplashWaterPalette = {
+  crest: '#F7FAFC',
+  trough: '#879CA9',
+} as const;
+
+/** Settings extend the voyage cards with quieter icon wells and a blue crew badge. */
+export const SettingsPalette = {
+  ink: Dashboard.ink,
+  secondary: '#78869F',
+  surface: Dashboard.glass,
+  iconWell: 'rgba(231,237,245,0.64)',
+  avatar: '#DEE5EF',
+  line: 'rgba(224,230,240,0.8)',
+  badge: '#E4EFFF',
+  accent: '#315E99',
+  primary: '#596F90',
+  primaryInk: '#FFFFFF',
+  danger: '#A3333F',
+  dangerTint: 'rgba(163,51,63,0.06)',
+  field: 'rgba(255,255,255,0.88)',
+  cardRadius: 24,
+  titleSize: 28,
+  rowTitleSize: 15,
+  bodySize: 13,
 } as const;

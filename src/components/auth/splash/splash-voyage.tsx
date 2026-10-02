@@ -7,6 +7,7 @@ import {
   BOAT, REFLECTION, REFLECTION_BANDS, WATER_PLATE,
   boatMotion, progress, reflectionMotion, sceneFrame, type Timeline,
 } from '@/components/auth/splash/splash-timeline';
+import { SplashWater } from '@/components/auth/splash/splash-water';
 
 const ORIGINAL = require('@/assets/images/voyage/original.png');
 const PLATE_IMAGE = require('@/assets/images/voyage/water-plate.png');
@@ -70,7 +71,7 @@ export function VoyageScene({
   const displayed = useRef(new Set<string>());
   const failed = useRef(false);
   const frame = sceneFrame(width, height);
-  const travel = Math.min(18, width * 0.05);
+  const travel = Math.min(5, width * 0.013);
 
   function markDisplayed(key: string) {
     displayed.current.add(key);
@@ -139,6 +140,7 @@ export function VoyageScene({
             onError={markFailed}
           />
         ))}
+        <SplashWater clock={motionClock} timeline={timeline} travel={travel} frame={frame} />
         <Animated.View
           testID="voyage-boat"
           style={[

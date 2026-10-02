@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { Bell, ChartNoAxesColumn, Circle, TrendingUp, Users } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
@@ -15,10 +16,13 @@ import { PopularCaptains } from '@/components/home/popular-captains';
 import { BrandFont, InterFont } from '@/constants/fonts';
 import { portfolio, stakedMarkets } from '@/constants/portfolio';
 import { Dashboard } from '@/constants/theme';
+import { ProfileAvatar } from '@/components/settings/profile-avatar';
+import { useAccountSettings } from '@/components/settings/settings-provider';
 
 export default function HomeScreen() {
   const { email, logout, isAuthenticated } = useAuth();
   const { hasTestAccess, leaveTestApp } = useTestAccess();
+  const { settings } = useAccountSettings();
   const { height, width } = useWindowDimensions();
   const compact = width < 360;
   const insets = useSafeAreaInsets();
@@ -26,7 +30,7 @@ export default function HomeScreen() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const previewing = hasTestAccess && !isAuthenticated;
-  const firstName = previewing || !email ? 'Vikas' : email.split('@')[0].split(/[._+\d-]/)[0];
+  const firstName = settings.name.split(/\s+/)[0];
   const greeting = firstName.charAt(0).toUpperCase() + firstName.slice(1);
   const headerTop = Math.max(insets.top + 8, 54);
   const heroSpace = Math.max(100, Math.min(height * 0.354, 350) - headerTop - 48);
@@ -48,7 +52,7 @@ export default function HomeScreen() {
     <DashboardShell testID="home-dashboard">
       <View style={styles.header}>
         <AuthButton accessibilityRole="button" accessibilityLabel="Open your profile" onPress={() => setSheet('profile')} style={styles.avatar}>
-          <Image source={require('@/assets/images/branding/avatar-dev.jpg')} style={styles.profileAvatar} contentFit="cover" transition={0} accessible={false} />
+          <ProfileAvatar name={settings.name} avatar={settings.avatar} size={47} />
         </AuthButton>
         <View style={styles.greeting}>
           <Text style={styles.hello} accessibilityRole="header">Hello, {greeting}</Text>
@@ -94,6 +98,10 @@ export default function HomeScreen() {
           <Text style={styles.wordmark}>SOCIALLY</Text>
           <Text style={styles.sheetTitle}>Hello, {greeting}</Text>
           {email ? <Text style={styles.sheetCopy}>{email}</Text> : null}
+          {settings.bio ? <Text style={styles.sheetCopy}>{settings.bio}</Text> : null}
+          <AuthButton accessibilityRole="button" onPress={() => { setSheet(null); router.push('/settings'); }} style={styles.signOut}>
+            <Text style={styles.signOutText}>Manage profile & settings</Text>
+          </AuthButton>
           <AuthButton accessibilityRole="button" onPress={() => { void signOut(); }} disabled={pending} style={styles.signOut}>
             {pending ? <ActivityIndicator color={Dashboard.ink} /> : <Text style={styles.signOutText}>{previewing ? 'Back to sign in' : 'Sign out'}</Text>}
           </AuthButton>

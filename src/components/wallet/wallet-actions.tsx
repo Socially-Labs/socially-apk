@@ -5,7 +5,7 @@ import Animated, {
   Easing, Extrapolation, interpolate, interpolateColor, useAnimatedProps, useAnimatedStyle,
   useReducedMotion, useSharedValue, withTiming, type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 
 import { AuthButton } from '@/components/shared/motion';
 import { InterFont } from '@/constants/fonts';
@@ -27,6 +27,27 @@ function ContactIcon() {
   </Svg>;
 }
 
+function IconGlow({ down = false }: { down?: boolean }) {
+  return <Svg width="100%" height="100%" viewBox="0 0 44 44" style={StyleSheet.absoluteFill}
+    accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
+    <Defs><RadialGradient id={down ? 'withdraw-glow' : 'deposit-glow'} cx="72%" cy="35%" r="85%">
+      <Stop offset="0" stopColor={down ? '#9DDFFF' : '#37DEA5'} />
+      <Stop offset="0.5" stopColor={down ? '#A9D8FF' : '#77E2C3'} />
+      <Stop offset="1" stopColor={down ? '#B5AFFF' : '#DAF5EB'} />
+    </RadialGradient></Defs>
+    <Circle cx="22" cy="22" r="22" fill={`url(#${down ? 'withdraw-glow' : 'deposit-glow'})`} />
+  </Svg>;
+}
+
+function ActionCopy({ withdraw = false }: { withdraw?: boolean }) {
+  return <View style={styles.initialText}>
+    <Text style={styles.label} numberOfLines={1}>{withdraw ? 'Withdraw' : 'Deposit'}</Text>
+    <Text style={styles.subtitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+      {withdraw ? 'Send to any address' : 'Add crypto to your wallet'}
+    </Text>
+  </View>;
+}
+
 /** Two equal-topology strokes let the opposite arrow become the close X. */
 function MorphArrow({ progress, down, morph = true }: { progress: SharedValue<number>; down?: boolean; morph?: boolean }) {
   const shaft = useAnimatedProps(() => {
@@ -39,7 +60,7 @@ function MorphArrow({ progress, down, morph = true }: { progress: SharedValue<nu
       ? `M6 ${8 - 2 * p}L${6 + 6 * p} ${18 - 6 * p}L${16 + 2 * p} 18`
       : `M${8 - 2 * p} ${6 + 12 * p}L${18 - 6 * p} ${6 + 6 * p}L18 ${16 - 10 * p}` };
   });
-  return <Svg width={25} height={25} viewBox="0 0 24 24"
+  return <Svg width={25} height={25} viewBox="0 0 24 24" style={styles.arrow}
     accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
     <AnimatedPath animatedProps={shaft} stroke={W.ink} strokeWidth={3} strokeLinecap="round" fill="none" />
     <AnimatedPath animatedProps={head} stroke={W.ink} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" fill="none" />
@@ -83,7 +104,7 @@ export function WalletActions({ onContact, onScan, onReceive }: Props) {
   const changeMode = (next: 'deposit' | 'withdraw') => { setDirection(next); setMode(next); };
   const close = () => setMode('idle');
   const gap = 8;
-  const closeWidth = 48;
+  const closeWidth = 58;
   const contactWidth = (width - closeWidth - gap * 2) * 0.49;
   const qrWidth = width - closeWidth - contactWidth - gap * 2;
   const initialDepositWidth = (width - gap) / 2;
@@ -108,7 +129,7 @@ export function WalletActions({ onContact, onScan, onReceive }: Props) {
   }));
   const closeTint = useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(progress.get(), [0, 1], [withdraw ? W.deposit[1] : W.withdraw[1], W.surface]),
-    left: interpolate(progress.get(), [0, 1], [5, 1]),
+    left: interpolate(progress.get(), [0, 1], [10, 7]),
   }));
 
   return <View style={styles.frame} onLayout={event => setWidth(event.nativeEvent.layout.width)} testID="wallet-actions">
@@ -118,12 +139,14 @@ export function WalletActions({ onContact, onScan, onReceive }: Props) {
         testID={mode === 'idle' ? 'wallet-deposit' : withdraw ? 'wallet-close' : 'wallet-contact'}
         onPress={mode === 'idle' ? () => changeMode('deposit') : withdraw ? close : () => onContact('deposit')}>
         {withdraw ? <>
-          <Animated.View style={[styles.coloredIcon, closeTint]}><MorphArrow progress={arrowProgress} /></Animated.View>
-          <Content progress={progress} style={styles.startLabel}><Text style={styles.label}>Deposit</Text></Content>
+          <Animated.View style={[styles.coloredIcon, closeTint]}>
+            <Content progress={progress}><IconGlow /></Content><MorphArrow progress={arrowProgress} />
+          </Animated.View>
+          <Content progress={progress}><ActionCopy /></Content>
         </> : <>
           <Content progress={progress}>
-            <View style={[styles.coloredIcon, styles.green]}><MorphArrow progress={arrowProgress} morph={false} /></View>
-            <Text style={[styles.label, styles.initialText]}>Deposit</Text>
+            <View style={[styles.coloredIcon, styles.green]}><IconGlow /><MorphArrow progress={arrowProgress} morph={false} /></View>
+            <ActionCopy />
           </Content>
           <Content progress={progress} incoming><ContactIcon /><Text style={styles.label}>Contact</Text></Content>
         </>}
@@ -148,13 +171,15 @@ export function WalletActions({ onContact, onScan, onReceive }: Props) {
         onPress={mode === 'idle' ? () => changeMode('withdraw') : withdraw ? onScan : close}>
         {withdraw ? <>
           <Content progress={progress}>
-            <View style={[styles.coloredIcon, styles.blue]}><MorphArrow progress={arrowProgress} down morph={false} /></View>
-            <Text style={[styles.label, styles.initialText]}>Withdraw</Text>
+            <View style={[styles.coloredIcon, styles.blue]}><IconGlow down /><MorphArrow progress={arrowProgress} down morph={false} /></View>
+            <ActionCopy withdraw />
           </Content>
           <Content progress={progress} incoming><QrCode size={21} strokeWidth={2.2} color={W.ink} /><Text style={styles.label}>Scan QR</Text></Content>
         </> : <>
-          <Animated.View style={[styles.coloredIcon, closeTint]}><MorphArrow progress={arrowProgress} down /></Animated.View>
-          <Content progress={progress} style={styles.startLabel}><Text style={styles.label}>Withdraw</Text></Content>
+          <Animated.View style={[styles.coloredIcon, closeTint]}>
+            <Content progress={progress}><IconGlow down /></Content><MorphArrow progress={arrowProgress} down />
+          </Animated.View>
+          <Content progress={progress}><ActionCopy withdraw /></Content>
         </>}
       </AuthButton>
     </Animated.View>
@@ -162,13 +187,14 @@ export function WalletActions({ onContact, onScan, onReceive }: Props) {
 }
 
 const styles = StyleSheet.create({
-  frame: { height: 56, marginTop: 16 },
-  pill: { position: 'absolute', top: 0, left: 0, height: 56, borderRadius: 28, borderWidth: 1, borderColor: W.border, backgroundColor: W.surface, overflow: 'hidden', boxShadow: W.shadow },
+  frame: { height: 58, marginTop: 16 },
+  pill: { position: 'absolute', top: 0, left: 0, height: 58, borderRadius: 29, backgroundColor: W.surface, overflow: 'hidden', boxShadow: W.shadow },
   content: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  coloredIcon: { position: 'absolute', left: 5, top: 5, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  coloredIcon: { position: 'absolute', left: 10, top: 7, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  arrow: { zIndex: 1 },
   green: { backgroundColor: W.deposit[1] },
   blue: { backgroundColor: W.withdraw[1] },
-  label: { fontFamily: InterFont.semiBold, fontSize: W.actionLabelSize, color: W.ink },
-  initialText: { position: 'absolute', left: 55 },
-  startLabel: { left: 46, justifyContent: 'flex-start', paddingLeft: 8 },
+  label: { fontFamily: InterFont.medium, fontSize: W.actionLabelSize, color: W.ink },
+  initialText: { position: 'absolute', left: 62, right: 6, gap: 2 },
+  subtitle: { fontFamily: InterFont.regular, fontSize: 8.5, lineHeight: 13, color: W.secondary },
 });

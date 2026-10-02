@@ -15,6 +15,7 @@ function SessionBridge({ children }: PropsWithChildren) {
       isReady,
       isConfigured: true,
       isAuthenticated: isReady && user !== null,
+      accountId: user?.id ?? null,
       email: emailAccount?.type === 'email' ? emailAccount.address : null,
       sendCode: async (email) => { await sendCode({ email }); },
       verifyCode: async (email, code) => { await loginWithCode({ email, code }); },
