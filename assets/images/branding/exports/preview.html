@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Socially logo — fidelity comparison</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 20px 64px; background: #f2f4f6; color: #25323e; font: 16px/1.6 system-ui, sans-serif; }
+  main { max-width: 1080px; margin: auto; }
+  h1 { font-size: clamp(26px, 5vw, 40px); line-height: 1.15; letter-spacing: -.03em; margin: 0 0 16px; }
+  h2 { font-size: 20px; margin: 0 0 10px; }
+  p { max-width: 78ch; }
+  a { color: #205a82; text-underline-offset: 3px; }
+  .downloads { display: flex; flex-wrap: wrap; gap: 12px 22px; margin: 20px 0 28px; }
+  .stage { position: relative; width: min(100%, 760px); aspect-ratio: 1; margin: auto; background-color: #dce4ea; background-image: conic-gradient(#eef2f5 25%, transparent 0 50%, #eef2f5 0 75%, transparent 0); background-size: 24px 24px; }
+  .stage img { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
+  #vector { clip-path: inset(0 50% 0 0); }
+  #divider { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #245d83; pointer-events: none; }
+  .controls { max-width: 760px; margin: 16px auto 32px; }
+  input { width: 100%; accent-color: #245d83; min-height: 32px; }
+  button { font: inherit; color: inherit; background: white; border: 1px solid #aab9c5; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #287cb5; outline-offset: 3px; }
+  .labels { display: flex; justify-content: space-between; font-size: 14px; }
+  .note { padding: 18px 24px; background: white; border-left: 3px solid #7395ad; margin: 24px 0; }
+  .small { font-size: 14px; }
+</style>
+<main>
+  <h1>Socially logo exports</h1>
+  <p>The existing silver-blue pirate and three candlesticks, converted into application formats. Compare the original artwork with the traced vector below.</p>
+  <nav class="downloads" aria-label="Logo downloads">
+    <a href="logo.svg" download>Vector SVG</a>
+    <a href="logo-exact.svg" download>Exact-appearance SVG</a>
+    <a href="favicon.ico" download>ICO</a>
+    <a href="logo.jpeg" download>JPEG</a>
+    <a href="logo.png" download>PNG</a>
+    <a href="logo.webp" download>WebP</a>
+    <a href="logo.avif" download>AVIF</a>
+  </nav>
+  <div class="stage" id="stage">
+    <img src="logo.png" alt="Original Socially logo" width="1024" height="1024">
+    <img src="logo.svg" alt="Pure vector trace of the Socially logo" id="vector" width="1024" height="1024">
+    <span id="divider" aria-hidden="true"></span>
+  </div>
+  <div class="controls">
+    <div class="labels"><span>Vector trace on the left</span><span>Original PNG on the right</span></div>
+    <label for="reveal">Drag to compare: <output id="amount">50%</output> vector</label>
+    <input id="reveal" type="range" min="0" max="100" value="50" aria-label="Percentage of vector trace revealed">
+    <button type="button" data-bg="checker">Checkerboard</button>
+    <button type="button" data-bg="#ffffff">White</button>
+    <button type="button" data-bg="#17212b">Dark</button>
+  </div>
+  <aside class="note">
+    <h2>What “exact” means here</h2>
+    <p><strong>logo.svg</strong> contains real vector paths. Its shapes follow the source; fine texture and antialiased edges are approximations. It is not pixel-identical.</p>
+    <p><strong>logo-exact.svg</strong> embeds the original PNG bytes with no alteration. It preserves the artwork exactly, but the image inside remains raster.</p>
+    <p class="small">PNG, WebP, and AVIF preserve the original visible pixels. JPEG is flattened onto the existing pale-blue background. The detailed vector is intended for artwork workflows; PNG or WebP is more efficient for mobile display.</p>
+  </aside>
+  <p><a href="README.md">Format guide and rebuild instructions</a> · <a href="fidelity-report.json">Measured fidelity report</a> · <a href="emblem-monochrome.svg">Monochrome vector</a></p>
+</main>
+<script>
+  const reveal = document.getElementById('reveal');
+  const vector = document.getElementById('vector');
+  const divider = document.getElementById('divider');
+  const stage = document.getElementById('stage');
+  reveal.addEventListener('input', () => {
+    vector.style.clipPath = `inset(0 ${100 - Number(reveal.value)}% 0 0)`;
+    divider.style.left = `${reveal.value}%`;
+    document.getElementById('amount').value = `${reveal.value}%`;
+  });
+  document.querySelectorAll('[data-bg]').forEach(button => button.addEventListener('click', () => {
+    stage.style.backgroundImage = button.dataset.bg === 'checker' ? '' : 'none';
+    stage.style.backgroundColor = button.dataset.bg === 'checker' ? '' : button.dataset.bg;
+  }));
+</script>
+</html>

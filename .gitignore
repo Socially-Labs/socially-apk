@@ -10,6 +10,7 @@ node_modules/
 
 scripts/*
 !scripts/prepare-app-icons.cjs
+!scripts/export-brand-assets.cjs
 !scripts/splash-timeline-check.mjs
 !scripts/android-crash-log.sh
 

@@ -1,0 +1,41 @@
+{
+  "source": "../../splash-icon.png",
+  "sourceSha256": "ac6c061e9b7d128793f609477dee0aeec4d4a1cbb352215dea00e877453d8e88",
+  "tools": {
+    "sharp": "0.35.5",
+    "potrace": "2.1.8",
+    "resvg": "2.6.2"
+  },
+  "exactPngBytesMatch": true,
+  "exactSvgEmbeddedPngBytesMatch": true,
+  "vectorContainsBitmap": false,
+  "vectorComparison": {
+    "description": "1024×1024 resvg render versus source, RGB composited on white / black. Channel range 0–255. This is an approximation, not a pixel-perfect claim.",
+    "white": {
+      "meanAbsoluteChannelError": 1.5388785829484393,
+      "rmse": 4.266141904798985,
+      "maxChannelError": 115.09019607843138,
+      "psnrDb": 35.53009766261265
+    },
+    "black": {
+      "meanAbsoluteChannelError": 1.5653235753082502,
+      "rmse": 4.660172262742315,
+      "maxChannelError": 187.40392156862742,
+      "psnrDb": 34.76276419601349
+    }
+  },
+  "losslessFormats": {
+    "logo.webp": {
+      "meanAbsoluteChannelError": 0,
+      "rmse": 0,
+      "maxChannelError": 0,
+      "psnrDb": null
+    },
+    "logo.avif": {
+      "meanAbsoluteChannelError": 0,
+      "rmse": 0,
+      "maxChannelError": 0,
+      "psnrDb": null
+    }
+  }
+}
