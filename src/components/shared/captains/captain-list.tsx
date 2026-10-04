@@ -1,7 +1,10 @@
 import { ChevronRight, Users } from 'lucide-react-native';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import Animated, { LinearTransition, useReducedMotion } from 'react-native-reanimated';
+
+import { selectionFeedback } from '@/components/shared/feedback';
 import { AuthButton } from '@/components/shared/motion';
 import { DashboardSheet } from '@/components/shared/dashboard/dashboard-sheet';
 import { type Captain } from '@/constants/captains';
@@ -9,11 +12,12 @@ import { InterFont } from '@/constants/fonts';
 import { Dashboard } from '@/constants/theme';
 
 export function CaptainList({ captains, horizontal = false }: { captains: readonly Captain[]; horizontal?: boolean }) {
+  const reduceMotion = useReducedMotion();
   const [selected, setSelected] = useState<Captain | null>(null);
   const cards = captains.map((captain) => (
-    <AuthButton key={captain.id} testID={`captain-${captain.id}`} accessibilityRole="button"
+    <Animated.View key={captain.id} layout={reduceMotion ? undefined : LinearTransition.duration(180)}><AuthButton testID={`captain-${captain.id}`} accessibilityRole="button"
       accessibilityLabel={`${captain.name}, ${captain.strategy}, ${captain.return30d} over 30 days, ${captain.crew} crew members. View captain.`}
-      onPress={() => setSelected(captain)} style={[styles.card, horizontal && styles.horizontalCard]}>
+      onPress={() => { Keyboard.dismiss(); selectionFeedback(); setSelected(captain); }} style={[styles.card, horizontal && styles.horizontalCard]}>
       <View style={styles.identity}>
         <View style={[styles.avatar, { backgroundColor: captain.tint }]}><Text style={[styles.initials, { color: captain.color }]}>{captain.initials}</Text></View>
         <View style={styles.nameColumn}><Text style={styles.name}>{captain.name}</Text><Text style={styles.strategy}>{captain.strategy}</Text></View>
@@ -23,7 +27,7 @@ export function CaptainList({ captains, horizontal = false }: { captains: readon
         <View style={styles.performance}><Text style={styles.return}>{captain.return30d}</Text><Text style={styles.caption}>30D return</Text></View>
         <View style={styles.crew}><Users size={14} color={Dashboard.icon} /><Text style={styles.crewText}>{captain.crew} crew</Text></View>
       </View>
-    </AuthButton>
+    </AuthButton></Animated.View>
   ));
   return <>
     {horizontal ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel} testID="captain-carousel">{cards}</ScrollView>
