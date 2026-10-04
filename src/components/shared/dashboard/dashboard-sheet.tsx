@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { X } from 'lucide-react-native';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming,
@@ -10,7 +10,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { AuthButton } from '@/components/shared/motion';
+import { selectionFeedback } from '@/components/shared/feedback';
 import { InterFont } from '@/constants/fonts';
+import { Motion } from '@/constants/motion';
 import { Dashboard, DashboardSheetTheme as S } from '@/constants/theme';
 
 type SheetProps = { visible: boolean; title: string; onClose: () => void; children: ReactNode };
@@ -45,6 +47,7 @@ function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps 
   const progress = useSharedValue(reduceMotion ? 1 : 0);
   const drag = useSharedValue(0);
   const dragStart = useSharedValue(0);
+  const crossedThreshold = useSharedValue(false);
   const sheetHeight = useSharedValue(maxHeight);
   const [content, setContent] = useState({ title, children });
 
@@ -54,6 +57,7 @@ function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps 
 
   useEffect(() => {
     if (visible) {
+      drag.set(reduceMotion ? 0 : withSpring(0, Motion.settleSpring));
       progress.set(reduceMotion ? 1 : withSpring(1, SETTLE));
     } else if (reduceMotion) {
       progress.set(0);
@@ -63,7 +67,7 @@ function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps 
         if (finished) scheduleOnRN(onExited);
       }));
     }
-  }, [visible, reduceMotion, progress, onExited]);
+  }, [visible, reduceMotion, progress, drag, onExited]);
 
   useEffect(() => () => {
     cancelAnimation(progress);
@@ -78,11 +82,15 @@ function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps 
     opacity: Math.min(1, Math.max(0, progress.get() * (1 - Math.max(0, drag.get()) / sheetHeight.get()))),
   }));
 
-  const pan = Gesture.Pan().enabled(visible && !reduceMotion).activeOffsetY([-6, 6])
-    .onStart(() => { cancelAnimation(drag); dragStart.set(drag.get()); })
+  const pan = Gesture.Pan().enabled(visible).activeOffsetY([-6, 6])
+    .onStart(() => { cancelAnimation(drag); dragStart.set(drag.get()); crossedThreshold.set(false); })
     .onUpdate(event => {
       const distance = dragStart.get() + event.translationY;
       drag.set(distance < 0 ? distance * 0.12 : distance);
+      if (!crossedThreshold.get() && distance > Math.min(96, sheetHeight.get() * 0.25)) {
+        crossedThreshold.set(true);
+        scheduleOnRN(selectionFeedback);
+      }
     })
     .onEnd(event => {
       if (drag.get() > Math.min(96, sheetHeight.get() * 0.25) || (event.velocityY > 900 && drag.get() > 12)) {
@@ -91,15 +99,16 @@ function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps 
         drag.set(0);
         scheduleOnRN(onClose);
       } else {
-        drag.set(withSpring(0, { duration: 260, dampingRatio: 0.86 }));
+        drag.set(reduceMotion ? 0 : withSpring(0, Motion.settleSpring));
       }
     })
     .onFinalize((_event, success) => {
-      if (!success) drag.set(withSpring(0, { duration: 260, dampingRatio: 0.86 }));
+      if (!success) drag.set(reduceMotion ? 0 : withSpring(0, Motion.settleSpring));
     });
 
   return (
-    <GestureHandlerRootView style={styles.overlay} testID="dashboard-sheet-overlay">
+    <GestureHandlerRootView style={styles.root} testID="dashboard-sheet-overlay">
+      <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} pointerEvents="none"
         testID="dashboard-sheet-backdrop" />
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} disabled={!visible}
@@ -109,6 +118,7 @@ function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps 
         accessibilityViewIsModal testID="dashboard-sheet" pointerEvents={visible ? 'auto' : 'none'}>
         <LinearGradient colors={S.gradient} style={StyleSheet.absoluteFill} pointerEvents="none" />
         <GestureDetector gesture={pan}>
+          <View>
           <View style={styles.handleArea} testID="dashboard-sheet-handle" accessible accessibilityRole="button"
             accessibilityLabel="Dismiss details with the grab handle"
             accessibilityActions={[{ name: 'activate', label: 'Close details' }, { name: 'escape', label: 'Close details' }]}
@@ -117,7 +127,6 @@ function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps 
             }}>
             <View style={styles.handle} />
           </View>
-        </GestureDetector>
         <View style={styles.heading}>
           <Text accessibilityRole="header" style={styles.title}>{content.title}</Text>
           <AuthButton accessibilityRole="button" accessibilityLabel="Close details" onPress={onClose} disabled={!visible}
@@ -125,16 +134,22 @@ function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps 
             <X size={19} color={Dashboard.icon} strokeWidth={1.9} />
           </AuthButton>
         </View>
+          </View>
+        </GestureDetector>
         <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} bounces={false}
+          keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          nestedScrollEnabled
           showsVerticalScrollIndicator={false} testID="dashboard-sheet-content">
           {content.children}
         </ScrollView>
       </Animated.View>
+      </KeyboardAvoidingView>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   overlay: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: S.inset },
   backdrop: { backgroundColor: S.backdrop },
   sheet: { width: '100%', maxWidth: Dashboard.maxWidth, alignSelf: 'center', flexShrink: 1,
