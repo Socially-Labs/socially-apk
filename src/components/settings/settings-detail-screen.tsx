@@ -1,8 +1,11 @@
 import Constants from 'expo-constants';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Check, ChevronDown, ChevronRight, ExternalLink, Gift, LifeBuoy, Mail, Share2, ShieldCheck } from 'lucide-react-native';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import { errorFeedback, selectionFeedback, successFeedback } from '@/components/shared/feedback';
+import { Motion } from '@/constants/motion';
 
 import { policyUrls } from '@/auth/config';
 import { useAuth } from '@/auth/session';
@@ -12,7 +15,8 @@ import { BrandFont, InterFont } from '@/constants/fonts';
 import { SettingsPalette as S } from '@/constants/theme';
 import { ProfileAvatar } from './profile-avatar';
 import { contactSupport, openSettingsLink, shareSettingsText } from './settings-actions';
-import { useAccountSettings, type ProfileAvatarKind } from './settings-provider';
+import { useAccountSettings, type ProfileDraft } from './settings-provider';
+import { SettingsLoading } from './settings-loading';
 
 const appVersion = Constants.expoConfig?.version ?? '1.0.0';
 const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || 'support@socially.trade';
@@ -25,9 +29,13 @@ const titles: Record<string, string> = {
 function Action({ label, onPress, disabled = false, busy = false, secondary = false, testID }: {
   label: string; onPress: () => void; disabled?: boolean; busy?: boolean; secondary?: boolean; testID?: string;
 }) {
-  return <AuthButton accessibilityRole="button" accessibilityState={{ disabled, busy }} testID={testID}
+  const reduceMotion = useReducedMotion();
+  return <AuthButton accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled, busy }} testID={testID}
     onPress={onPress} disabled={disabled} style={[styles.action, secondary && styles.secondaryAction, disabled && styles.disabled]}>
-    {busy ? <ActivityIndicator color={S.primaryInk} /> : <Text style={[styles.actionText, secondary && styles.secondaryActionText]}>{label}</Text>}
+    <Animated.View key={busy ? 'busy' : label} entering={reduceMotion ? undefined : FadeIn.duration(Motion.feedback)} style={styles.actionContent}>
+      {busy ? <ActivityIndicator color={S.primaryInk} /> : label === 'Saved' ? <Check size={18} color={S.primaryInk} /> : null}
+      <Text style={[styles.actionText, secondary && styles.secondaryActionText]}>{label}</Text>
+    </Animated.View>
   </AuthButton>;
 }
 function Card({ children }: { children: ReactNode }) { return <View style={styles.card}>{children}</View>; }
@@ -35,20 +43,30 @@ function ErrorCopy({ children }: { children: string | null }) { return children 
 
 function ProfileEditor() {
   const { email } = useAuth();
-  const { settings, ready, saving, updateSettings, error: storageError } = useAccountSettings();
-  const [name, setName] = useState(settings.name);
-  const [bio, setBio] = useState(settings.bio);
-  const [avatar, setAvatar] = useState<ProfileAvatarKind>(settings.avatar);
+  const { settings, ready, saving, profileDraft, updateProfileDraft, updateSettings, error: storageError } = useAccountSettings();
+  const { name, bio, avatar } = profileDraft ?? settings;
+  const nameInput = useRef<TextInput>(null);
+  const bioInput = useRef<TextInput>(null);
+  const [nameTouched, setNameTouched] = useState(false);
+  const [focusedField, setFocusedField] = useState<'name' | 'bio' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const dirty = name.trim() !== settings.name || bio.trim() !== settings.bio || avatar !== settings.avatar;
+  const nameError = nameTouched && !name.trim() ? 'Please enter your display name.' : null;
+  function edit(patch: Partial<ProfileDraft>) {
+    updateProfileDraft({ name, bio, avatar, ...patch });
+    setSaved(false);
+    setError(null);
+  }
   async function save() {
-    if (!name.trim()) { setError('Please enter your display name.'); return; }
+    if (!ready || saving || !dirty) return;
+    setNameTouched(true);
+    if (!name.trim()) { errorFeedback(); nameInput.current?.focus(); return; }
     setError(null);
     setSaved(false);
     Keyboard.dismiss();
-    try { await updateSettings({ name: name.trim(), bio: bio.trim(), avatar }); setName(name.trim()); setBio(bio.trim()); setSaved(true); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Your profile couldn’t be saved. Please try again.'); }
+    try { await updateSettings({ name: name.trim(), bio: bio.trim(), avatar }); setSaved(true); successFeedback(); }
+    catch (cause) { errorFeedback(); setError(cause instanceof Error ? cause.message : 'Your profile couldn’t be saved. Please try again.'); }
   }
   return <>
     <Card>
@@ -56,26 +74,31 @@ function ProfileEditor() {
       <Text style={styles.label}>Choose your avatar</Text>
       <View style={styles.avatarOptions}>{(['captain', 'initials'] as const).map(kind => <AuthButton key={kind}
         accessibilityRole="button" accessibilityLabel={kind === 'captain' ? 'Captain avatar' : 'Initials avatar'} accessibilityState={{ selected: avatar === kind, disabled: !ready || saving }}
-        disabled={!ready || saving} onPress={() => { setAvatar(kind); setSaved(false); }} style={[styles.avatarOption, avatar === kind && styles.selected]}>
+        disabled={!ready || saving} onPress={() => { if (kind !== avatar) selectionFeedback(); edit({ avatar: kind }); }} style={[styles.avatarOption, avatar === kind && styles.selected]}>
         <ProfileAvatar name={name || settings.name} avatar={kind} size={42} />
         <Text style={styles.optionText}>{kind === 'captain' ? 'Captain' : 'Initials'}</Text>
         {avatar === kind ? <Check size={16} color={S.accent} /> : null}
       </AuthButton>)}</View>
       <Text style={styles.label}>Display name</Text>
-      <TextInput testID="profile-name" accessibilityLabel="Display name" value={name} maxLength={40} editable={ready && !saving}
-        onChangeText={value => { setName(value); setSaved(false); setError(null); }} placeholder="Your name" placeholderTextColor={S.secondary}
-        autoCapitalize="words" autoComplete="name" returnKeyType="done" onSubmitEditing={() => { if (dirty) void save(); }} style={styles.input} />
+      <TextInput ref={nameInput} testID="profile-name" accessibilityLabel="Display name" accessibilityHint={nameError ?? 'Up to 40 characters'} value={name} maxLength={40} editable={ready && !saving}
+        onChangeText={value => edit({ name: value })} placeholder="Your name" placeholderTextColor={S.secondary}
+        onFocus={() => setFocusedField('name')} onBlur={() => { setFocusedField(null); setNameTouched(true); }}
+        autoCapitalize="words" autoComplete="name" returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => bioInput.current?.focus()}
+        style={[styles.input, focusedField === 'name' && styles.inputFocused, nameError && styles.inputInvalid]} />
+      <ErrorCopy>{nameError}</ErrorCopy>
       <Text style={styles.label}>Bio <Text style={styles.optional}>(optional)</Text></Text>
-      <TextInput testID="profile-bio" accessibilityLabel="Bio" value={bio} maxLength={140} editable={ready && !saving}
-        onChangeText={value => { setBio(value); setSaved(false); }} placeholder="A little about you" placeholderTextColor={S.secondary}
-        multiline textAlignVertical="top" style={[styles.input, styles.bio]} />
+      <TextInput ref={bioInput} testID="profile-bio" accessibilityLabel="Bio" accessibilityHint="Optional, up to 140 characters" value={bio} maxLength={140} editable={ready && !saving}
+        onChangeText={value => edit({ bio: value })} placeholder="A little about you" placeholderTextColor={S.secondary}
+        onFocus={() => setFocusedField('bio')} onBlur={() => setFocusedField(null)}
+        multiline textAlignVertical="top" style={[styles.input, styles.bio, focusedField === 'bio' && styles.inputFocused]} />
       <Text style={styles.characterCount}>{bio.length}/140</Text>
       <Text style={styles.label}>Sign-in account</Text>
       <View style={styles.account}><Mail size={18} color={S.secondary} /><Text selectable style={styles.copy}>{email ?? 'Signed in with a social account or preview access'}</Text></View>
       <Text style={styles.note}>Your sign-in details are managed by your login provider. Profile changes are saved on this device.</Text>
       <ErrorCopy>{error ?? storageError}</ErrorCopy>
       {saved ? <Text accessibilityLiveRegion="polite" style={styles.success}>Profile saved.</Text> : null}
-      <Action label={saving ? 'Saving…' : 'Save changes'} busy={saving} disabled={!ready || saving || !dirty}
+      {dirty ? <Text style={styles.note}>Unsaved changes · Your draft stays here while you explore.</Text> : null}
+      <Action label={saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'} busy={saving} disabled={!ready || saving || !dirty}
         testID="profile-save" onPress={() => { void save(); }} />
     </Card>
   </>;
@@ -216,15 +239,16 @@ export default function SettingsDetailScreen() {
   const { ready } = useAccountSettings();
   function goBack() { Keyboard.dismiss(); if (router.canGoBack()) router.back(); else router.replace('/settings'); }
   return <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-    <DashboardShell testID={`settings-detail-${section}`}>
+    <DashboardShell testID={`settings-detail-${section}`} keyboardAvoided>
       <View style={styles.header}><AuthButton accessibilityRole="button" accessibilityLabel="Back to Settings" onPress={goBack} style={styles.back}><ArrowLeft size={22} color={S.ink} /></AuthButton><Text accessibilityRole="header" style={styles.title}>{titles[section] ?? 'Settings'}</Text></View>
-      {!ready && (section === 'profile' || section === 'display') ? <ActivityIndicator color={S.primary} accessibilityLabel="Loading saved settings" /> :
+      {!ready && (section === 'profile' || section === 'display') ? <SettingsLoading profile={section === 'profile'} /> :
         section === 'profile' ? <ProfileEditor /> : section === 'display' ? <DisplayPreferences /> : section === 'referral' ? <Referral /> : section === 'support' ? <Support /> : section === 'terms' || section === 'privacy' ? <Policy kind={section} /> : section === 'about' ? <About /> : <Card><Text style={styles.copy}>This settings page isn’t available.</Text><Action label="Back to Settings" onPress={goBack} /></Card>}
     </DashboardShell>
   </KeyboardAvoidingView>;
 }
 
 const styles = StyleSheet.create({
+  actionContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   screen: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 26 },
   back: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: S.surface },
@@ -236,6 +260,8 @@ const styles = StyleSheet.create({
   optional: { fontFamily: InterFont.regular, color: S.secondary },
   note: { fontFamily: InterFont.regular, fontSize: 12, lineHeight: 18, color: S.secondary },
   input: { backgroundColor: S.field, borderRadius: 14, borderColor: S.line, borderWidth: 1, padding: 14, minHeight: 50, fontFamily: InterFont.regular, fontSize: 15, lineHeight: 21, color: S.ink },
+  inputFocused: { borderColor: S.accent },
+  inputInvalid: { borderColor: S.danger },
   bio: { minHeight: 94 },
   supportInput: { minHeight: 130 },
   characterCount: { textAlign: 'right', fontFamily: InterFont.regular, fontSize: 11, color: S.secondary, marginTop: -7 },

@@ -22,7 +22,7 @@ import { useAccountSettings } from '@/components/settings/settings-provider';
 export default function HomeScreen() {
   const { email, logout, isAuthenticated } = useAuth();
   const { hasTestAccess, leaveTestApp } = useTestAccess();
-  const { settings } = useAccountSettings();
+  const { settings, updateProfileDraft } = useAccountSettings();
   const { height, width } = useWindowDimensions();
   const compact = width < 360;
   const insets = useSafeAreaInsets();
@@ -38,6 +38,7 @@ export default function HomeScreen() {
   async function signOut() {
     if (pending) return;
     if (previewing) {
+      updateProfileDraft(null);
       leaveTestApp();
       return;
     }

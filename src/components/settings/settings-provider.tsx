@@ -5,8 +5,11 @@ import { settingsStorage } from './settings-storage';
 
 export type ProfileAvatarKind = 'captain' | 'initials';
 export type AccountSettings = { name: string; bio: string; avatar: ProfileAvatarKind; hideBalances: boolean };
+export type ProfileDraft = Pick<AccountSettings, 'name' | 'bio' | 'avatar'>;
 type SettingsContextValue = {
   settings: AccountSettings; ready: boolean; saving: boolean; error: string | null;
+  profileDraft: ProfileDraft | null;
+  updateProfileDraft: (draft: ProfileDraft | null) => void;
   updateSettings: (patch: Partial<AccountSettings>) => Promise<void>;
 };
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -30,6 +33,9 @@ function AccountSettingsProvider({ identity, email, children }: PropsWithChildre
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Keep unfinished edits across route changes, scoped to this account's mounted
+  // provider. Switching accounts or signing out drops the draft automatically.
+  const [profileDraft, updateProfileDraft] = useState<ProfileDraft | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -61,6 +67,7 @@ function AccountSettingsProvider({ identity, email, children }: PropsWithChildre
       await settingsStorage.write(storageKey, JSON.stringify(next));
       current.current = next;
       setSettings(next);
+      if ('name' in patch || 'bio' in patch || 'avatar' in patch) updateProfileDraft(null);
     } catch {
       const message = 'Your changes couldn’t be saved. Please try again.';
       setError(message);
@@ -68,7 +75,7 @@ function AccountSettingsProvider({ identity, email, children }: PropsWithChildre
     } finally { writing.current = false; setSaving(false); }
   }
 
-  return <SettingsContext.Provider value={{ settings, ready, saving, error, updateSettings }}>{children}</SettingsContext.Provider>;
+  return <SettingsContext.Provider value={{ settings, ready, saving, error, profileDraft, updateProfileDraft, updateSettings }}>{children}</SettingsContext.Provider>;
 }
 
 export function useAccountSettings() {
