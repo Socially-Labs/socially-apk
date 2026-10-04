@@ -20,14 +20,14 @@ export function SignInBrand({ testIDPrefix }: { testIDPrefix: 'auth' | 'splash' 
 }
 
 const styles = StyleSheet.create({
-  brand: { alignItems: 'center', marginBottom: 20 },
-  logo: { width: 64, height: 64, marginBottom: 8 },
+  brand: { alignItems: 'center', marginBottom: 0 },
+  logo: { width: 48, height: 48, marginBottom: 8 },
   name: {
-    fontFamily: BrandFont.wordmark, fontSize: 28, lineHeight: 34,
+    fontFamily: BrandFont.wordmark, fontSize: 30, lineHeight: 36,
     letterSpacing: 4, color: AuthPanel.ink, textAlign: 'center',
   },
   tagline: {
     fontFamily: InterFont.medium, fontSize: 9, lineHeight: 14,
-    letterSpacing: 2.5, color: AuthPanel.primary, textAlign: 'center', marginTop: 4,
+    letterSpacing: 2, color: AuthPanel.primary, textAlign: 'center', marginTop: 4,
   },
 });

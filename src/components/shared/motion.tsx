@@ -1,11 +1,12 @@
-import type { ComponentProps, ReactNode } from 'react';
+import { useEffect, type ComponentProps, type ReactNode } from 'react';
 import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
-  Easing, Extrapolation, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue,
+  cancelAnimation, Easing, Extrapolation, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue,
   withSpring, type SharedValue,
 } from 'react-native-reanimated';
 
 import { AuthPanel } from '@/constants/theme';
+import { Motion } from '@/constants/motion';
 
 // Construct the curve on the UI thread rather than copying a JS-created
 // Bézier closure and its captured helper functions into the worklet runtime.
@@ -34,6 +35,9 @@ export function AuthButton({ children, style, disabled, onPressIn, onPressOut, o
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(1);
   const focus = useSharedValue(false);
+  useEffect(() => {
+    if (disabled || reduceMotion) { cancelAnimation(scale); scale.set(1); }
+  }, [disabled, reduceMotion, scale]);
   const animated = useAnimatedStyle(() => ({
     transform: [{ scale: scale.get() }],
     outlineWidth: focus.get() ? 2 : 0,
@@ -48,11 +52,11 @@ export function AuthButton({ children, style, disabled, onPressIn, onPressOut, o
       onFocus={(event) => { focus.set(true); onFocus?.(event); }}
       onBlur={(event) => { focus.set(false); onBlur?.(event); }}
       onPressIn={(event) => {
-        if (!reduceMotion) scale.set(withSpring(0.975, { damping: 24, stiffness: 420, mass: 0.6 }));
+        if (!reduceMotion) scale.set(withSpring(Motion.pressScale, Motion.pressSpring));
         onPressIn?.(event);
       }}
       onPressOut={(event) => {
-        scale.set(reduceMotion ? 1 : withSpring(1, { damping: 18, stiffness: 360, mass: 0.6 }));
+        scale.set(reduceMotion ? 1 : withSpring(1, Motion.releaseSpring));
         onPressOut?.(event);
       }}>
       {children}

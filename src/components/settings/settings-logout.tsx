@@ -7,10 +7,12 @@ import { DashboardSheet } from '@/components/shared/dashboard/dashboard-sheet';
 import { AuthButton } from '@/components/shared/motion';
 import { InterFont } from '@/constants/fonts';
 import { SettingsPalette as S } from '@/constants/theme';
+import { useAccountSettings } from './settings-provider';
 
 export function LogoutSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { logout, isAuthenticated } = useAuth();
   const { hasTestAccess, leaveTestApp } = useTestAccess();
+  const { updateProfileDraft } = useAccountSettings();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const busy = useRef(false);
@@ -23,6 +25,7 @@ export function LogoutSheet({ visible, onClose }: { visible: boolean; onClose: (
     setError(null);
     try {
       if (!previewing) await logout();
+      updateProfileDraft(null);
       // Revoke preview access too, so a successful logout always leaves the app.
       leaveTestApp();
       onClose();

@@ -1,43 +1,61 @@
-import { useRouter } from 'expo-router';
-import { Check, ChevronDown, ChevronRight, Eye, EyeOff, History, LayoutGrid, Settings, Wallet } from 'lucide-react-native';
-import { useState } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-
-import { AuthButton } from '@/components/shared/motion';
-import { DashboardSheet } from '@/components/shared/dashboard/dashboard-sheet';
-import { DashboardShell } from '@/components/shared/dashboard/dashboard-shell';
-import { MarketSparkline, TokenIcon } from '@/components/shared/markets/market-graphics';
-import { WalletActions } from '@/components/wallet/wallet-actions';
-import { InterFont } from '@/constants/fonts';
-import { Dashboard, WalletPalette as W } from '@/constants/theme';
-import { formatWalletValue, walletAssets, walletBalance, type WalletAsset } from '@/constants/wallet';
 import { useAccountSettings } from '@/components/settings/settings-provider';
-
-type WalletSheet = 'deposit-contact' | 'withdraw-contact' | 'scan' | 'receive' | 'history' | 'networks' | WalletAsset;
-const filters = ['All Networks', 'Solana', 'Solana (Wormhole)'] as const;
-type NetworkFilter = typeof filters[number];
+import { errorFeedback, selectionFeedback } from '@/components/shared/feedback';
+import { AuthButton } from '@/components/shared/motion';
+import { BrandFont, InterFont } from '@/constants/fonts';
+import { Dashboard, WalletPalette as W } from '@/constants/theme';
+import { walletAssets, type WalletAsset } from '@/constants/wallet';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { ChevronDown, ChevronRight, History, Plus, Settings, Wallet } from 'lucide-react-native';
+import { useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WalletActions } from './wallet-actions';
+import { WalletAssetRow } from './wallet-asset-row';
+import { WalletBalanceCard } from './wallet-balance-card';
+import { sharedStyles } from './wallet-section-styles';
+import { WalletSheet } from './wallet-sheet';
+import { tabs, type NetworkFilter, type WalletSheet as WalletSheetKind, type WalletTab } from './wallet-types';
 
 export default function WalletScreen() {
   const router = useRouter();
-  const [sheet, setSheet] = useState<WalletSheet | null>(null);
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const [sheet, setSheet] = useState<WalletSheetKind | null>(null);
+  const [tab, setTab] = useState<WalletTab>('Assets');
   const [network, setNetwork] = useState<NetworkFilter>('All Networks');
+  const [hiddenTokens, setHiddenTokens] = useState<WalletAsset['symbol'][]>([]);
   const { settings: accountSettings, ready, saving, updateSettings } = useAccountSettings();
   const [visibilityError, setVisibilityError] = useState<string | null>(null);
-  const balanceVisible = ready && !accountSettings.hideBalances;
+  const reduceMotion = useReducedMotion();
+  const [locallyHidden, setLocallyHidden] = useState(false);
+  const visibilityWriting = useRef(false);
+  const balanceVisible = ready && !locallyHidden && !accountSettings.hideBalances;
   async function toggleBalances() {
+    if (!ready || saving || visibilityWriting.current) return;
+    visibilityWriting.current = true;
     setVisibilityError(null);
-    try { await updateSettings({ hideBalances: balanceVisible }); }
-    catch (cause) { setVisibilityError(cause instanceof Error ? cause.message : 'Balance visibility couldn’t be saved.'); }
+    const hideBalances = balanceVisible;
+    // Keep a failed hide masked until the user explicitly reveals balances.
+    if (hideBalances) setLocallyHidden(true);
+    selectionFeedback();
+    try { await updateSettings({ hideBalances }); setLocallyHidden(false); }
+    catch { errorFeedback(); setVisibilityError(hideBalances ? 'Balance hidden here. Your preference couldn’t be saved.' : 'Balance couldn’t be revealed. Please try again.'); }
+    finally { visibilityWriting.current = false; }
   }
-  const { height, width } = useWindowDimensions();
-  const compact = width < 360;
-  const assets = network === 'All Networks' ? walletAssets : walletAssets.filter(asset => asset.network === network);
-  const title = sheet === null ? '' : typeof sheet === 'object' ? sheet.name : {
-    'deposit-contact': 'Deposit from a contact', 'withdraw-contact': 'Withdraw to a contact', scan: 'Scan QR', receive: 'Receive on Solana', history: 'Activity', networks: 'Networks',
-  }[sheet];
-
-  return (
-    <DashboardShell testID="wallet-dashboard" variant="wallet">
+  function showSheet(next: WalletSheetKind) { selectionFeedback(); setSheet(next); }
+  function changeTab(next: WalletTab) { if (next !== tab) selectionFeedback(); setTab(next); }
+  function setTokenVisibility(symbol: WalletAsset['symbol'], visible: boolean) {
+    selectionFeedback();
+    setHiddenTokens(current => visible ? current.filter(item => item !== symbol) : [...new Set([...current, symbol])]);
+  }
+  const assets = walletAssets.filter(asset => !hiddenTokens.includes(asset.symbol) && (network === 'All Networks' || asset.network === network));
+  const navigationClearance = Math.max(insets.bottom + 12, 42) + 60 + 20;
+  return <View style={styles.screen} testID="wallet-dashboard"><StatusBar style="dark" />
+    <ScrollView style={styles.scroll} removeClippedSubviews={false} showsVerticalScrollIndicator={false}
+      contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top + 8, 48), paddingBottom: navigationClearance }]}>
       <View style={styles.header} testID="wallet-header">
         <View style={styles.headerIcon}><Wallet size={23} color={W.selectedInk} strokeWidth={1.8} /></View>
         <View style={styles.headingCopy}>
@@ -45,140 +63,74 @@ export default function WalletScreen() {
           <Text style={styles.subtitle}>Your on-chain balance</Text>
         </View>
         <AuthButton accessibilityRole="button" accessibilityLabel="Open settings" testID="wallet-settings"
-          onPress={() => router.navigate('/settings')} style={styles.settings}>
-          <Settings size={22} strokeWidth={1.9} color={W.selectedInk} />
+          onPress={() => router.navigate('/settings')} style={styles.settingsButton} hitSlop={4}>
+          <Settings size={22} color={W.selectedInk} strokeWidth={1.9} />
         </AuthButton>
       </View>
-      <View style={[styles.hero, { marginTop: Math.max(66, Math.min(124, height * 0.138)) }]}>
-        <View style={styles.balanceHeading}>
-          <Text style={styles.balanceLabel}>Total Balance</Text>
-          <AuthButton accessibilityRole="button" accessibilityLabel={balanceVisible ? 'Hide balance' : 'Show balance'}
-            testID="wallet-balance-visibility" disabled={!ready || saving} onPress={() => { void toggleBalances(); }} style={styles.visibility}>
-            {balanceVisible ? <Eye size={19} color={W.secondary} strokeWidth={2} /> : <EyeOff size={19} color={W.secondary} strokeWidth={2} />}
-          </AuthButton>
-        </View>
-        <Text style={[styles.balance, compact && styles.compactBalance]} testID="wallet-balance"
-          numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{balanceVisible ? walletBalance : '••••••'}</Text>
-        {visibilityError ? <Text accessibilityRole="alert" style={styles.previewNote}>{visibilityError}</Text> : null}
-      </View>
-      <View style={styles.receiveCard} testID="wallet-funding-card">
-        <AuthButton accessibilityRole="button" accessibilityLabel="Receive on Solana"
-          testID="wallet-receive" onPress={() => setSheet('receive')} style={styles.receive}>
-          <View style={styles.receiveIcon}><LayoutGrid size={23} color={W.ink} strokeWidth={2.2} /></View>
-          <View style={styles.receiveCopy}>
-            <Text style={styles.receiveTitle}>Receive on Solana</Text>
-            <Text style={[styles.receiveSubtitle, compact && styles.compactReceiveSubtitle]}>Deposit from any wallet or exchange</Text>
-          </View>
-          <ChevronRight size={21} color={W.secondary} strokeWidth={1.8} />
-        </AuthButton>
-      </View>
-      <WalletActions onContact={mode => setSheet(mode === 'deposit' ? 'deposit-contact' : 'withdraw-contact')}
-        onScan={() => setSheet('scan')} onReceive={() => setSheet('receive')} />
+      <WalletBalanceCard visible={balanceVisible} compact={compact} canToggle={ready && !saving} error={visibilityError}
+        onToggle={() => { void toggleBalances(); }} onMore={() => showSheet('options')} onVaults={() => changeTab('Vaults')} />
+      <WalletActions onAction={showSheet} compact={compact} />
       <View style={styles.sectionHeading}>
-        <Text style={styles.sectionTitle} accessibilityRole="header">Assets</Text>
-        <AuthButton accessibilityRole="button" accessibilityLabel={`Filter assets. ${network} selected`}
-          testID="wallet-networks" onPress={() => setSheet('networks')} style={styles.filter} hitSlop={7}>
-          <Text style={styles.filterLabel} numberOfLines={1}>{network}</Text>
-          <ChevronDown size={15} color={W.secondary} strokeWidth={2} />
-        </AuthButton>
+        <View style={[styles.tabs, compact && styles.compactTabs]} testID="wallet-tabs">
+          {tabs.map(item => <AuthButton key={item} accessibilityRole="button" accessibilityState={{ selected: tab === item }} onPress={() => changeTab(item)} testID={`wallet-tab-${item.toLowerCase()}`} style={[styles.tab, compact && styles.compactTab, tab === item && styles.activeTab]}><Text style={[styles.tabText, tab === item && styles.activeTabText]}>{item}</Text></AuthButton>)}
+        </View>
+        {tab === 'Assets' ? <AuthButton accessibilityRole="button" accessibilityLabel={`Filter assets. ${network} selected`} testID="wallet-networks" onPress={() => showSheet('networks')} style={[styles.filter, compact && styles.compactFilter]}>
+          <Text style={[styles.filterLabel, compact && styles.compactFilterLabel]} numberOfLines={1}>{network}</Text><ChevronDown size={13} color={W.ink} />
+        </AuthButton> : null}
       </View>
-      <View style={styles.assetList}>
-        {assets.map(asset => (
-          <AuthButton key={asset.symbol} accessibilityRole="button"
-            accessibilityLabel={balanceVisible ? `${asset.name}, ${asset.quantity}, ${formatWalletValue(asset.value)}, ${asset.network}` : `${asset.name}, balances hidden, ${asset.network}`}
-            testID={`wallet-asset-${asset.symbol.toLowerCase()}`} onPress={() => setSheet(asset)} style={styles.asset}>
-            <TokenIcon symbol={asset.symbol} size={compact ? 36 : 42} glossy />
-            <View style={styles.assetName}>
-              <Text style={styles.assetSymbol}>{asset.symbol}</Text>
-              <Text style={[styles.caption, compact && styles.compactCaption]} numberOfLines={1}>{asset.network}</Text>
-            </View>
-            <View style={styles.sparkline} testID={`wallet-chart-${asset.symbol.toLowerCase()}`}>
-              <MarketSparkline market={asset} width={compact ? 32 : 42} height={26} />
-            </View>
-            <View style={styles.assetAmount}>
-              <Text style={styles.assetValue}>{balanceVisible ? formatWalletValue(asset.value) : '••••'}</Text>
-              <Text style={styles.caption}>{balanceVisible ? asset.quantity : '••••'}</Text>
-            </View>
-            <ChevronRight size={19} color={W.secondary} strokeWidth={1.8} />
+      <View style={styles.tabContent} testID={`wallet-content-${tab.toLowerCase()}`}>
+        {tab === 'Assets' ? <>
+          <View style={styles.assetList}>
+            {assets.map(asset => <WalletAssetRow key={asset.symbol} asset={asset} visible={balanceVisible} compact={compact} reduceMotion={reduceMotion} onSelect={showSheet} />)}
+            {assets.length === 0 ? <View style={styles.empty}><Wallet size={28} color={W.secondary} /><Text style={styles.emptyTitle}>No tokens shown</Text><Text style={styles.detailCopy}>Choose another network or show tokens in Manage tokens.</Text></View> : null}
+          </View>
+          <AuthButton accessibilityRole="button" accessibilityLabel="Manage tokens" testID="wallet-manage-tokens" onPress={() => showSheet('manage')} style={styles.manage}>
+            <View style={styles.manageIcon}><Plus size={22} strokeWidth={1.5} color={W.ink} /></View><View style={styles.manageCopy}><Text style={styles.manageTitle}>Manage tokens</Text><Text style={styles.caption}>Show, hide or add custom tokens</Text></View><ChevronRight size={18} color={W.ink} />
           </AuthButton>
-        ))}
+        </> : tab === 'Vaults' ? <View style={styles.empty}>
+          <Wallet size={28} color={W.selectedInk} /><Text style={styles.emptyTitle}>Your Captain vaults</Text><Text style={styles.detailCopy}>You haven’t allocated to a Captain’s fund yet. Explore their strategy and track record before joining the Crew.</Text>
+          <AuthButton accessibilityRole="button" testID="wallet-discover-captains" onPress={() => router.navigate('/explore')} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Discover Captains</Text><ChevronRight size={17} color={W.heroInk} /></AuthButton>
+        </View> : <View style={styles.empty}><History size={28} color={W.selectedInk} /><Text style={styles.emptyTitle}>No transactions yet</Text><Text style={styles.detailCopy}>Your deposits, sends, swaps and vault activity will appear here once your wallet is connected.</Text></View>}
       </View>
-      <DashboardSheet visible={sheet !== null} title={title} onClose={() => setSheet(null)}>
-        {sheet === 'networks' ? filters.map(filter => (
-          <AuthButton key={filter} accessibilityRole="button" accessibilityState={{ selected: filter === network }}
-            onPress={() => { setNetwork(filter); setSheet(null); }} style={styles.networkOption}>
-            <Text style={styles.networkLabel}>{filter}</Text>
-            {filter === network ? <Check size={20} color={W.selectedInk} /> : null}
-          </AuthButton>
-        )) : typeof sheet === 'object' && sheet !== null ? (
-          <View style={styles.detail}>
-            <TokenIcon symbol={sheet.symbol} size={56} glossy />
-            <Text style={styles.detailValue}>{balanceVisible ? formatWalletValue(sheet.value) : '••••'}</Text>
-            <Text style={styles.detailCopy}>{balanceVisible ? sheet.quantity : '••••'}</Text>
-            <Text style={styles.detailCopy}>{sheet.network}</Text>
-            <Text style={styles.previewNote}>Preview holding</Text>
-            <AuthButton accessibilityRole="button" accessibilityLabel="View wallet activity" testID="wallet-history"
-              onPress={() => setSheet('history')} style={styles.activity}>
-              <History size={17} color={W.secondary} /><Text style={styles.activityLabel}>View activity</Text>
-            </AuthButton>
-          </View>
-        ) : (
-          <View style={styles.detail}>
-            {sheet === 'history' ? <History size={32} color={W.secondary} /> : <Wallet size={32} color={W.secondary} />}
-            <Text style={styles.detailHeading}>{sheet === 'history' ? 'No transactions yet' : 'Connect your wallet'}</Text>
-            <Text style={styles.detailCopy}>{sheet === 'history'
-              ? 'Your deposits and withdrawals will appear here once your wallet is connected.'
-              : sheet === 'withdraw-contact' || sheet === 'scan'
-                ? 'Connect your wallet to withdraw funds to a contact or scan a Solana payment QR code.'
-                : 'Connect your wallet to get your Solana deposit address.'}</Text>
-            <Text style={styles.previewNote}>You’re viewing a preview portfolio.</Text>
-          </View>
-        )}
-      </DashboardSheet>
-    </DashboardShell>
-  );
+    </ScrollView>
+    <WalletSheet sheet={sheet} network={network} hiddenTokens={hiddenTokens} balanceVisible={balanceVisible}
+      onClose={() => setSheet(null)} onShowSheet={showSheet} onTokenVisibility={setTokenVisibility}
+      onNetwork={filter => { if (filter !== network) selectionFeedback(); setNetwork(filter); setSheet(null); }}
+      onSettings={() => { setSheet(null); router.navigate('/settings'); }}
+      onActivity={() => { setSheet(null); changeTab('Activity'); }} />
+  </View>;
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', minHeight: 44, gap: 11 },
+  ...sharedStyles,
+  screen: { flex: 1, backgroundColor: Dashboard.background },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 16, width: '100%', maxWidth: Dashboard.maxWidth, alignSelf: 'center' },
+  header: { flexDirection: 'row', alignItems: 'center', minHeight: 44, gap: 11, marginBottom: 18 },
   headerIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: W.muted, alignItems: 'center', justifyContent: 'center' },
   headingCopy: { flex: 1, gap: 3 },
-  settings: { width: 40, height: 40, borderRadius: 20, backgroundColor: W.surface, alignItems: 'center', justifyContent: 'center', boxShadow: W.shadow },
-  hero: { paddingHorizontal: 8 },
   title: { fontFamily: InterFont.semiBold, fontSize: W.headerTitleSize, lineHeight: 24, color: W.ink },
   subtitle: { fontFamily: InterFont.regular, fontSize: W.captionSize, lineHeight: 17, color: W.secondary },
-  balanceHeading: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 24 },
-  balanceLabel: { fontFamily: InterFont.medium, fontSize: 13, color: W.secondary },
-  visibility: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  balance: { fontFamily: InterFont.semiBold, fontSize: W.balanceSize, lineHeight: 52, letterSpacing: -1.7, color: W.ink, fontVariant: ['tabular-nums'] },
-  compactBalance: { fontSize: 36 },
-  receiveCard: { marginTop: 12, borderRadius: 32, backgroundColor: W.surface, boxShadow: W.shadow },
-  receive: { minHeight: 58, paddingVertical: 7, paddingLeft: 11, paddingRight: 14, flexDirection: 'row', alignItems: 'center', gap: 11 },
-  receiveIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: W.muted, alignItems: 'center', justifyContent: 'center' },
-  receiveCopy: { flex: 1, gap: 2 },
-  receiveTitle: { fontFamily: InterFont.medium, fontSize: 13, lineHeight: 18, color: W.ink },
-  receiveSubtitle: { fontFamily: InterFont.regular, fontSize: 11, lineHeight: 16, color: W.secondary },
-  compactReceiveSubtitle: { fontSize: 9 },
-  caption: { fontFamily: InterFont.regular, fontSize: W.captionSize, lineHeight: 17, color: W.secondary },
-  sectionHeading: { marginTop: 20, marginBottom: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  sectionTitle: { fontFamily: InterFont.semiBold, fontSize: 18, lineHeight: 25, color: W.ink },
-  filter: { minHeight: 30, maxWidth: '62%', paddingHorizontal: 13, borderRadius: 24, backgroundColor: W.muted, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  filterLabel: { flexShrink: 1, fontFamily: InterFont.medium, fontSize: 11, color: W.secondary },
-  assetList: { gap: 4 },
-  asset: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 56, paddingVertical: 7, paddingLeft: 12, paddingRight: 10, borderRadius: 21, backgroundColor: W.assetSurface },
-  assetName: { flex: 1, gap: 3, minWidth: 0 },
-  assetSymbol: { fontFamily: InterFont.medium, fontSize: 13, lineHeight: 18, color: W.ink },
-  compactCaption: { fontSize: 9 },
-  sparkline: { width: 42, alignItems: 'center', opacity: 0.8 },
-  assetAmount: { alignItems: 'flex-end', gap: 3 },
-  assetValue: { fontFamily: InterFont.medium, fontSize: 13, lineHeight: 18, color: W.ink, fontVariant: ['tabular-nums'] },
-  activity: { alignSelf: 'center', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 12 },
-  activityLabel: { fontFamily: InterFont.medium, fontSize: 11, color: W.secondary },
-  networkLabel: { fontFamily: InterFont.medium, fontSize: W.bodySize, color: W.ink },
-  networkOption: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: Dashboard.line },
-  detail: { alignItems: 'center', paddingVertical: 24, gap: 12 },
-  detailValue: { fontFamily: InterFont.semiBold, fontSize: 32, color: W.ink },
-  detailHeading: { fontFamily: InterFont.semiBold, fontSize: 18, lineHeight: 25, color: W.ink, textAlign: 'center' },
-  detailCopy: { fontFamily: InterFont.regular, fontSize: W.bodySize, lineHeight: 22, color: W.secondary, textAlign: 'center' },
-  previewNote: { fontFamily: InterFont.regular, fontSize: W.captionSize, color: W.secondary, marginTop: 12 },
+  settingsButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: W.surface, alignItems: 'center', justifyContent: 'center', boxShadow: W.shadow },
+  sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 13 },
+  tabs: { flexDirection: 'row', backgroundColor: W.muted, borderRadius: 15, padding: 2 },
+  tab: { paddingHorizontal: 13, minHeight: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 13 },
+  compactTabs: { flex: 1 },
+  compactTab: { flex: 1, paddingHorizontal: 5 },
+  compactFilter: { width: 92, paddingHorizontal: 7 },
+  compactFilterLabel: { fontSize: 11 },
+  activeTab: { backgroundColor: W.hero[1] },
+  tabText: { fontFamily: BrandFont.editorial, fontSize: 15, color: W.ink },
+  activeTabText: { color: W.heroInk },
+  filter: { minHeight: 36, paddingHorizontal: 10, borderRadius: 17, backgroundColor: W.muted, flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: '46%' },
+  filterLabel: { flexShrink: 1, fontFamily: BrandFont.editorial, fontSize: 13, color: W.ink },
+  tabContent: { gap: 12 },
+  assetList: { gap: 7 },
+  manage: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: W.border, borderRadius: 20, paddingHorizontal: 15, minHeight: 64, marginTop: 13 },
+  manageIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: W.muted, alignItems: 'center', justifyContent: 'center' },
+  manageTitle: { fontFamily: BrandFont.editorial, fontSize: 17, color: W.ink },
+  empty: { alignItems: 'center', padding: 24, gap: 13, borderRadius: 22, backgroundColor: W.assetSurface },
+  emptyTitle: { fontFamily: BrandFont.editorial, fontSize: 23, color: W.ink, textAlign: 'center' },
+  primaryButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 22, paddingHorizontal: 18, backgroundColor: W.hero[1], marginTop: 5 },
+  primaryButtonText: { fontFamily: InterFont.medium, fontSize: 12, color: W.heroInk },
 });

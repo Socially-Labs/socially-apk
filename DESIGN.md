@@ -47,10 +47,14 @@ These are the source of truth. This document describes them; it does not overrid
 | --- | --- |
 | Colours (light/dark) | `src/constants/theme.ts` → `Colors` |
 | Auth panel colours, shadows, type sizes | `src/constants/theme.ts` → `AuthPanel` |
+| Auth scene water highlights | `src/constants/theme.ts` → `CoastalPalette` |
 | Wallet surfaces, action colours, type sizes | `src/constants/theme.ts` → `WalletPalette` |
-| Settings cards, profile badge, forms and type sizes | `src/constants/theme.ts` → `SettingsPalette` |
+| Settings cards, profile cover, forms and type sizes | `src/constants/theme.ts` → `SettingsPalette` |
 | Splash water highlights and troughs | `src/constants/theme.ts` → `SplashWaterPalette` |
 | Floating detail sheet surfaces and motion | `src/constants/theme.ts` → `DashboardSheetTheme` |
+| Shared bottom navigation colours and shadows | `src/constants/theme.ts` → `NavigationPalette` |
+| Interaction pacing and press springs | `src/constants/motion.ts` → `Motion` |
+| Discover cards, charts, risk and profile surfaces | `src/constants/theme.ts` → `DiscoverPalette` |
 | Inter family names, weight map | `src/constants/fonts.ts` → `InterFont`, `InterWeightMap`, `interFamily()` |
 | Spacing scale, max measure | `src/constants/theme.ts` → `Spacing`, `MaxContentWidth` |
 | Type variants | `src/components/shared/ui/themed-text.tsx` |
@@ -320,11 +324,10 @@ Measured against Parts 1–3. Not a to-do list; a record of where we stand.
 | Kerning | On | default ✅ | React Native enables kerning; not disabled anywhere |
 
 The auth panel uses `AuthPanel` tokens in `theme.ts`: 15px email input and primary
-button, 26px verification code, 13px social labels, 14px errors, and 12px secondary
-captions. The OR divider is 11px. The reference's quieter hierarchy is retained
-with readable captions; `placeholder` is slate `#66758C`, with 4.5:1 contrast on
-the light panel. The panel has 26px corners, 10px control corners, a translucent
-white gradient, a slate primary button, and outlined Google, Apple, and X buttons.
+button, 26px verification code, 14px social labels and errors, and 11px secondary
+captions. The OR divider is 10px. The panel has 22px corners, 10px control corners,
+a translucent white gradient, a navy primary button, and an outlined Google button.
+The shared form is at most 420px wide, with 20px side margins on phones.
 
 ### The free-font tension — unresolved, on purpose
 
@@ -341,62 +344,177 @@ problem and the SDK 57 interpolation limits are documented at length in
 has done the work Butterick is asking for. **This is a deliberate decision, not an
 oversight.** Revisit if small-size legibility becomes a complaint.
 
+### Product icon language
+
+`product.md` defines the distinction between Crew wallets, pooled fund vaults,
+and a Captain's constrained trading authority. `shared/icons/product-icons.tsx`
+gives vaults, trading permissions, holdings, cash reserves, and drawdown separate
+symbols on a 24px grid with rounded 1.8px strokes. Product strategy symbols use
+time, balanced exposure, connected venues and a monochrome Shiba Inu face.
+Discover follows the user’s latest explicit reference for its compass, chart,
+cube, leaf and flame icons. A risk explanation uses a falling chart, never a
+checked shield. Personal Wallet keeps its wallet symbol. Utility icons retain
+familiar action meanings. Home uses the same outline icon on every bottom tab.
+The Settings destination always uses the gear icon. Discover’s Top
+Captain label retains the small reference star; avoid adding other decoration. Token identifiers use
+flat surfaces, retaining SOL's brand gradient. Icons accompany text and cannot
+stand in for evidence of verification or a deployed protocol. Preview copy
+explains intended permissions without asserting that the vault is already live.
+
 ### Complexity
 
-- `settings/settings-screen.tsx` follows the supplied Settings reference with a
-  profile card, grouped rows, 24px card corners, 28px heading, and 15px row titles.
+- Home retains its voyage artwork and translucent surfaces. Settings uses the same
+  cool page background, Inter typography, and blue accents with quiet white cards.
+  The existing coastal voyage artwork appears in the editable profile banner,
+  with a circular photo overlapping its edge. Account and Display share a group;
+  invitations and support share another. Legal links sit in a compact footer.
+  Logout is a session row inside Account and opens a confirmation sheet. Profile
+  editing includes display name, username, bio, banner, and photo, with previews,
+  save/discard actions, and drafts that survive route changes. The 14px introduction
+  and form copy are secondary text; headings remain 28px and row titles 15px.
+  Discover follows the user's latest reference: a coastal Captain scene,
+  supplied in `assets/images/discover/captain-horizon.png`, a two-line heading,
+  translucent search and strategy pills, and a dark navy Captain card with subdued
+  landscape imagery, a glowing blue chart and mint positive returns. Discover's
+  bottom navigation shares the same coastal navy Home capsule and pale blue right-hand capsule
+  as Home, Wallet and Settings. Only the selected state changes between tabs;
+  screen-specific backgrounds, icon circles and destination symbols are avoided.
+  Reference strategy icons use a compass, rising chart, cube, leaf and flame. No extra badge
+  implies a verified Captain. The background image uses cover sizing to preserve
+  proportions and a light veil to keep the heading readable.
+  The default browsing layout measures the actual screen, intro and card section,
+  then explicitly adds their remaining height before search, revealing more hero
+  artwork. Do not use flex-grow/min-height to distribute space in a native FlatList
+  header: native measurement may leave that height unused. The image follows the
+  measured intro plus the added hero space, reduced by 5% for a wider image crop.
+  The last card sits 26px above floating navigation on screens that
+  fit the content; compact screens scroll normally. Search and filtered lists
+  retain a compact intro. Bottom padding matches navigation and safe-area clearance;
+  do not fill unused space with a new gradient or an unrelated content section.
+  The Top Captains section shows one card at a time, labeled “Top Captain”
+  rather than “Featured Captain”, with no dots, counter, save or playback row.
+  Its rounded border separates it from the page without an outset shadow, which
+  the horizontal carousel viewport would clip into a rectangular dark edge.
+  Swiping provides manual navigation. It advances every eight seconds and pauses on touch or
+  card focus, during sheets and search input, outside Discover, and while the app
+  is in the background. Reduced motion and native screen readers use manual
+  navigation; motion preference changes take effect immediately. Search, filters,
+  and Saved use compact white result rows. Shared floating navigation remains consistent across tabs.
+  `NavigationPalette` reuses the Wallet’s navy for active Home and the selected
+  icon circle, with ivory foregrounds, muted blue inactive controls and a pale
+  blue tray. Keep these colours shared across screens; selection changes colour
+  without changing tab size, position or hit targets.
+  The main heading is 30px, carousel return 27px, row return 19px, and profile
+  return 32px. Return and drawdown stay paired for the same period. Strategy chips
+  filter directly; the ranking sheet holds time windows, categories and sorting.
+  Search and draft filter sheets narrow a virtualized Captain list. Captain routes
+  follow the supplied expanded-profile reference: an uploaded banner, overlapping
+  rounded profile photo, Follow, save and more controls, a three-column track
+  record summary, underlined Overview/Holdings/Trades tabs, and a light
+  performance panel with a labeled percentage axis and period selector. Chart
+  labels derive from the same portfolio series as returns and drawdown. The fixed
+  “Join this Captain” action opens a dedicated investment preview route. Its clean
+  coastal hero uses `investment-coast.webp`, with a 41px Cormorant heading (34px
+  on compact phones) and a
+  navy Captain summary. The 30px USDC amount field, 44px presets and Max use the
+  Wallet’s sample balance. Cent-accurate validation blocks zero, malformed and
+  over-balance amounts. Shares use an explicitly illustrative price; returns and
+  drawdown derive from the same Discover series. The 54px review action reserves
+  its own footer space, including keyboard and safe-area clearance. Review opens
+  the shared sheet and explains that deposits are not connected. There are no
+  simulated successful transactions or minted positions. Balance privacy also
+  masks the sample balance and balance after review. Fund mechanics can expand
+  inline; exits can require a queue, so the screen makes no instant-exit promise.
+  Vault also
+  remains accessible in the more menu. There is no Discussion tab. The Join footer
+  reserves its own space outside the scroll viewport and cannot overlay the chart
+  or records. Panels have at least a viewport of space and tab changes scroll to
+  their data after layout, with native clipping disabled. The chart has an explicit
+  native height. The media fields `bannerUrl` and `profilePhotoUrl`
+  take backend image URLs, with local dummy artwork for current sample profiles
+  and failed image loads. Settings photo and banner edits persist locally; the
+  Captain API is not connected yet. Only an explicit `verified` value displays a verified badge. Detail sheets
+  explain metrics, risk, positions, trades and trading authority. Saves and
+  following are scoped to the current account session.
+  All fixtures are explicitly sample data. No verification badges or allocation
+  actions imply a live deployed vault.
+
+- `settings/settings-screen.tsx` uses an editable coastal profile card and grouped
+  rows, 24px profile corners, a 28px heading, and 15px row titles.
   Detail routes sit outside the bottom tabs and use a 44px back control. Profile
   forms save per account on this device and update the home greeting and avatar.
-  Display preferences control wallet amounts, including asset details and spoken
-  labels. Logout uses the shared detail sheet, with confirmation and retry on failure.
+  Username validation accepts 3–24 lowercase letters, numbers, and underscores,
+  starting with a letter. Photos are resized to 512px squares and banners to
+  1200×400px JPEGs before local persistence. Display preferences control wallet
+  amounts, including asset details and spoken labels. Logout lives inside Account
+  and uses the shared detail sheet, with confirmation and retry on failure.
 
-- `auth/splash/splash-water.tsx` keeps the voyage alive through the intro and
-  sign-in: three staggered hull ripples expand and fade over 6 seconds, nine
-  surface waves undulate, and clipped bands distort the arches' water reflections.
-  A separate scene clock runs on the UI thread while the intro clock controls
-  the card and exit. The boat drifts at most 5px over a 24-second cycle with a
-  shallow 9-second bob. Water is clipped to the sea so the stairs and arches stay
-  fixed. Motion pauses in the background and freezes for reduced motion.
+- `auth/coastal-scene.tsx` is shared by launch sign-in and the regular auth route.
+  The pale coast and seated voyager stay still. A separately extracted sailboat
+  drifts by at most 7 artwork units over 24 seconds, with a 1.7-unit bob over
+  6 seconds and a 0.35-degree roll. Six clipped texture bands, six SVG wave paths,
+  two hull ripples, two foam paths and six reflection bands share one UI-thread
+  clock. A shoreline mask protects the person and rocks. Motion stops while the
+  scene is hidden or the app is backgrounded. Reduced motion displays the original
+  still, and preference changes take effect while the screen is open. Failed
+  animation layers also fall back to the still. The older arch-scene modules are
+  no longer mounted by the auth flow.
 
 - `shared/dashboard/dashboard-sheet.tsx` adapts the October 2 modal reference to
   the dashboard theme: 32px corners, 8px side insets, a grab handle, a centred
   title, and a quiet inset body surface. The panel rises as one surface with a
   360ms spring and slides out over 260ms. The native modal and its last visible
-  content stay mounted through the exit. The handle supports downward dragging,
-  with a short drag returning to rest. Reduced motion applies states instantly.
+  content stay mounted through the exit. The handle and heading support downward
+  dragging, with a short drag returning to rest. A single haptic marks the dismiss
+  threshold. Reduced motion retains direct dragging and applies settling instantly.
   All existing dashboard callers inherit the shared treatment. Measurements and
   platform adaptations are recorded in `docs/dashboard-sheet-motion.md`.
+  Sheets can reserve a footer outside their scrolling content; Discover keeps
+  Reset and Apply visible while users edit filters.
 
-- `wallet.tsx` uses the voyage artwork, a 40px balance, translucent asset cards,
-  and separate preview holdings. Its 18px title and 12px subtitle sit in the top
-  header, aligned like the home greeting. Deposit and Withdraw share the Receive
-  on Solana card, with a divider between its receiving row and the actions.
-  `wallet-actions.tsx` adapts the reference Pay/Request expansion to Deposit and
-  Withdraw: three pills, a reversible arrow-to-X morph, and brief
-  label crossfades. Opening takes 380ms and closing 320ms. Reduced motion applies
-  the final state immediately. Blur runs on web and Android 12+; iOS uses the
-  same crossfade and scale without unsupported blur. Motion measurements and
-  deliberate platform differences are recorded in `docs/wallet-motion.md`.
+- The shared SVG logo loader traces the actual emblem before revealing its
+  original artwork. It pulses only during pending startup work. Restored sessions
+  skip the voyage intro; signed-out users retain the existing sign-in scene.
+  Custom tabs retain screen state, use a sliding selection indicator, and preserve
+  search/filter/scroll state. Settings drafts live in the account provider, and
+  loading forms reserve their major shapes. See `docs/motion-polish.md` for the
+  implementation checklist and work that depends on live data.
 
-- `auth-screen.tsx` follows the user's October 1, 2026 screenshot: white arches,
-  pale blue sea and sky, and a compact translucent bottom panel. The generated
-  backdrop preserves the existing voyage composition; its color appears over
-  the original during a 600ms crossfade. The form stays hidden until the splash
-  finishes, then rises 64px with a clamped spring (damping 28, stiffness 240,
-  mass 0.9). Controls follow on a single 520ms clock with 52ms stagger spacing
-  and individually eased cubic Bézier curves `(0.22, 1, 0.36, 1)`.
+- Wallet keeps its original icon-led header: an 18px Wallet title, 11px
+  “Your on-chain balance” subtitle and direct Settings gear. The user's navy
+  balance-card reference applies to the main content below that header on a plain
+  pale surface. Treat content references as scoped changes; preserve the screen's
+  existing header and navigation unless the user explicitly replaces them.
+  The bundled Cormorant Garamond semibold supplies its editorial type, including
+  the 43px total, action labels, tabs and asset values. Inter supplies supporting
+  labels. A fine compass illustration sits inside the navy card. Four fixed
+  actions—Deposit, Send, Receive and Swap—open the existing connection sheets.
+  Assets, Vaults and Activity have separate panels. Network filtering and local
+  token visibility affect the asset list without changing the total balance.
+  The preview assets are all tradable; Captain vault allocations remain zero
+  until live positions are available. Balance privacy masks the total, both
+  buckets, asset values and holding sheets. The shared bottom navigation keeps
+  its existing form. `docs/wallet-motion.md` records the superseded motion study.
+
+- `auth-screen.tsx` and `auth/splash/splash-sign-in-card.tsx` share
+  `auth/sign-in-layout.tsx`: the 48px brand mark and 30px editorial wordmark sit
+  in the open sky, with the form at the bottom. The October 5 coastal artwork
+  follows Discover's pale blue, ivory and navy palette. All artwork layers use
+  the same undistorted 941×1672 coordinate space, framed to preserve the seated
+  voyager above the form. The regular route's form stays hidden until the intro
+  completes, then rises 36px with a clamped spring (damping 28, stiffness 240,
+  mass 0.9). Controls follow on a shared 520ms reveal clock.
   Email and verification share the field and button; 280ms layout transitions
   move these controls while headers and footers crossfade. Button labels have
   fixed space so loading text never changes their height. Press feedback uses
-  2.5% compression and a spring return. Focus moves the background by 8px and
-  scales it by 1.8%; scroll and sheet drag add smaller parallax. Only the top
-  sheet edge accepts drag, with a velocity-aware spring return and downward
-  keyboard dismissal. The keyboard opens on tap, and the verification field
+  2.5% compression and a spring return. Focusing or scrolling the form leaves
+  the person and coastline still. The keyboard opens on tap, and the verification field
   receives focus after an email code is sent. Small viewports can scroll.
   Reduced motion skips spatial movement, stagger, fades, and layout animation.
   The default policy destinations are `socially.trade/terms` and `/privacy`,
-  with optional public environment overrides. Social buttons dispatch actual
-  Privy OAuth flows; providers and allowed redirects must be configured in Privy.
+  with optional public environment overrides. When preview mode is disabled,
+  Google sign-in dispatches the existing Privy OAuth flow; its provider and
+  allowed redirects must be configured in Privy.
 
 - `src/app/_layout.tsx` gates the navigator behind font loading **without unmounting
   it**, and pins `collapsable={false}` on both wrappers. The simpler-looking

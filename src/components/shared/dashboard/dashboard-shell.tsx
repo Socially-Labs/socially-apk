@@ -1,19 +1,33 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { type ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, type ReactNode } from 'react';
+import { Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Dashboard, WalletPalette } from '@/constants/theme';
+import { Motion } from '@/constants/motion';
 
-export function DashboardShell({ children, testID, variant = 'default' }: { children: ReactNode; testID?: string; variant?: 'default' | 'wallet' }) {
+export function DashboardShell({ children, testID, variant = 'default', keyboardAvoided = false }: {
+  children: ReactNode; testID?: string; variant?: 'default' | 'wallet'; keyboardAvoided?: boolean;
+}) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  const reduceMotion = useReducedMotion();
+  const opacity = useSharedValue(1);
+  useFocusEffect(useCallback(() => {
+    // The screen stays mounted, so filters and scroll position survive tab changes.
+    opacity.set(reduceMotion ? 1 : 0.92);
+    if (!reduceMotion) opacity.set(withTiming(1, { duration: Motion.reveal }));
+    return () => { cancelAnimation(opacity); opacity.set(1); };
+  }, [opacity, reduceMotion]));
+  const contentStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
   return (
     <View style={styles.screen} testID={testID}>
       <StatusBar style="dark" />
-      <View style={StyleSheet.absoluteFill} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View testID="dashboard-scenery" style={StyleSheet.absoluteFill} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Image
           source={require('@/assets/images/auth/voyage-blue.png')}
           style={[styles.artwork, { height: Math.max(370, height * 0.52) }]}
@@ -25,13 +39,14 @@ export function DashboardShell({ children, testID, variant = 'default' }: { chil
           style={[styles.fade, { top: Math.max(240, height * 0.32), height: height * 0.3 }, variant === 'wallet' && { top: height * 0.24, height: height * 0.28 }]} />
       </View>
       <ScrollView
-        keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        automaticallyAdjustKeyboardInsets={!keyboardAvoided}
         style={styles.scroll} showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.content, {
           paddingHorizontal: variant === 'wallet' ? 20 : 15,
           paddingTop: Math.max(insets.top + 8, variant === 'wallet' ? 48 : 54), paddingBottom: Math.max(insets.bottom + 120, 142),
         }]}>
-        <View style={styles.measure}>{children}</View>
+        <Animated.View style={[styles.measure, contentStyle]}>{children}</Animated.View>
       </ScrollView>
     </View>
   );
