@@ -368,7 +368,8 @@ explains intended permissions without asserting that the vault is already live.
   The existing coastal voyage artwork appears in the editable profile banner,
   with a circular photo overlapping its edge. Account and Display share a group;
   invitations and support share another. Legal links sit in a compact footer.
-  Logout is a session row inside Account and opens a confirmation sheet. Profile
+  Logout is available in the top-right Settings header and as a session row inside
+  Account; both open the same confirmation flow. Profile
   editing includes display name, username, bio, banner, and photo, with previews,
   save/discard actions, and drafts that survive route changes. The 14px introduction
   and form copy are secondary text; headings remain 28px and row titles 15px.
@@ -446,8 +447,9 @@ explains intended permissions without asserting that the vault is already live.
   Username validation accepts 3–24 lowercase letters, numbers, and underscores,
   starting with a letter. Photos are resized to 512px squares and banners to
   1200×400px JPEGs before local persistence. Display preferences control wallet
-  amounts, including asset details and spoken labels. Logout lives inside Account
-  and uses the shared detail sheet, with confirmation and retry on failure.
+  amounts, including asset details and spoken labels. The top-right Settings logout
+  button and Account session row use the shared detail sheet, with confirmation
+  and retry on failure.
 
 - `auth/coastal-scene.tsx` is shared by launch sign-in and the regular auth route.
   The pale coast and seated voyager stay still. A separately extracted sailboat

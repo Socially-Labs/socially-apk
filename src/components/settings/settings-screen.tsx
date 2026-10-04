@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { ChevronRight, FileText, HeartHandshake, Info, LockKeyhole, Monitor, Pencil, Settings2, UserRound, UserRoundPlus, type LucideIcon } from 'lucide-react-native';
-import { type ReactNode } from 'react';
+import { ChevronRight, FileText, HeartHandshake, Info, LockKeyhole, LogOut, Monitor, Pencil, UserRound, UserRoundPlus, type LucideIcon } from 'lucide-react-native';
+import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AuthButton } from '@/components/shared/motion';
@@ -11,6 +11,7 @@ import { ProfileBanner } from './profile-banner';
 import { appVersion } from './settings-detail-config';
 import { useAccountSettings } from './settings-provider';
 import { SettingsSurface } from './settings-surface';
+import { LogoutSheet } from './settings-logout';
 
 export { appVersion } from './settings-detail-config';
 function openSection(section: string) { router.push({ pathname: '/account/[section]', params: { section } }); }
@@ -31,10 +32,14 @@ function SettingsGroup({ title, children }: { title: string; children: ReactNode
 }
 export default function SettingsScreen() {
   const { settings, ready, error } = useAccountSettings();
+  const [logoutOpen, setLogoutOpen] = useState(false);
   return <SettingsSurface testID="settings-dashboard">
     <View style={styles.heading}>
       <View style={styles.headingCopy}><Text style={styles.title} accessibilityRole="header">Make it yours.</Text><Text style={styles.copy}>Your profile, your preferences.</Text></View>
-      <View style={styles.headingIcon}><Settings2 size={23} color={S.accent} strokeWidth={1.7} /></View>
+      <AuthButton testID="settings-header-logout" accessibilityRole="button" accessibilityLabel="Log out"
+        accessibilityHint="Opens a confirmation before signing out" onPress={() => setLogoutOpen(true)} style={styles.logoutButton}>
+        <LogOut size={21} color={S.danger} strokeWidth={1.7} />
+      </AuthButton>
     </View>
     <View style={styles.profile}>
       <ProfileBanner uri={settings.bannerUri} />
@@ -71,12 +76,13 @@ export default function SettingsScreen() {
         <Text style={styles.version}>v{appVersion}</Text>
       </View>
     </View>
+    <LogoutSheet visible={logoutOpen} onClose={() => setLogoutOpen(false)} />
   </SettingsSurface>;
 }
 const styles = StyleSheet.create({
   heading: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
   headingCopy: { flex: 1 },
-  headingIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: S.badge, alignItems: 'center', justifyContent: 'center' },
+  logoutButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: S.dangerTint, alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: InterFont.semiBold, fontSize: S.titleSize, lineHeight: 36, letterSpacing: -1, color: S.ink },
   copy: { fontFamily: InterFont.regular, fontSize: S.bodySize, lineHeight: 20, color: S.secondary, marginTop: 5 },
   profile: { borderRadius: S.cardRadius, backgroundColor: S.solidSurface, overflow: 'hidden', borderWidth: 1, borderColor: S.border, boxShadow: S.shadow },
