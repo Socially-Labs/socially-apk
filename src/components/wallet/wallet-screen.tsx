@@ -1,7 +1,10 @@
 import { useRouter } from 'expo-router';
 import { Check, ChevronDown, ChevronRight, Eye, EyeOff, History, LayoutGrid, Settings, Wallet } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import Animated, { FadeIn, LinearTransition, useReducedMotion } from 'react-native-reanimated';
+
+import { errorFeedback, selectionFeedback } from '@/components/shared/feedback';
 
 import { AuthButton } from '@/components/shared/motion';
 import { DashboardSheet } from '@/components/shared/dashboard/dashboard-sheet';
@@ -23,11 +26,28 @@ export default function WalletScreen() {
   const [network, setNetwork] = useState<NetworkFilter>('All Networks');
   const { settings: accountSettings, ready, saving, updateSettings } = useAccountSettings();
   const [visibilityError, setVisibilityError] = useState<string | null>(null);
-  const balanceVisible = ready && !accountSettings.hideBalances;
+  const reduceMotion = useReducedMotion();
+  const [locallyHidden, setLocallyHidden] = useState(false);
+  const visibilityWriting = useRef(false);
+  const balanceVisible = ready && !locallyHidden && !accountSettings.hideBalances;
   async function toggleBalances() {
+    if (!ready || saving || visibilityWriting.current) return;
+    visibilityWriting.current = true;
     setVisibilityError(null);
-    try { await updateSettings({ hideBalances: balanceVisible }); }
-    catch (cause) { setVisibilityError(cause instanceof Error ? cause.message : 'Balance visibility couldn’t be saved.'); }
+    const hideBalances = balanceVisible;
+    // Mask sensitive content immediately, including while persistence is pending.
+    // A failed hide stays masked until the user explicitly chooses to reveal it.
+    if (hideBalances) setLocallyHidden(true);
+    selectionFeedback();
+    try {
+      await updateSettings({ hideBalances });
+      setLocallyHidden(false);
+    } catch {
+      errorFeedback();
+      setVisibilityError(hideBalances
+        ? 'Balance hidden here. Your preference couldn’t be saved.'
+        : 'Balance couldn’t be revealed. Please try again.');
+    } finally { visibilityWriting.current = false; }
   }
   const { height, width } = useWindowDimensions();
   const compact = width < 360;
@@ -57,8 +77,10 @@ export default function WalletScreen() {
             {balanceVisible ? <Eye size={19} color={W.secondary} strokeWidth={2} /> : <EyeOff size={19} color={W.secondary} strokeWidth={2} />}
           </AuthButton>
         </View>
-        <Text style={[styles.balance, compact && styles.compactBalance]} testID="wallet-balance"
-          numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{balanceVisible ? walletBalance : '••••••'}</Text>
+        <Animated.Text key={balanceVisible ? 'visible' : 'hidden'}
+          entering={balanceVisible && !reduceMotion ? FadeIn.duration(160) : undefined}
+          style={[styles.balance, compact && styles.compactBalance]} testID="wallet-balance"
+          numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>{balanceVisible ? walletBalance : '••••••'}</Animated.Text>
         {visibilityError ? <Text accessibilityRole="alert" style={styles.previewNote}>{visibilityError}</Text> : null}
       </View>
       <View style={styles.receiveCard} testID="wallet-funding-card">
@@ -84,29 +106,14 @@ export default function WalletScreen() {
       </View>
       <View style={styles.assetList}>
         {assets.map(asset => (
-          <AuthButton key={asset.symbol} accessibilityRole="button"
-            accessibilityLabel={balanceVisible ? `${asset.name}, ${asset.quantity}, ${formatWalletValue(asset.value)}, ${asset.network}` : `${asset.name}, balances hidden, ${asset.network}`}
-            testID={`wallet-asset-${asset.symbol.toLowerCase()}`} onPress={() => setSheet(asset)} style={styles.asset}>
-            <TokenIcon symbol={asset.symbol} size={compact ? 36 : 42} glossy />
-            <View style={styles.assetName}>
-              <Text style={styles.assetSymbol}>{asset.symbol}</Text>
-              <Text style={[styles.caption, compact && styles.compactCaption]} numberOfLines={1}>{asset.network}</Text>
-            </View>
-            <View style={styles.sparkline} testID={`wallet-chart-${asset.symbol.toLowerCase()}`}>
-              <MarketSparkline market={asset} width={compact ? 32 : 42} height={26} />
-            </View>
-            <View style={styles.assetAmount}>
-              <Text style={styles.assetValue}>{balanceVisible ? formatWalletValue(asset.value) : '••••'}</Text>
-              <Text style={styles.caption}>{balanceVisible ? asset.quantity : '••••'}</Text>
-            </View>
-            <ChevronRight size={19} color={W.secondary} strokeWidth={1.8} />
-          </AuthButton>
+          <WalletAssetRow key={asset.symbol} asset={asset} visible={balanceVisible}
+            compact={compact} reduceMotion={reduceMotion} onSelect={setSheet} />
         ))}
       </View>
       <DashboardSheet visible={sheet !== null} title={title} onClose={() => setSheet(null)}>
         {sheet === 'networks' ? filters.map(filter => (
           <AuthButton key={filter} accessibilityRole="button" accessibilityState={{ selected: filter === network }}
-            onPress={() => { setNetwork(filter); setSheet(null); }} style={styles.networkOption}>
+            onPress={() => { if (filter !== network) selectionFeedback(); setNetwork(filter); setSheet(null); }} style={styles.networkOption}>
             <Text style={styles.networkLabel}>{filter}</Text>
             {filter === network ? <Check size={20} color={W.selectedInk} /> : null}
           </AuthButton>
@@ -136,6 +143,35 @@ export default function WalletScreen() {
         )}
       </DashboardSheet>
     </DashboardShell>
+  );
+}
+
+// Pass privacy explicitly across the row boundary so each retained row updates
+// its visual content and accessibility label together when visibility changes.
+function WalletAssetRow({ asset, visible, compact, reduceMotion, onSelect }: {
+  asset: WalletAsset; visible: boolean; compact: boolean; reduceMotion: boolean;
+  onSelect: (asset: WalletAsset) => void;
+}) {
+  return (
+          <Animated.View layout={reduceMotion ? undefined : LinearTransition.duration(180)}>
+          <AuthButton accessibilityRole="button"
+            accessibilityLabel={visible ? `${asset.name}, ${asset.quantity}, ${formatWalletValue(asset.value)}, ${asset.network}` : `${asset.name}, balances hidden, ${asset.network}`}
+            testID={`wallet-asset-${asset.symbol.toLowerCase()}`} onPress={() => onSelect(asset)} style={styles.asset}>
+            <TokenIcon symbol={asset.symbol} size={compact ? 36 : 42} glossy />
+            <View style={styles.assetName}>
+              <Text style={styles.assetSymbol}>{asset.symbol}</Text>
+              <Text style={[styles.caption, compact && styles.compactCaption]} numberOfLines={1}>{asset.network}</Text>
+            </View>
+            <View style={styles.sparkline} testID={`wallet-chart-${asset.symbol.toLowerCase()}`}>
+              <MarketSparkline market={asset} width={compact ? 32 : 42} height={26} />
+            </View>
+            <Animated.View key={visible ? 'visible' : 'hidden'} entering={visible && !reduceMotion ? FadeIn.duration(160) : undefined} style={styles.assetAmount}>
+              <Text style={styles.assetValue}>{visible ? formatWalletValue(asset.value) : '••••'}</Text>
+              <Text style={styles.caption}>{visible ? asset.quantity : '••••'}</Text>
+            </Animated.View>
+            <ChevronRight size={19} color={W.secondary} strokeWidth={1.8} />
+          </AuthButton>
+          </Animated.View>
   );
 }
 
