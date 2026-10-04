@@ -6,13 +6,13 @@ import { Dashboard } from '@/constants/theme';
 import { Bell } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
-export function HomeHeader({ name, avatar, greeting, onProfile, onNotifications }: {
-  name: string; avatar: ProfileAvatarKind; greeting: string; onProfile: () => void; onNotifications: () => void;
+export function HomeHeader({ name, avatar, photoUri, greeting, onProfile, onNotifications }: {
+  name: string; avatar: ProfileAvatarKind; photoUri?: string | null; greeting: string; onProfile: () => void; onNotifications: () => void;
 }) {
   return (
     <View style={styles.header}>
       <AuthButton accessibilityRole="button" accessibilityLabel="Open your profile" onPress={onProfile} style={styles.avatar}>
-        <ProfileAvatar name={name} avatar={avatar} size={47} />
+        <ProfileAvatar name={name} avatar={avatar} photoUri={photoUri} size={47} />
       </AuthButton>
       <View style={styles.greeting}>
         <Text style={styles.hello} accessibilityRole="header">Hello, {greeting}</Text>

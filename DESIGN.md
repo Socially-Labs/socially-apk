@@ -49,7 +49,7 @@ These are the source of truth. This document describes them; it does not overrid
 | Auth panel colours, shadows, type sizes | `src/constants/theme.ts` → `AuthPanel` |
 | Auth scene water highlights | `src/constants/theme.ts` → `CoastalPalette` |
 | Wallet surfaces, action colours, type sizes | `src/constants/theme.ts` → `WalletPalette` |
-| Settings cards, profile badge, forms and type sizes | `src/constants/theme.ts` → `SettingsPalette` |
+| Settings cards, profile cover, forms and type sizes | `src/constants/theme.ts` → `SettingsPalette` |
 | Splash water highlights and troughs | `src/constants/theme.ts` → `SplashWaterPalette` |
 | Floating detail sheet surfaces and motion | `src/constants/theme.ts` → `DashboardSheetTheme` |
 | Shared bottom navigation colours and shadows | `src/constants/theme.ts` → `NavigationPalette` |
@@ -363,8 +363,16 @@ explains intended permissions without asserting that the vault is already live.
 
 ### Complexity
 
-- Home and Settings retain their original voyage artwork and translucent
-  surfaces. Discover follows the user's latest reference: a coastal Captain scene,
+- Home retains its voyage artwork and translucent surfaces. Settings uses the same
+  cool page background, Inter typography, and blue accents with quiet white cards.
+  The existing coastal voyage artwork appears in the editable profile banner,
+  with a circular photo overlapping its edge. Account and Display share a group;
+  invitations and support share another. Legal links sit in a compact footer.
+  Logout is a session row inside Account and opens a confirmation sheet. Profile
+  editing includes display name, username, bio, banner, and photo, with previews,
+  save/discard actions, and drafts that survive route changes. The 14px introduction
+  and form copy are secondary text; headings remain 28px and row titles 15px.
+  Discover follows the user's latest reference: a coastal Captain scene,
   supplied in `assets/images/discover/captain-horizon.png`, a two-line heading,
   translucent search and strategy pills, and a dark navy Captain card with subdued
   landscape imagery, a glowing blue chart and mint positive returns. Discover's
@@ -424,19 +432,22 @@ explains intended permissions without asserting that the vault is already live.
   their data after layout, with native clipping disabled. The chart has an explicit
   native height. The media fields `bannerUrl` and `profilePhotoUrl`
   take backend image URLs, with local dummy artwork for current sample profiles
-  and failed image loads. Settings uploads and the Captain API are not connected
-  yet. Only an explicit `verified` value displays a verified badge. Detail sheets
+  and failed image loads. Settings photo and banner edits persist locally; the
+  Captain API is not connected yet. Only an explicit `verified` value displays a verified badge. Detail sheets
   explain metrics, risk, positions, trades and trading authority. Saves and
   following are scoped to the current account session.
   All fixtures are explicitly sample data. No verification badges or allocation
   actions imply a live deployed vault.
 
-- `settings/settings-screen.tsx` follows the supplied Settings reference with a
-  profile card, grouped rows, 24px card corners, 28px heading, and 15px row titles.
+- `settings/settings-screen.tsx` uses an editable coastal profile card and grouped
+  rows, 24px profile corners, a 28px heading, and 15px row titles.
   Detail routes sit outside the bottom tabs and use a 44px back control. Profile
   forms save per account on this device and update the home greeting and avatar.
-  Display preferences control wallet amounts, including asset details and spoken
-  labels. Logout uses the shared detail sheet, with confirmation and retry on failure.
+  Username validation accepts 3–24 lowercase letters, numbers, and underscores,
+  starting with a letter. Photos are resized to 512px squares and banners to
+  1200×400px JPEGs before local persistence. Display preferences control wallet
+  amounts, including asset details and spoken labels. Logout lives inside Account
+  and uses the shared detail sheet, with confirmation and retry on failure.
 
 - `auth/coastal-scene.tsx` is shared by launch sign-in and the regular auth route.
   The pale coast and seated voyager stay still. A separately extracted sailboat

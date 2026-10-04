@@ -48,7 +48,7 @@ export default function HomeScreen() {
 
   return (
     <DashboardShell testID="home-dashboard">
-      <HomeHeader name={settings.name} avatar={settings.avatar} greeting={greeting}
+      <HomeHeader name={settings.name} avatar={settings.avatar} photoUri={settings.photoUri} greeting={greeting}
         onProfile={() => setSheet('profile')} onNotifications={() => setSheet('notifications')} />
       <View style={{ height: heroSpace }} pointerEvents="none" />
       <PortfolioSummary compact={compact} onOverview={() => setSheet('portfolio')} />

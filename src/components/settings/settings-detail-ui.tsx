@@ -29,7 +29,7 @@ export function ErrorCopy({ children }: { children: string | null }) { return ch
 const styles = StyleSheet.create({
   ...sharedStyles,
   actionContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  card: { padding: 20, borderRadius: S.cardRadius, backgroundColor: S.surface, gap: 14, marginBottom: 16 },
+  card: { padding: 20, borderRadius: S.cardRadius, backgroundColor: S.solidSurface, borderWidth: 1, borderColor: S.border, gap: 14, marginBottom: 16 },
   action: { minHeight: 52, paddingHorizontal: 16, paddingVertical: 13, borderRadius: 16, backgroundColor: S.primary, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
   actionText: { fontFamily: InterFont.medium, fontSize: 14, lineHeight: 20, color: S.primaryInk, textAlign: 'center' },
   secondaryAction: { backgroundColor: S.iconWell },

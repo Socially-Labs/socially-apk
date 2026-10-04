@@ -10,7 +10,7 @@ components/
   discover/              Discovery controls, surfaces, charts, cards, carousel, filters and Captain profile sections
   crew/                  Crew screen
   wallet/                Screen coordinator, balance card, asset row, sheets and four quick actions
-  settings/              Settings screen and independent profile, display, referral, support, policy and about sections
+  settings/              Settings surface, account/session, profile editor/media, display, referral, support, policy and about sections
   shared/
     captains/            Compact Captain cards and details used by Home
     dashboard/           Voyage screen shell and details sheet
