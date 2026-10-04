@@ -51,6 +51,7 @@ These are the source of truth. This document describes them; it does not overrid
 | Settings cards, profile badge, forms and type sizes | `src/constants/theme.ts` → `SettingsPalette` |
 | Splash water highlights and troughs | `src/constants/theme.ts` → `SplashWaterPalette` |
 | Floating detail sheet surfaces and motion | `src/constants/theme.ts` → `DashboardSheetTheme` |
+| Interaction pacing and press springs | `src/constants/motion.ts` → `Motion` |
 | Inter family names, weight map | `src/constants/fonts.ts` → `InterFont`, `InterWeightMap`, `interFamily()` |
 | Spacing scale, max measure | `src/constants/theme.ts` → `Spacing`, `MaxContentWidth` |
 | Type variants | `src/components/shared/ui/themed-text.tsx` |
@@ -362,10 +363,19 @@ oversight.** Revisit if small-size legibility becomes a complaint.
   the dashboard theme: 32px corners, 8px side insets, a grab handle, a centred
   title, and a quiet inset body surface. The panel rises as one surface with a
   360ms spring and slides out over 260ms. The native modal and its last visible
-  content stay mounted through the exit. The handle supports downward dragging,
-  with a short drag returning to rest. Reduced motion applies states instantly.
+  content stay mounted through the exit. The handle and heading support downward
+  dragging, with a short drag returning to rest. A single haptic marks the dismiss
+  threshold. Reduced motion retains direct dragging and applies settling instantly.
   All existing dashboard callers inherit the shared treatment. Measurements and
   platform adaptations are recorded in `docs/dashboard-sheet-motion.md`.
+
+- The shared SVG logo loader traces the actual emblem before revealing its
+  original artwork. It pulses only during pending startup work. Restored sessions
+  skip the voyage intro; signed-out users retain the existing sign-in scene.
+  Custom tabs retain screen state, use a sliding selection indicator, and preserve
+  search/filter/scroll state. Settings drafts live in the account provider, and
+  loading forms reserve their major shapes. See `docs/motion-polish.md` for the
+  implementation checklist and work that depends on live data.
 
 - `wallet.tsx` uses the voyage artwork, a 40px balance, translucent asset cards,
   and separate preview holdings. Its 18px title and 12px subtitle sit in the top
