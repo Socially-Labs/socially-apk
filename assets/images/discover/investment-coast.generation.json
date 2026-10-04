@@ -1,0 +1,10 @@
+{
+  "tool": "built-in image_gen",
+  "useCase": "stylized-concept",
+  "reference": "User-supplied Captain investment screen, 2026-10-05; composition and mood reference only",
+  "prompt": "Use case: stylized-concept. Asset type: clean coastal hero artwork for a premium mobile Captain investment page, landscape 4:3 composition. Input image 1 is a composition and mood reference only; do NOT reproduce any UI, typography, cards, icons, status bar, controls or numbers. Generate only the underlying scene. A single mysterious navy-cloaked voyager seen from behind occupies the far LEFT third, waist-up, leaning on an ivory stone balcony under one elegant weathered arch at the far left. A small subtle stitched compass motif on the cloak. Beyond: a serene pale blue sea and distant ivory Mediterranean harbor with a few towers, subdued warm morning sunlight. Refined restrained painterly realism, believable fabric and stone, understated detail, soft atmospheric depth; no glossy fantasy clutter. Entire RIGHT TWO THIRDS and especially upper right consist of bright pale blue sky with very faint clouds, ample clear negative space for navy text that will be overlaid later. The distant harbor sits in the lower right third. Cloak can be dark navy but overall scene must be light and airy, softly washed powder blue, ivory, very subtle sand gold only. Bottom edge pale blue mist for blending into an ivory app background. No readable text, no logos, no UI, no charts, no floating objects, no extra people, no saturated orange sunset, no neon, no elaborate gold armor.",
+  "asset": "investment-coast.webp",
+  "source": "exec-6a527df5-8240-404d-98f1-c9442fe8a7e3.png",
+  "encoding": "WebP quality 90, 1448×1086",
+  "role": "Decorative static hero; all interface content is rendered by React Native."
+}

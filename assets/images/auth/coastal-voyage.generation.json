@@ -1,0 +1,98 @@
+{
+  "generator": "Built-in image_gen",
+  "asset": "coastal-voyage.png",
+  "mobileAsset": "coastal-voyage.webp",
+  "purpose": "Minimal coastal auth background prepared for future SVG motion overlays",
+  "references": {
+    "scene": "User-supplied seated voyager, coast, ship and sea",
+    "style": [
+      "assets/images/discover/voyage-cover.png",
+      "assets/images/discover/captain-horizon.png"
+    ],
+    "excluded": [
+      "Home screen",
+      "Settings screen"
+    ]
+  },
+  "prompt": "Create ONE finished portrait background artwork for the Socially mobile app's authentication screen. This is a NEW simpler interpretation of reference image 1, using the restrained atmosphere and material language of references 2 and 3.\n\nREFERENCE ROLES:\n1. Hooded man seated on a rocky coast watching a sailboat: use ONLY the core scene/story and back-facing seated pose. Completely replace the dark amber sunset lighting, busy rocks and visual density.\n2. Existing app voyage-cover: use its airy pale blue sea/sky, ivory coastal stone, soft natural light, restrained navy accents and carefully rendered materials as the primary style reference.\n3. Existing app captain-horizon: use only the refined maritime atmosphere and navy travel cloak; do NOT copy its architecture, floating cards, city, banners or decorative objects.\n\nOUTPUT: full-bleed portrait 9:16 artwork, ideally 1152 x 2048 pixels. A visually quiet, beautifully art-directed coastal scene, simple enough to augment with fine SVG water ripples. Minimal, elegant, luminous and softly dimensional. Sophisticated restrained editorial 3D illustration with believable subtle material texture and clean large forms. Not flat cartoon or vector clip-art; not a hyper-detailed fantasy videogame.\n\nCOMPOSITION:\nA vast pale mist-blue sky above a calm powder-blue sea, with an almost imperceptible pale distant headland entering at the left horizon. A back-facing adult man in a simple muted navy hooded travel cloak sits quietly on a broad low ivory limestone coastal ledge on the LEFT. His pose and presence echo reference 1. Show his full seated silhouette, relaxed arm resting on one knee, boots supported by the stone. Keep the person modest in scale: approximately 16 percent of canvas width, his head at 45 percent of canvas height, feet at 65 percent. A single small elegant sailing ship with a simple ivory sail, slim dark navy hull and just enough rigging to read clearly is on the RIGHT, isolated on open sea; the ship is about 12 percent of canvas width, mast tip near 41 percent canvas height and waterline near 55 percent. The sea horizon is around 47 percent height. The man and ship must remain clearly separated without overlaps.\nOne or two broad smooth naturally shaped limestone ledges frame the lower-left shore. The stone has soft rounded weathering and very restrained texture, not hundreds of craggy rocks. The shore slopes gently out of the scene toward the bottom left. A narrow delicate foam line touches the stone. The lower-right is open calm pale blue water. The lowest 25 percent of the canvas is very quiet, pale and low contrast, with no focal objects, so an auth form can sit there later. The top 30 percent is clean open sky suitable for a small wordmark later; do not add a wordmark. Balance the small navy figure on the left against the sailboat on the right with ample breathing room.\n\nCOLOR AND LIGHT:\nExtremely restrained palette: mist blue #E4EDF5, cool ivory #F5F7FB, dusty blue #AEC5D8, navy #263D55. Very soft neutral morning daylight and a tiny amount of warm ivory in the sails and rocks; shadows remain open and light. The figure is the only relatively dark anchor, and fabric folds must remain readable. No visible blazing sun, orange sunset, yellow light streaks, saturated turquoise, lavender, multicolored gradients, metallic gold ornament or hard black shadows. A tiny quiet stitched compass on the cloak is acceptable in muted warm gray, no ornate gold trim.\n\nANIMATION FRIENDLY:\nKeep the sea simple with only a few fine, widely spaced, nearly horizontal ripples and a very faint soft boat reflection. Large calm water areas with clean boundaries around the stationary man and coastline. Clearly defined ship silhouette that can be isolated later. No spray, baked motion blur, dense glitter, huge waves, lens flare, bokeh plants, fog wisps crossing the figure, foreground foliage, flying birds, decorative dots or complex cloud banks. The sky can have a barely visible soft cloud haze, no hard cloud shapes.\n\nNo typography, letters, UI, form, controls, symbols floating in air, extra people, extra boats, buildings, arches, borders, collage, watermarks or framing. Return only the final single refined portrait image.",
+  "animationGuidance": {
+    "coordinateSystem": "Normalized fractions of the complete image; align the SVG overlay and image to one shared viewBox and crop transform.",
+    "stationary": [
+      "seated person and cloak",
+      "limestone foreground",
+      "distant coastline",
+      "sky and horizon"
+    ],
+    "waterRipples": {
+      "x": [
+        0.5,
+        0.98
+      ],
+      "y": [
+        0.53,
+        0.7
+      ],
+      "description": "Sparse near-horizontal paths in low-opacity cool white. Slow translation and opacity changes; clip away from the seated person and stone."
+    },
+    "shorelineFoam": {
+      "x": [
+        0.53,
+        0.74
+      ],
+      "y": [
+        0.72,
+        0.79
+      ],
+      "description": "Small strokes along the existing right edge of the stone. Restrained opacity and path-length changes."
+    },
+    "boat": {
+      "bounds": {
+        "left": 0.73,
+        "top": 0.37,
+        "right": 0.88,
+        "bottom": 0.5
+      },
+      "description": "The live scene uses coastal-water.webp and a separate coastal-boat.png layer. The original master remains the static and reduced-motion fallback."
+    },
+    "reducedMotion": "Use the static artwork.",
+    "contentSafeAreas": {
+      "topSky": [
+        0,
+        0,
+        1,
+        0.29
+      ],
+      "lowerQuietWater": [
+        0,
+        0.86,
+        1,
+        1
+      ]
+    },
+    "note": "Motion overlays are now implemented in coastal-scene.tsx. All layers use the same 941×1672 coordinates and a shoreline clip."
+  },
+  "layers": [
+    {
+      "file": "coastal-water.webp",
+      "purpose": "Boat-free scene generated from the approved master",
+      "prompt": "Production image edit for animation. Input is a 941x1672 portrait coastal illustration. Remove ONLY the small offshore sailboat on the right (mast/sails/rigging/hull x approximately 701 to 826, y 626 to 824) and its narrow water reflection directly below it (x710 to830, y818 to960). Fill those small regions with matching existing pale sky, horizon and calm blue sea. Preserve EVERY other part of the image, the ENTIRE full portrait canvas, colors and camera framing EXACTLY: seated navy hooded man on the left, his clothing and compass, all ivory coastal rocks, distant cliffs, sky and water elsewhere. Do not redraw, relight, recolor, crop, resize or add anything. Output a clean plate with no boat and no boat reflection, otherwise identical to the input. No words or UI.",
+      "source": "/Users/vikas/.codex/generated_images/01a10877-0baf-7b40-94d1-db38b6d3b438/exec-78150424-ab94-4f36-a496-8c5e2acac003.png"
+    },
+    {
+      "file": "coastal-boat.png",
+      "purpose": "Transparent ship crop at x697, y620, 130×202 in the master coordinate space",
+      "prompt": "Production transparent animation layer. Extract ONLY the EXISTING small sailboat from the provided coastal image: ivory sails, fine mast and rigging, dark navy hull, at x701–826 and y626–824 of the original 941x1672 image. Preserve its exact shape, material, color, shading and proportions. Do not design or redraw a different boat; no new details. The sea, boat reflection, sky, man, rocks, land and every other object must be fully transparent. Use genuine transparent alpha, including spaces between rigging. Return the entire original 941x1672 canvas with the tiny boat at its exact original position and size, transparent everywhere else. No ground shadow, no reflection, no background, no text.",
+      "source": "/Users/vikas/.codex/generated_images/01a10877-0baf-7b40-94d1-db38b6d3b438/exec-a6f36eb6-7807-497f-9544-778e7f2f3182.png"
+    }
+  ],
+  "implementation": {
+    "scene": "src/components/auth/coastal-scene.tsx",
+    "geometry": "src/components/auth/coastal-motion.ts",
+    "layout": "src/components/auth/sign-in-layout.tsx",
+    "entryPoints": [
+      "src/components/auth/auth-screen.tsx",
+      "src/components/auth/splash/splash-screen.tsx"
+    ],
+    "rendering": "Static image fallback, separate boat raster, shoreline-clipped SVG water/reflection/foam, one active UI-thread clock"
+  }
+}

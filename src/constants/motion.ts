@@ -3,6 +3,7 @@ export const Motion = {
   feedback: 140,
   reveal: 180,
   transition: 260,
+  carouselDwell: 8000,
   pressScale: 0.975,
   pressSpring: { damping: 24, stiffness: 420, mass: 0.6 },
   releaseSpring: { damping: 22, stiffness: 360, mass: 0.6 },

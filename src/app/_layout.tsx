@@ -14,6 +14,7 @@ import { BootLoadingScreen } from '@/components/auth/splash/boot-loading-screen'
 import { IntroCompleteContext } from '@/components/auth/intro-context';
 import { AppFontMap } from '@/constants/fonts';
 import { SettingsProvider } from '@/components/settings/settings-provider';
+import { DiscoverProvider } from '@/components/discover/discover-provider';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 // Expo Go owns its native splash and cannot customize the fade animation.
@@ -43,6 +44,8 @@ function AuthNavigator() {
       <Stack.Protected guard={canEnterApp}>
         <Stack.Screen name="(app)" />
         <Stack.Screen name="account/[section]" options={{ animation: reduceMotion ? 'fade' : 'default', gestureEnabled: true, gestureDirection: 'horizontal' }} />
+        <Stack.Screen name="captain/[id]" options={{ animation: reduceMotion ? 'fade' : 'default', gestureEnabled: true }} />
+        <Stack.Screen name="invest/[id]" options={{ animation: reduceMotion ? 'fade' : 'default', gestureEnabled: true }} />
       </Stack.Protected>
     </Stack>
   );
@@ -104,7 +107,7 @@ function AppLayout() {
           accessibilityElementsHidden={!splashComplete}
           importantForAccessibility={splashComplete ? 'auto' : 'no-hide-descendants'}>
           <IntroCompleteContext.Provider value={splashComplete}>
-            <SettingsProvider><AuthNavigator /></SettingsProvider>
+            <SettingsProvider><DiscoverProvider><AuthNavigator /></DiscoverProvider></SettingsProvider>
           </IntroCompleteContext.Provider>
         </View>
         {introMode === 'sign-in' && !splashComplete && <SplashOverlay onComplete={completeSplash} />}

@@ -3,9 +3,8 @@ import { usePathname } from 'expo-router';
 import { TabList, TabSlot, TabTrigger, Tabs, type TabTriggerSlotProps } from 'expo-router/ui';
 import { Compass, House, Settings, Wallet, type LucideIcon } from 'lucide-react-native';
 import { useEffect } from 'react';
-import { Keyboard, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Keyboard, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthButton } from '@/components/shared/motion';
@@ -30,10 +29,7 @@ function VoyageTab({ isFocused, label, icon: Icon, style: _style, compact = fals
             style={[StyleSheet.absoluteFill, styles.homeGradient]} />
         </View>
         <View style={styles.homeIcon}>
-          <Svg width={24} height={24} viewBox="0 0 24 24"
-            accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
-            <Path d="M2 10 10.5 2.7a2.3 2.3 0 0 1 3 0L22 10v10a2 2 0 0 1-2 2h-5v-7a3 3 0 0 0-6 0v7H4a2 2 0 0 1-2-2Z" fill="#FFFFFF" />
-          </Svg>
+          <Icon size={24} color="#FFFFFF" strokeWidth={1.8} />
         </View>
         <Text style={styles.homeLabel}>Home</Text>
       </> : <View style={styles.iconCircle}>

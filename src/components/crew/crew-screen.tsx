@@ -1,4 +1,4 @@
-import { Users } from 'lucide-react-native';
+import { UserRound, Users } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { DashboardShell } from '@/components/shared/dashboard/dashboard-shell';
@@ -9,9 +9,9 @@ import { Dashboard } from '@/constants/theme';
 export default function CrewScreen() {
   return <DashboardShell testID="crew-dashboard">
     <View style={styles.heading}><Users size={24} color={Dashboard.icon} /><Text style={styles.title}>Your crew</Text></View>
-    <Text style={styles.copy}>A shared voyage.</Text>
+    <Text style={styles.copy}>Crew members allocate capital to a shared fund.</Text>
     <View style={styles.card}><Text style={styles.copy}>Crew Members</Text><Text style={styles.total}>{portfolio.crewMembers}</Text>
-      <View style={styles.avatars}>{Array.from({ length: portfolio.crewMembers }, (_, index) => <View key={index} style={styles.avatar}><Users size={20} color={Dashboard.icon} /></View>)}</View>
+      <View style={styles.avatars}>{Array.from({ length: portfolio.crewMembers }, (_, index) => <View key={index} style={styles.avatar}><UserRound size={20} color={Dashboard.icon} /></View>)}</View>
       <Text style={styles.captain}>Vikas · Captain</Text>
     </View>
   </DashboardShell>;

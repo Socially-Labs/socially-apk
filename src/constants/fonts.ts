@@ -61,9 +61,10 @@ export const InterFontMap = {
   [InterFont.black]: require('@expo-google-fonts/inter/900Black/Inter_900Black.ttf'),
 } as const;
 
-/** The editorial serif is reserved for the Socially wordmark. */
+/** The editorial serif serves the wordmark and the supplied Wallet reference. */
 export const BrandFont = {
   wordmark: 'CormorantGaramond-SemiBold',
+  editorial: 'CormorantGaramond-SemiBold',
 } as const;
 
 // Load the actual 600 cut, rather than asking a regular face for synthetic bold.

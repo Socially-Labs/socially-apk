@@ -15,7 +15,7 @@ import { InterFont } from '@/constants/fonts';
 import { Motion } from '@/constants/motion';
 import { Dashboard, DashboardSheetTheme as S } from '@/constants/theme';
 
-type SheetProps = { visible: boolean; title: string; onClose: () => void; children: ReactNode };
+type SheetProps = { visible: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode };
 const SETTLE = { duration: S.openDuration, dampingRatio: 0.94 };
 const EXIT = Easing.bezier(0.4, 0, 1, 1);
 
@@ -38,7 +38,7 @@ export function DashboardSheet(props: SheetProps) {
   );
 }
 
-function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps & { onExited: () => void }) {
+function SheetPanel({ visible, title, children, footer, onClose, onExited }: SheetProps & { onExited: () => void }) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
@@ -49,11 +49,11 @@ function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps 
   const dragStart = useSharedValue(0);
   const crossedThreshold = useSharedValue(false);
   const sheetHeight = useSharedValue(maxHeight);
-  const [content, setContent] = useState({ title, children });
+  const [content, setContent] = useState({ title, children, footer });
 
   // Callers clear their selected item on close. Retain the last visible content
   // so its title and body travel out together rather than emptying mid-animation.
-  if (visible && (content.title !== title || content.children !== children)) setContent({ title, children });
+  if (visible && (content.title !== title || content.children !== children || content.footer !== footer)) setContent({ title, children, footer });
 
   useEffect(() => {
     if (visible) {
@@ -142,6 +142,7 @@ function SheetPanel({ visible, title, children, onClose, onExited }: SheetProps 
           showsVerticalScrollIndicator={false} testID="dashboard-sheet-content">
           {content.children}
         </ScrollView>
+        {content.footer ? <View style={styles.footer}>{content.footer}</View> : null}
       </Animated.View>
       </KeyboardAvoidingView>
     </GestureHandlerRootView>
@@ -165,4 +166,5 @@ const styles = StyleSheet.create({
   body: { flexShrink: 1, borderRadius: S.bodyRadius, backgroundColor: S.body,
     borderWidth: 1, borderColor: S.bodyBorder },
   bodyContent: { padding: 16 },
+  footer: { paddingTop: 12 },
 });

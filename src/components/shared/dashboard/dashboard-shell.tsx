@@ -27,7 +27,7 @@ export function DashboardShell({ children, testID, variant = 'default', keyboard
   return (
     <View style={styles.screen} testID={testID}>
       <StatusBar style="dark" />
-      <View style={StyleSheet.absoluteFill} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View testID="dashboard-scenery" style={StyleSheet.absoluteFill} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Image
           source={require('@/assets/images/auth/voyage-blue.png')}
           style={[styles.artwork, { height: Math.max(370, height * 0.52) }]}

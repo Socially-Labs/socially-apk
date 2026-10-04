@@ -1,0 +1,38 @@
+/** A quiet ivory form and navy action over the pale coastal auth scene. */
+export const AuthPanel = {
+  backdrop: '#E4EDF5',
+  surface: '#FFFFFF',
+  glass: ['rgba(255,255,255,0.92)', 'rgba(249,251,255,0.96)'] as const,
+  glassBorder: 'rgba(255,255,255,0.88)',
+  field: 'rgba(246,248,252,0.32)',
+  ink: '#191E43',
+  secondary: '#7D8DAC',
+  caption: '#94A2BF',
+  placeholder: '#66758C',
+  border: '#E1E6F0',
+  divider: '#D8DFEC',
+  focusBorder: '#8C9EB7',
+  primary: '#2C4864',
+  primaryGradient: ['#344F6A', '#243D57'] as const,
+  disabled: '#748299',
+  clear: '#BDC5D3',
+  error: '#A3333F',
+  panelShadow: '0 8px 32px rgba(37, 60, 85, 0.08)',
+  buttonShadow: 'none',
+  inputSize: 15,
+  codeSize: 26,
+  bodySize: 14,
+  captionSize: 11,
+  buttonSize: 15,
+  socialSize: 14,
+  panelRadius: 22,
+  controlRadius: 10,
+} as const;
+
+/** SVG highlights stay within the cool, low-contrast coastal artwork. */
+export const CoastalPalette = {
+  foam: '#F5FAFD',
+  trough: '#6E9AB4',
+  reflection: '#EAF2F5',
+  bottomFade: ['rgba(228,237,245,0)', 'rgba(228,237,245,0.6)', '#E4EDF5'] as const,
+} as const;

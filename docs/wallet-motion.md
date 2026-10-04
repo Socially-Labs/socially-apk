@@ -1,4 +1,8 @@
-# Wallet motion reference
+# Archived Wallet motion reference
+
+This study describes the previous Pay/Request-inspired Wallet controls. The
+October 5 navy balance-card reference supersedes that layout and motion. The
+current Wallet uses four fixed quick actions; the following notes are historical.
 
 Source: https://cdn.bestdesignsonx.com/amplify_video/2104845613175283713/vid/avc1/960x960/qSA3JfArQorehaBb.mp4
 
@@ -6,7 +10,7 @@ The October 2 screenshot supplies the wallet layout and artwork direction. The
 video supplies the Pay/Request control labels, shapes, and interaction. Holdings
 are preview data; payment, contact, and QR sheets describe the unconnected state.
 
-The latest layout follows the full-height wallet screenshot: Wallet and its
+The earlier layout followed the full-height wallet screenshot: Wallet and its
 subtitle sit in the header with a Settings gear. Total Balance includes a working
 visibility toggle. Receive on Solana is its own capsule with a deposit description;
 Deposit and Withdraw sit below as separate capsules with subtitles and gradient

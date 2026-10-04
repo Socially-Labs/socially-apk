@@ -1,23 +1,18 @@
 import { useId } from 'react';
 import { Platform } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Polygon, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Stop } from 'react-native-svg';
 
 import { type MarketSymbol } from '@/constants/portfolio';
 import { Dashboard, WalletPalette } from '@/constants/theme';
 
 const decorative = Platform.OS === 'web' ? { 'aria-hidden': true as const } : { accessible: false };
 
-export function TokenIcon({ symbol, size = 40, glossy = false }: { symbol: MarketSymbol | 'USDC'; size?: number; glossy?: boolean }) {
+export function TokenIcon({ symbol, size = 40 }: { symbol: MarketSymbol | 'USDC'; size?: number }) {
   const gradient = `token-${useId().replace(/:/g, '')}`;
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48" {...decorative}>
-      {glossy && <Defs><RadialGradient id={`${gradient}-surface`} cx="35%" cy="20%" r="90%">
-        <Stop offset="0" stopColor={symbol === 'USDC' ? '#75DDFF' : '#FF9A13'} />
-        <Stop offset="0.55" stopColor={symbol === 'USDC' ? '#249AEE' : '#FF9B20'} />
-        <Stop offset="1" stopColor={symbol === 'USDC' ? '#85C6F5' : '#FFE481'} />
-      </RadialGradient></Defs>}
       {symbol === 'USDC' ? <>
-        <Circle cx="24" cy="24" r="24" fill={glossy ? `url(#${gradient}-surface)` : WalletPalette.usdc} />
+        <Circle cx="24" cy="24" r="24" fill={WalletPalette.usdc} />
         <Path d="M17 9a17 17 0 0 0 0 30M31 9a17 17 0 0 1 0 30M24 11v4m0 18v4m6-18c-1-5-12-5-12 1 0 6 12 2 12 8 0 6-11 6-12 1" fill="none" stroke={WalletPalette.white} strokeWidth="2.5" strokeLinecap="round" />
       </> : symbol === 'SOL' ? <>
         <Defs><LinearGradient id={gradient} x1="0" y1="1" x2="1" y2="0">
@@ -26,7 +21,7 @@ export function TokenIcon({ symbol, size = 40, glossy = false }: { symbol: Marke
         <Circle cx="24" cy="24" r="24" fill="#071324" />
         <Path d="m15 12-4 5h23l4-5H15Zm-4 9 4 5h23l-4-5H11Zm4 9-4 5h23l4-5H15Z" fill={`url(#${gradient})`} />
       </> : symbol === 'BTC' ? <>
-        <Circle cx="24" cy="24" r="24" fill={glossy ? `url(#${gradient}-surface)` : '#FF991D'} />
+        <Circle cx="24" cy="24" r="24" fill="#FF991D" />
         <Path transform="rotate(14 24 24)" d="M20 9v5m5-5v5m-5 20v5m5-5v5M15 14h12c9 0 9 10 0 10H17h11c10 0 10 10 0 10H15m4-20v20" fill="none" stroke="white" strokeWidth="3.1" />
       </> : <>
         <Circle cx="24" cy="24" r="24" fill="#D7DDE8" />

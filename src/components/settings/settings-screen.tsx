@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { BookOpen, ChartNoAxesColumn, ChevronRight, FileText, Gift, LifeBuoy, LogOut, Pencil, ShieldCheck, Users, Info, type LucideIcon } from 'lucide-react-native';
+import { Monitor, ChevronRight, FileText, UserRoundPlus, LifeBuoy, LogOut, Pencil, LockKeyhole, Users, Info, type LucideIcon } from 'lucide-react-native';
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
@@ -64,21 +64,20 @@ export default function SettingsScreen() {
     </AuthButton>
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     <SettingsGroup title="Preferences">
-      <SettingsRow icon={ChartNoAxesColumn} title="Display" subtitle="Balance visibility and appearance" section="display" last />
+      <SettingsRow icon={Monitor} title="Display" subtitle="Balance visibility and appearance" section="display" last />
     </SettingsGroup>
     <SettingsGroup title="Your community">
-      <SettingsRow icon={Gift} title="Refer a friend" subtitle="Invite someone aboard" section="referral" />
+      <SettingsRow icon={UserRoundPlus} title="Refer a friend" subtitle="Invite someone aboard" section="referral" />
       <SettingsRow icon={LifeBuoy} title="Help & support" subtitle="We’re here to help" section="support" last />
     </SettingsGroup>
     <SettingsGroup title="Legal & about">
       <SettingsRow icon={FileText} title="Terms of Service" section="terms" />
-      <SettingsRow icon={ShieldCheck} title="Privacy Policy" section="privacy" />
+      <SettingsRow icon={LockKeyhole} title="Privacy Policy" section="privacy" />
       <SettingsRow icon={Info} title="About Socially" subtitle={`Version ${appVersion}`} section="about" last />
     </SettingsGroup>
     <AuthButton testID="settings-sign-out" accessibilityRole="button" onPress={() => setLogoutOpen(true)} style={styles.logout}>
       <LogOut size={20} color={S.danger} strokeWidth={1.8} /><Text style={styles.logoutText}>{previewing ? 'Back to sign in' : 'Log out'}</Text>
     </AuthButton>
-    <View style={styles.footer}><BookOpen size={12} color={S.secondary} /><Text style={styles.footerText}>Your next chapter starts here.</Text></View>
     <LogoutSheet visible={logoutOpen} onClose={() => setLogoutOpen(false)} />
   </DashboardShell>;
 }
@@ -108,6 +107,4 @@ const styles = StyleSheet.create({
   logout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 54, marginTop: 24, borderRadius: 20, backgroundColor: S.surface },
   logoutText: { fontFamily: InterFont.medium, fontSize: 14, color: S.danger },
   error: { fontFamily: InterFont.regular, fontSize: 13, lineHeight: 19, color: S.danger, marginTop: 12 },
-  footer: { alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, marginTop: 19 },
-  footerText: { fontFamily: InterFont.regular, fontSize: 10, lineHeight: 15, color: S.secondary },
 });

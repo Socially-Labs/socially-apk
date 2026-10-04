@@ -1,0 +1,23 @@
+{
+  "tool": "Built-in image_gen.imagegen",
+  "reference": "User-supplied Discover screen image, 2026-10-04",
+  "assets": [
+    {
+      "path": "voyage-cover.png",
+      "use": "Scenic Discover background",
+      "prompt": "Create ONLY a background artwork asset inspired closely by the TOP scenery in the provided app screenshot. No app, no UI, no text, no status bar, no cards, no people, no lettering. Wide landscape illustration, approximately 1536x1024. Luxurious airy coastal scene at early morning: pale blue luminous sky, calm silver-blue sea, beautiful dark navy-sailed yacht on the right half, white limestone Mediterranean arches and terrace on the far right with a navy nautical banner and fine gold wheel emblem, warm peach sunlight. The entire left 55% must be uncluttered pale sky and misty sea so dark app headline text remains readable over it. Horizon at approximately 65% down the image. Dreamy polished photorealistic 3D illustration, the same refined maritime mood and colors as the reference. Keep the yacht and architecture on the right, clear left negative space. No letters, text, watermarks or screenshot framing."
+    },
+    {
+      "path": "captain-portraits.png",
+      "use": "Four-column, two-row illustrated avatar sprite sheet; clipped in the app",
+      "prompt": "Create one single production sprite-sheet bitmap asset for Captain profile avatars inspired by the illustrated profile portraits in this app reference. EXACTLY four columns and two rows of equal square portrait cells, total landscape canvas 2:1 approximately 2048x1024. No padding, gutters, borders, rounded corners, letters, names or text. All cells individually filled edge to edge with their portrait, bust and face centered for cropping. Cohesive sophisticated semi-realistic illustrated digital concept-art portraits, distinct trader identities, cinematic soft lighting, nautical palette, recognizable even at small sizes. Left to right top row: (1) mysterious hooded navigator in navy cloak against warm dusk sea, face partially visible, reference featured Atlas mood; (2) thoughtful woman with short dark blue hair in side profile against lavender coastal sky, reference Solstice mood; (3) mature explorer man wearing tan coat, sandy neutral light; (4) confident woman in dark green coat near a teal sea. Left to right bottom row: (5) young navigator in blue hood with cool electric-blue rim light, reference Nova mood; (6) thoughtful woman with silver hair and calm blue-gray palette; (7) man in dark wide-brim hat in profile, warm amber sunset, reference Drift mood; (8) understated pale blue sailing captain portrait. This is one rectangular sprite sheet consumed by code, not a UI mockup. Exactly 4x2 square cells."
+    }
+  ],
+  "supplied_assets": [
+    {
+      "path": "captain-horizon.png",
+      "use": "User-supplied coastal Captain scene for Discover header and subdued card background",
+      "source": "User attachment, October 4, 2026"
+    }
+  ]
+}
