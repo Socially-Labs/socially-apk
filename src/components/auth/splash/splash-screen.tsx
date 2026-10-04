@@ -1,5 +1,4 @@
 import Constants from 'expo-constants';
-import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
@@ -16,6 +15,7 @@ import { AUTH_TEST_MODE, useTestAccess } from '@/auth/test-access';
 import { SplashSignInCard } from '@/components/auth/splash/splash-sign-in-card';
 import { buildTimeline, progress, traitsOf, transition, type SplashEvent } from '@/components/auth/splash/splash-timeline';
 import { VoyageScene } from '@/components/auth/splash/splash-voyage';
+import { LogoLoader } from '@/components/shared/brand/logo-loader';
 import { BrandFont, InterFont } from '@/constants/fonts';
 
 const APP_NAME = (Constants.expoConfig?.name ?? 'Socially').trim().toUpperCase() || 'SOCIALLY';
@@ -207,14 +207,7 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
         accessibilityRole="summary"
         accessibilityLabel={`${APP_NAME}. Join the voyage.`}>
         <View style={styles.icon}>
-          <Image
-            source={require('@/assets/images/splash-icon.png')}
-            style={StyleSheet.absoluteFill}
-            contentFit="contain"
-            transition={0}
-            accessibilityElementsHidden
-            importantForAccessibility="no"
-          />
+          <LogoLoader size={56} loading={!isReady && !authGraceOver} />
         </View>
         <Text style={styles.name} maxFontSizeMultiplier={1.2}>{APP_NAME}</Text>
         <Text style={styles.tagline} maxFontSizeMultiplier={1.2}>JOIN THE VOYAGE</Text>

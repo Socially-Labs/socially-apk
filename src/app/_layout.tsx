@@ -4,11 +4,13 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View, useColorScheme } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 
 import { AuthProvider } from '@/auth/auth-provider';
 import { useAuth } from '@/auth/session';
 import { TestAccessProvider, useTestAccess } from '@/auth/test-access';
 import { SplashOverlay } from '@/components/auth/splash/splash-screen';
+import { BootLoadingScreen } from '@/components/auth/splash/boot-loading-screen';
 import { IntroCompleteContext } from '@/components/auth/intro-context';
 import { AppFontMap } from '@/constants/fonts';
 import { SettingsProvider } from '@/components/settings/settings-provider';
@@ -29,6 +31,7 @@ export default function RootLayout() {
 }
 
 function AuthNavigator() {
+  const reduceMotion = useReducedMotion();
   const { isAuthenticated } = useAuth();
   const { hasTestAccess } = useTestAccess();
   const canEnterApp = isAuthenticated || hasTestAccess;
@@ -39,7 +42,7 @@ function AuthNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={canEnterApp}>
         <Stack.Screen name="(app)" />
-        <Stack.Screen name="account/[section]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="account/[section]" options={{ animation: reduceMotion ? 'fade' : 'default', gestureEnabled: true, gestureDirection: 'horizontal' }} />
       </Stack.Protected>
     </Stack>
   );
@@ -47,6 +50,10 @@ function AuthNavigator() {
 
 function AppLayout() {
   const colorScheme = useColorScheme();
+  const { isAuthenticated, isReady } = useAuth();
+  const { hasTestAccess } = useTestAccess();
+  const [authTimedOut, setAuthTimedOut] = useState(false);
+  const [introMode, setIntroMode] = useState<'app' | 'sign-in' | null>(null);
   const [splashComplete, setSplashComplete] = useState(false);
   const completeSplash = useCallback(() => setSplashComplete(true), []);
   // On native these are usually already embedded by the expo-font config plugin
@@ -62,6 +69,25 @@ function AppLayout() {
   }, [fontsLoaded, fontError, fontsTimedOut]);
 
   const fontsSettled = fontsLoaded || fontError !== null || fontsTimedOut;
+  const bootSettled = fontsSettled && (isReady || hasTestAccess || authTimedOut);
+  const canEnterApp = isAuthenticated || hasTestAccess;
+  // Decide once from the settled session; later sign-in keeps its existing exit fade.
+  if (bootSettled && introMode === null) {
+    setIntroMode(canEnterApp ? 'app' : 'sign-in');
+    if (canEnterApp) setSplashComplete(true);
+  }
+
+  useEffect(() => {
+    if (isReady || hasTestAccess) return;
+    const failsafe = setTimeout(() => setAuthTimedOut(true), 2500);
+    return () => clearTimeout(failsafe);
+  }, [isReady, hasTestAccess]);
+
+  useEffect(() => {
+    if (introMode !== 'app') return;
+    // Restored sessions open immediately; the logo never imposes a minimum wait.
+    SplashScreen.hideAsync().catch(() => {});
+  }, [introMode]);
 
   // Keep the navigator mounted while fonts load; the native splash covers it
   // until the overlay is ready. Keep both native wrappers too: switching
@@ -74,13 +100,15 @@ function AppLayout() {
         <View
           style={styles.root}
           collapsable={false}
+          pointerEvents={splashComplete ? 'auto' : 'none'}
           accessibilityElementsHidden={!splashComplete}
           importantForAccessibility={splashComplete ? 'auto' : 'no-hide-descendants'}>
           <IntroCompleteContext.Provider value={splashComplete}>
             <SettingsProvider><AuthNavigator /></SettingsProvider>
           </IntroCompleteContext.Provider>
         </View>
-        {fontsSettled && !splashComplete && <SplashOverlay onComplete={completeSplash} />}
+        {introMode === 'sign-in' && !splashComplete && <SplashOverlay onComplete={completeSplash} />}
+        {introMode === null && <BootLoadingScreen />}
       </View>
     </ThemeProvider>
   );
