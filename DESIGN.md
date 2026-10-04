@@ -52,6 +52,7 @@ These are the source of truth. This document describes them; it does not overrid
 | Settings cards, profile badge, forms and type sizes | `src/constants/theme.ts` → `SettingsPalette` |
 | Splash water highlights and troughs | `src/constants/theme.ts` → `SplashWaterPalette` |
 | Floating detail sheet surfaces and motion | `src/constants/theme.ts` → `DashboardSheetTheme` |
+| Shared bottom navigation colours and shadows | `src/constants/theme.ts` → `NavigationPalette` |
 | Interaction pacing and press springs | `src/constants/motion.ts` → `Motion` |
 | Discover cards, charts, risk and profile surfaces | `src/constants/theme.ts` → `DiscoverPalette` |
 | Inter family names, weight map | `src/constants/fonts.ts` → `InterFont`, `InterWeightMap`, `interFamily()` |
@@ -367,7 +368,7 @@ explains intended permissions without asserting that the vault is already live.
   supplied in `assets/images/discover/captain-horizon.png`, a two-line heading,
   translucent search and strategy pills, and a dark navy Captain card with subdued
   landscape imagery, a glowing blue chart and mint positive returns. Discover's
-  bottom navigation shares the same Home capsule and white right-hand capsule
+  bottom navigation shares the same coastal navy Home capsule and pale blue right-hand capsule
   as Home, Wallet and Settings. Only the selected state changes between tabs;
   screen-specific backgrounds, icon circles and destination symbols are avoided.
   Reference strategy icons use a compass, rising chart, cube, leaf and flame. No extra badge
@@ -391,6 +392,10 @@ explains intended permissions without asserting that the vault is already live.
   is in the background. Reduced motion and native screen readers use manual
   navigation; motion preference changes take effect immediately. Search, filters,
   and Saved use compact white result rows. Shared floating navigation remains consistent across tabs.
+  `NavigationPalette` reuses the Wallet’s navy for active Home and the selected
+  icon circle, with ivory foregrounds, muted blue inactive controls and a pale
+  blue tray. Keep these colours shared across screens; selection changes colour
+  without changing tab size, position or hit targets.
   The main heading is 30px, carousel return 27px, row return 19px, and profile
   return 32px. Return and drawdown stay paired for the same period. Strategy chips
   filter directly; the ranking sheet holds time windows, categories and sorting.

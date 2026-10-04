@@ -12,7 +12,7 @@ import { selectionFeedback } from '@/components/shared/feedback';
 import { ConnectionNotice } from './connection-notice';
 import { InterFont } from '@/constants/fonts';
 import { Motion } from '@/constants/motion';
-import { Dashboard } from '@/constants/theme';
+import { Dashboard, NavigationPalette as N } from '@/constants/theme';
 
 function VoyageTab({ isFocused, label, icon: Icon, style: _style, compact = false, onPress, ...props }: TabTriggerSlotProps & { label: string; icon: LucideIcon; compact?: boolean }) {
   const isHome = label === 'Home';
@@ -25,15 +25,15 @@ function VoyageTab({ isFocused, label, icon: Icon, style: _style, compact = fals
       {isHome ? <>
         {/* Clip the painted surface separately so the outer shadow/focus ring stays round and visible. */}
         <View style={[StyleSheet.absoluteFill, styles.homeSurface]} pointerEvents="none">
-          <LinearGradient colors={isFocused ? Dashboard.activeGradient : ['#8191AB', '#6C7E9A']}
+          <LinearGradient colors={isFocused ? N.activeGradient : N.homeInactiveGradient}
             style={[StyleSheet.absoluteFill, styles.homeGradient]} />
         </View>
         <View style={styles.homeIcon}>
-          <Icon size={24} color="#FFFFFF" strokeWidth={1.8} />
+          <Icon size={24} color={N.primaryInk} strokeWidth={1.8} />
         </View>
         <Text style={styles.homeLabel}>Home</Text>
       </> : <View style={styles.iconCircle}>
-        <Icon size={22} color={isFocused ? '#425A80' : '#7183A1'} strokeWidth={isFocused ? 2 : 1.8} />
+        <Icon size={22} color={isFocused ? N.selectedInk : N.inactiveInk} strokeWidth={isFocused ? 2 : 1.8} />
       </View>}
     </AuthButton>
   );
@@ -91,15 +91,15 @@ const styles = StyleSheet.create({
   slot: { flex: 1 },
   routeList: { display: 'none' },
   bar: { position: 'absolute', zIndex: 20, height: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  home: { width: 138, height: 60, borderRadius: 30, outlineStyle: 'solid', backgroundColor: '#657A9C', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 11, borderWidth: 1, borderColor: 'rgba(255,255,255,0.45)', boxShadow: '0 8px 24px rgba(57,78,113,0.24)' },
+  home: { width: 138, height: 60, borderRadius: 30, outlineStyle: 'solid', backgroundColor: N.primarySurface, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 11, borderWidth: 1, borderColor: N.primaryBorder, boxShadow: N.primaryShadow },
   homeSurface: { borderRadius: 29, overflow: 'hidden' },
   homeGradient: { borderRadius: 29 },
   compactHome: { width: 122 },
-  homeLabel: { fontFamily: InterFont.medium, fontSize: 15, color: '#FFFFFF' },
+  homeLabel: { fontFamily: InterFont.medium, fontSize: 15, color: N.primaryInk },
   homeIcon: { width: 24, height: 24 },
-  iconGroup: { width: 174, height: 56, paddingHorizontal: 7, borderRadius: 28, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.9)', borderWidth: 1, borderColor: '#FFFFFF', boxShadow: '0 6px 22px rgba(81,103,140,0.1)' },
+  iconGroup: { width: 174, height: 56, paddingHorizontal: 7, borderRadius: 28, flexDirection: 'row', alignItems: 'center', backgroundColor: N.tray, borderWidth: 1, borderColor: N.trayBorder, boxShadow: N.trayShadow },
   compactIconGroup: { width: 150 },
   iconTab: { flex: 1, height: 48, borderRadius: 24, outlineStyle: 'solid', alignItems: 'center', justifyContent: 'center' },
   iconCircle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  selectedCircle: { position: 'absolute', top: 7, width: 40, height: 40, borderRadius: 20, backgroundColor: '#E7EDF6' },
+  selectedCircle: { position: 'absolute', top: 7, width: 40, height: 40, borderRadius: 20, backgroundColor: N.selected, borderWidth: 1, borderColor: N.selectedBorder },
 });
