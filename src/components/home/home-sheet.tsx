@@ -1,16 +1,16 @@
 import { DashboardSheet } from '@/components/shared/dashboard/dashboard-sheet';
 import { AuthButton } from '@/components/shared/motion';
 import { BrandFont, InterFont } from '@/constants/fonts';
-import { portfolio } from '@/constants/portfolio';
 import { Dashboard } from '@/constants/theme';
 import { Image } from 'expo-image';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { CrewPortfolioBreakdown } from './crew-vaults';
 
 export type HomeSheetKind = 'notifications' | 'portfolio' | 'profile';
 
-export function HomeSheet({ sheet, greeting, email, bio, pending, error, previewing, onClose, onSettings, onSignOut }: {
+export function HomeSheet({ sheet, greeting, email, bio, pending, error, previewing, hidden, onClose, onSettings, onSignOut }: {
   sheet: HomeSheetKind | null; greeting: string; email: string | null; bio: string; pending: boolean; error: string | null;
-  previewing: boolean; onClose: () => void; onSettings: () => void; onSignOut: () => void;
+  previewing: boolean; hidden: boolean; onClose: () => void; onSettings: () => void; onSignOut: () => void;
 }) {
   return (
     <DashboardSheet visible={sheet !== null} title={sheet === 'profile' ? 'Your profile' : sheet === 'portfolio' ? 'Portfolio overview' : 'Notifications'} onClose={onClose}>
@@ -27,14 +27,9 @@ export function HomeSheet({ sheet, greeting, email, bio, pending, error, preview
           {pending ? <ActivityIndicator color={Dashboard.ink} /> : <Text style={styles.signOutText}>{previewing ? 'Back to sign in' : 'Sign out'}</Text>}
         </AuthButton>
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-      </View> : sheet === 'portfolio' ? <View style={styles.sheetContent}>
-        <Text style={styles.sheetCopy}>Total staked across 3 markets</Text>
-        <Text style={styles.sheetTotal}>{portfolio.totalStaked}</Text>
-        <Text style={styles.sheetProfit}>{portfolio.pnl} total PnL</Text>
-        <Text style={styles.sheetCopy}>SOL 40% · BTC 37% · ETH 23%</Text>
-      </View> : <View style={styles.notice}>
+      </View> : sheet === 'portfolio' ? <CrewPortfolioBreakdown hidden={hidden} /> : <View style={styles.notice}>
         <View style={styles.noticeDot} />
-        <View style={styles.noticeText}><Text style={styles.sheetTitle}>Welcome aboard.</Text><Text style={styles.sheetCopy}>Your markets, crew, and wallet are all in one place.</Text></View>
+        <View style={styles.noticeText}><Text style={styles.sheetTitle}>Welcome aboard.</Text><Text style={styles.sheetCopy}>Explore Captains and keep track of your vault investments from Home.</Text></View>
       </View>}
     </DashboardSheet>
   );

@@ -7,14 +7,18 @@ import { Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'rea
 import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Dashboard, WalletPalette } from '@/constants/theme';
+import { Dashboard, DiscoverPalette, WalletPalette } from '@/constants/theme';
 import { Motion } from '@/constants/motion';
 
 export function DashboardShell({ children, testID, variant = 'default', keyboardAvoided = false }: {
-  children: ReactNode; testID?: string; variant?: 'default' | 'wallet'; keyboardAvoided?: boolean;
+  children: ReactNode; testID?: string; variant?: 'default' | 'wallet' | 'crew' | 'captain'; keyboardAvoided?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  const crew = variant === 'crew';
+  const captain = variant === 'captain';
+  const scenicHome = crew || captain;
+  const sceneryHeight = scenicHome ? Math.max(390, Math.min(480, height * 0.55)) : Math.max(370, height * 0.52);
   const reduceMotion = useReducedMotion();
   const opacity = useSharedValue(1);
   useFocusEffect(useCallback(() => {
@@ -24,28 +28,34 @@ export function DashboardShell({ children, testID, variant = 'default', keyboard
     return () => { cancelAnimation(opacity); opacity.set(1); };
   }, [opacity, reduceMotion]));
   const contentStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
-  return (
-    <View style={styles.screen} testID={testID}>
-      <StatusBar style="dark" />
+  const scenery = (
       <View testID="dashboard-scenery" style={StyleSheet.absoluteFill} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Image
-          source={require('@/assets/images/auth/voyage-blue.png')}
-          style={[styles.artwork, { height: Math.max(370, height * 0.52) }]}
-          contentFit="fill" transition={0} />
-        <View style={[styles.veil, { height: Math.max(370, height * 0.52) }, variant === 'wallet' && { backgroundColor: WalletPalette.veil }]} />
+          source={captain ? require('@/assets/images/home/captain-helm.webp') : crew ? require('@/assets/images/home/crew-harbor.webp') : require('@/assets/images/auth/voyage-blue.png')}
+          style={[styles.artwork, { height: sceneryHeight }]}
+          contentFit={scenicHome ? 'cover' : 'fill'} contentPosition={scenicHome ? { left: '60%', top: '50%' } : 'center'} transition={0} />
+        <View style={[styles.veil, { height: sceneryHeight }, scenicHome && { backgroundColor: 'transparent' }, variant === 'wallet' && { backgroundColor: WalletPalette.veil }]} />
+        {scenicHome ? <LinearGradient colors={captain ? DiscoverPalette.captainSceneryVeil : DiscoverPalette.sceneryVeil} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.artwork, { height: sceneryHeight }]} /> : null}
         <LinearGradient
           colors={['rgba(245,247,251,0)', 'rgba(245,247,251,0.84)', Dashboard.background]}
           locations={[0, 0.68, 1]}
-          style={[styles.fade, { top: Math.max(240, height * 0.32), height: height * 0.3 }, variant === 'wallet' && { top: height * 0.24, height: height * 0.28 }]} />
+          style={[styles.fade, { top: Math.max(240, height * 0.32), height: height * 0.3 }, scenicHome && { top: sceneryHeight - 150, height: 150 }, variant === 'wallet' && { top: height * 0.24, height: height * 0.28 }]} />
       </View>
+  );
+  return (
+    <View style={styles.screen} testID={testID}>
+      <StatusBar style="dark" />
+      {scenicHome ? null : scenery}
       <ScrollView
+        testID={scenicHome ? 'home-scroll' : undefined}
         keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         automaticallyAdjustKeyboardInsets={!keyboardAvoided}
         style={styles.scroll} showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.content, {
-          paddingHorizontal: variant === 'wallet' ? 20 : 15,
+          paddingHorizontal: variant === 'wallet' || scenicHome ? 20 : 15,
           paddingTop: Math.max(insets.top + 8, variant === 'wallet' ? 48 : 54), paddingBottom: Math.max(insets.bottom + 120, 142),
         }]}>
+        {scenicHome ? scenery : null}
         <Animated.View style={[styles.measure, contentStyle]}>{children}</Animated.View>
       </ScrollView>
     </View>

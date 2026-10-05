@@ -12,6 +12,7 @@ import { appVersion } from './settings-detail-config';
 import { useAccountSettings } from './settings-provider';
 import { SettingsSurface } from './settings-surface';
 import { LogoutSheet } from './settings-logout';
+import { DeveloperOptions } from './developer-options';
 
 export { appVersion } from './settings-detail-config';
 function openSection(section: string) { router.push({ pathname: '/account/[section]', params: { section } }); }
@@ -65,6 +66,7 @@ export default function SettingsScreen() {
       <SettingsRow icon={UserRoundPlus} title="Invite a friend" subtitle="Good company. A shared horizon." section="referral" />
       <SettingsRow icon={HeartHandshake} title="Help & support" subtitle="A little help when you need it" section="support" last />
     </SettingsGroup>
+    {__DEV__ ? <SettingsGroup title="Developer options"><DeveloperOptions /></SettingsGroup> : null}
     <View style={styles.about}>
       <AuthButton testID="settings-about" accessibilityRole="button" onPress={() => openSection('about')} style={styles.aboutLink}>
         <Info size={16} color={S.secondary} /><Text style={styles.footerText}>About Socially</Text><ChevronRight size={14} color={S.secondary} />

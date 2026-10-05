@@ -2,12 +2,13 @@ import { ProfileAvatar } from '@/components/settings/profile-avatar';
 import type { ProfileAvatarKind } from '@/components/settings/settings-provider';
 import { AuthButton } from '@/components/shared/motion';
 import { InterFont } from '@/constants/fonts';
-import { Dashboard } from '@/constants/theme';
+import { Dashboard, DiscoverPalette } from '@/constants/theme';
 import { Bell } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
-export function HomeHeader({ name, avatar, photoUri, greeting, onProfile, onNotifications }: {
+export function HomeHeader({ name, avatar, photoUri, greeting, role = 'crew', onProfile, onNotifications }: {
   name: string; avatar: ProfileAvatarKind; photoUri?: string | null; greeting: string; onProfile: () => void; onNotifications: () => void;
+  role?: 'crew' | 'captain';
 }) {
   return (
     <View style={styles.header}>
@@ -16,7 +17,7 @@ export function HomeHeader({ name, avatar, photoUri, greeting, onProfile, onNoti
       </AuthButton>
       <View style={styles.greeting}>
         <Text style={styles.hello} accessibilityRole="header">Hello, {greeting}</Text>
-        <Text style={styles.subtitle}>Captain mode active.</Text>
+        <Text style={[styles.subtitle, { color: DiscoverPalette.secondary }]}>{role === 'captain' ? 'Your Captain dashboard' : 'Your Crew portfolio'}</Text>
       </View>
       <AuthButton testID="home-notifications" accessibilityRole="button" accessibilityLabel="Notifications, unread update"
         onPress={onNotifications} style={styles.notification}>

@@ -1,0 +1,12 @@
+{
+  "generator": "built-in image_gen",
+  "created": "2026-10-05",
+  "source": "crew-harbor.png",
+  "runtimeAsset": "crew-harbor.webp",
+  "referenceImages": [
+    "../auth/coastal-voyage.png",
+    "../discover/investment-coast.webp",
+    "../discover/captain-horizon.png"
+  ],
+  "prompt": "Use case: stylized-concept.\nAsset type: production background artwork for the upper hero of Socially's mobile Crew investment home, no user interface baked into image.\nReference images: the existing Socially coastal-voyage, investment-coast and captain-horizon artwork are style references: blue Mediterranean sky, ivory limestone, fine cinematic fantasy realism, quiet navy maritime details, warm early light.\nPrimary request: create a distinct home harbor scene from a Crew member's perspective, standing on an ivory stone coastal terrace looking out toward three elegant small sailing vessels in a sheltered blue bay. One nearer sailboat right of center, two distant sailboats toward the horizon; all white fabric sails, subtle navy hulls. Distant pale island architecture and mountains. A low stone terrace edge at the bottom, a modest navy cloth and brass compass detail at far lower left, restrained and atmospheric. No hooded character, no floating financial cards. The ships represent separate Captain vaults as part of one shared voyage.\nComposition: landscape 3:2; sky occupies top 40 percent, clean light pale sky especially upper left for real interface text, main boat silhouette in middle right, water occupies center and bottom, limestone restrained at edges. Important objects within central 70 percent to support a portrait phone cover crop. Scene needs to remain recognizable in a 390px-wide by 350px-high crop. Perspective open and spacious, not an arch blocking the scene.\nStyle: polished cinematic realistic painted fantasy environment closely matching the supplied references, natural water reflections and soft airy atmosphere.\nColors: pearl ivory limestone, powder blue sky, slate and pale azure water, tiny navy maritime accents and very restrained antique brass. Soft morning sunlight, subtle warm horizon but predominantly cool.\nConstraints: artwork only; absolutely no text, numbers, letters, logos, watermark, app frame, graphs, generated UI, people, coin symbols. Crisp boats and architecture with soft atmospheric distance, avoid clutter."
+}
