@@ -54,7 +54,7 @@ export default function WalletScreen() {
   const assets = walletAssets.filter(asset => !hiddenTokens.includes(asset.symbol) && (network === 'All Networks' || asset.network === network));
   const navigationClearance = Math.max(insets.bottom + 12, 42) + 60 + 20;
   return <View style={styles.screen} testID="wallet-dashboard"><StatusBar style="dark" />
-    <ScrollView style={styles.scroll} removeClippedSubviews={false} showsVerticalScrollIndicator={false}
+    <ScrollView testID="wallet-scroll" style={styles.scroll} removeClippedSubviews={false} showsVerticalScrollIndicator={false}
       contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top + 8, 48), paddingBottom: navigationClearance }]}>
       <View style={styles.header} testID="wallet-header">
         <View style={styles.headerIcon}><Wallet size={23} color={W.selectedInk} strokeWidth={1.8} /></View>
@@ -72,7 +72,7 @@ export default function WalletScreen() {
       <WalletActions onAction={showSheet} compact={compact} />
       <View style={styles.sectionHeading}>
         <View style={[styles.tabs, compact && styles.compactTabs]} testID="wallet-tabs">
-          {tabs.map(item => <AuthButton key={item} accessibilityRole="button" accessibilityState={{ selected: tab === item }} onPress={() => changeTab(item)} testID={`wallet-tab-${item.toLowerCase()}`} style={[styles.tab, compact && styles.compactTab, tab === item && styles.activeTab]}><Text style={[styles.tabText, tab === item && styles.activeTabText]}>{item}</Text></AuthButton>)}
+          {tabs.map((item, index) => <AuthButton key={item} accessibilityRole="button" accessibilityState={{ selected: tab === item }} onPress={() => changeTab(item)} testID={`wallet-tab-${item.toLowerCase()}`} style={[styles.tab, compact && styles.compactTab, tab === item && styles.activeTab]}><Text style={[styles.tabText, tab === item && styles.activeTabText]}>{item}</Text>{index === 1 && tab === 'Assets' ? <View style={styles.tabDivider} pointerEvents="none" /> : null}</AuthButton>)}
         </View>
         {tab === 'Assets' ? <AuthButton accessibilityRole="button" accessibilityLabel={`Filter assets. ${network} selected`} testID="wallet-networks" onPress={() => showSheet('networks')} style={[styles.filter, compact && styles.compactFilter]}>
           <Text style={[styles.filterLabel, compact && styles.compactFilterLabel]} numberOfLines={1}>{network}</Text><ChevronDown size={13} color={W.ink} />
@@ -112,23 +112,24 @@ const styles = StyleSheet.create({
   title: { fontFamily: InterFont.semiBold, fontSize: W.headerTitleSize, lineHeight: 24, color: W.ink },
   subtitle: { fontFamily: InterFont.regular, fontSize: W.captionSize, lineHeight: 17, color: W.secondary },
   settingsButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: W.surface, alignItems: 'center', justifyContent: 'center', boxShadow: W.shadow },
-  sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 13 },
-  tabs: { flexDirection: 'row', backgroundColor: W.muted, borderRadius: 15, padding: 2 },
-  tab: { paddingHorizontal: 13, minHeight: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 13 },
+  sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 },
+  tabs: { flexDirection: 'row', backgroundColor: W.actionIcon, borderRadius: 16, borderCurve: 'continuous', borderWidth: 1, borderColor: W.border, padding: 2 },
+  tab: { paddingHorizontal: 13, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 13 },
   compactTabs: { flex: 1 },
   compactTab: { flex: 1, paddingHorizontal: 5 },
   compactFilter: { width: 92, paddingHorizontal: 7 },
-  compactFilterLabel: { fontSize: 11 },
-  activeTab: { backgroundColor: W.hero[1] },
+  compactFilterLabel: { fontSize: 12 },
+  activeTab: { backgroundColor: W.selected },
   tabText: { fontFamily: BrandFont.editorial, fontSize: 15, color: W.ink },
-  activeTabText: { color: W.heroInk },
-  filter: { minHeight: 36, paddingHorizontal: 10, borderRadius: 17, backgroundColor: W.muted, flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: '46%' },
+  activeTabText: { color: W.ink },
+  tabDivider: { position: 'absolute', right: 0, width: 1, height: 14, backgroundColor: W.balanceLine },
+  filter: { minHeight: 44, paddingHorizontal: 10, borderRadius: 22, backgroundColor: W.muted, flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: '46%' },
   filterLabel: { flexShrink: 1, fontFamily: BrandFont.editorial, fontSize: 13, color: W.ink },
   tabContent: { gap: 12 },
-  assetList: { gap: 7 },
-  manage: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: W.border, borderRadius: 20, paddingHorizontal: 15, minHeight: 64, marginTop: 13 },
+  assetList: { gap: 6 },
+  manage: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: W.border, borderRadius: 18, borderCurve: 'continuous', paddingHorizontal: 12, minHeight: 56 },
   manageIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: W.muted, alignItems: 'center', justifyContent: 'center' },
-  manageTitle: { fontFamily: BrandFont.editorial, fontSize: 17, color: W.ink },
+  manageTitle: { fontFamily: InterFont.semiBold, fontSize: 13, lineHeight: 18, color: W.ink },
   empty: { alignItems: 'center', padding: 24, gap: 13, borderRadius: 22, backgroundColor: W.assetSurface },
   emptyTitle: { fontFamily: BrandFont.editorial, fontSize: 23, color: W.ink, textAlign: 'center' },
   primaryButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 22, paddingHorizontal: 18, backgroundColor: W.hero[1], marginTop: 5 },
