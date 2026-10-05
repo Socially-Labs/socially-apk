@@ -25,15 +25,26 @@ they are not inferred source code from the reference.
 
 ## Theme and mobile adaptations
 
-The shared component uses existing Inter faces and dashboard ink, plus a pale
-blue-white gradient, 32pt corners, 8pt side margins, a circular close control,
-and a subtle inset content surface. Its height follows its contents and caps
+The selected visual reference is `design-previews/bottom-sheets/02-frosted-floating-no-close.png`.
+The shared component uses Inter titles, a translucent ice-blue gradient, a white
+rim, 36pt corners, 10pt side margins and at least 12pt bottom clearance. It has
+no corner close control. Web uses a 24px backdrop blur; supported iOS devices use
+the already installed glass module after both availability checks, and respect
+Reduce Transparency. Other native platforms use an opaque pearl-gradient
+fallback. Material layers ignore touches and accessibility traversal; the panel
+animates only its transform, keeping the glass layer at full opacity.
+Its height follows its contents and caps
 at 80% of the viewport. Long content scrolls inside the sheet. Bottom spacing
 accounts for the device safe area rather than copying the video's device frame.
 
 The reference's picker content and avatar changes are not added to the app.
-Wallet, profile, portfolio, notifications, market and captain details retain
-their own content and use the same presentation. The app behind the native
+Wallet, profile, notifications, market and captain details retain
+their own content and use the same presentation. Crew portfolio uses the chosen
+centred balance, inset performance chart and three-metric group. Existing sample
+data, period calculations and balance privacy back its contents; below 360pt,
+the summary switches to rows. Sheets without a custom footer receive a fixed
+52pt Done button. Caller-specific action footers remain outside the scroll area.
+The app behind the native
 Modal stays in place; the dimming backdrop supplies separation.
 
 The sheet stays mounted until its slide-out finishes. It retains the last
@@ -47,7 +58,7 @@ past 25% of the sheet's height (capped at 96pt), or a downward fling over 900pt/
 with at least 12pt travel, dismisses it. Dragging is restricted to the handle
 so content scrolling and child controls keep their own interactions. Upward
 dragging has resistance. Reduced motion presents and dismisses instantly;
-close, backdrop, platform back/Escape, and the handle accessibility escape
+Done, backdrop, platform back/Escape, and the handle accessibility escape
 remain available.
 
 ## Reproduce the inspection

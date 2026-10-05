@@ -399,11 +399,20 @@ explains intended permissions without asserting that the vault is already live.
   Your Crew, Earnings, and Create vault shortcuts finish the Home content;
   the vault list is available inside Manage vaults. Active, Deposits paused, and
   Draft labels provide context in the vault management sheets.
-  The shared detail sheet shows sample holdings, rules, Crew, fees, notifications,
+  The shared detail sheet shows sample holdings, rules, Crew, fees,
   and exit requests. Create vault adds an in-memory draft after name validation;
   pause/resume changes only the preview state. These controls deploy no vaults,
   move no funds, and grant no trading authority. Monetary values in every Captain
   sheet follow balance privacy. Generation prompts live beside both Home assets.
+  Both Home bells open notification concept 02: a pearl popover anchored beneath
+  the bell, with a small pointer, navy Inter text, mint count badge, and a 44px
+  mark-all-read control. Its width caps at 350px and its height at 390px, further
+  constrained by safe areas. Only the notification list scrolls; there is no
+  “See all notifications” footer. Tapping a row marks it read; Captain exit
+  requests open their existing detail sheet. Read state stays in memory and
+  controls the bell dot. The feed is explicitly labeled Sample updates, and
+  notification amounts follow balance privacy. Outside tap and Back/Escape
+  dismiss the popover; reduced motion skips the short entrance.
   Development builds show a Captain/Crew Home preview control in Settings under
   Developer options. The selection stays in memory across app tabs, leaves the
   saved signup role intact, and resets Home scroll and sheets when switching.
@@ -508,9 +517,16 @@ explains intended permissions without asserting that the vault is already live.
   animation layers also fall back to the still. The older arch-scene modules are
   no longer mounted by the auth flow.
 
-- `shared/dashboard/dashboard-sheet.tsx` adapts the October 2 modal reference to
-  the dashboard theme: 32px corners, 8px side insets, a grab handle, a centred
-  title, and a quiet inset body surface. The panel rises as one surface with a
+- `shared/dashboard/dashboard-sheet.tsx` uses the selected frosted floating
+  concept: 36px corners, 10px side insets, at least 12px bottom clearance, a grab
+  handle, a centred title and open content. A white rim and ice-blue gradient
+  surround the glass surface. Web blurs the backdrop; supported iOS devices use
+  the installed glass module, with an opaque pearl fallback on other native
+  platforms and when Reduce Transparency is enabled. There is no corner cross.
+  Sheets without a custom footer have a fixed 52px navy Done button. Crew’s
+  portfolio sheet uses a centred Cormorant balance, a mint chart with 44px period
+  targets, and a three-metric inset summary that stacks below 360px. Values and
+  chart descriptions honour balance privacy. The panel rises as one surface with a
   360ms spring and slides out over 260ms. The native modal and its last visible
   content stay mounted through the exit. The handle and heading support downward
   dragging, with a short drag returning to rest. A single haptic marks the dismiss
@@ -529,14 +545,19 @@ explains intended permissions without asserting that the vault is already live.
   implementation checklist and work that depends on live data.
 
 - Wallet keeps its original icon-led header: an 18px Wallet title, 11px
-  “Your on-chain balance” subtitle and direct Settings gear. The user's navy
-  balance-card reference applies to the main content below that header on a plain
-  pale surface. Treat content references as scoped changes; preserve the screen's
+  “Your on-chain balance” subtitle and direct Settings gear. The user's selected
+  frosted balance-card reference applies to the main content below that header on
+  a plain pale surface, sharing Home's ice-blue, navy and mint tokens. Treat
+  content references as scoped changes; preserve the screen's
   existing header and navigation unless the user explicitly replaces them.
   The bundled Cormorant Garamond semibold supplies its editorial type, including
   the 43px total, action labels, tabs and asset values. Inter supplies supporting
-  labels. A fine compass illustration sits inside the navy card. Four fixed
-  actions—Deposit, Send, Receive and Swap—open the existing connection sheets.
+  labels and the Manage tokens row. A fine pale-blue compass sits inside the
+  24px balance card with its white rim. Four 92px white action tiles—Deposit,
+  Send, Receive and Swap—open the existing connection sheets. The selected
+  Assets tab uses a pale-blue pill; tabs and utility controls have 44px targets.
+  The 58px token rows use white surfaces with fine blue borders and 18px corners.
+  Compact screens reduce icon and sparkline widths and let network labels wrap.
   Assets, Vaults and Activity have separate panels. Network filtering and local
   token visibility affect the asset list without changing the total balance.
   The preview assets are all tradable; Captain vault allocations remain zero
@@ -582,11 +603,17 @@ explains intended permissions without asserting that the vault is already live.
   version was also the broken one.
 - `explore.tsx` now selects Crew Discover or Captain Markets using the same role
   as Home. Settings’ development role preview switches both screens together.
-  Captain Markets uses a compact coastal header, token/mint search, and the same
-  navy, 24px-radius balance card as Home. The single vault selector controls the
+  Captain Markets uses a compact coastal header, token/mint search, and a pearl
+  frosted reserve card with 24px corners, navy editorial balance type and a mint
+  status pill. Its theme shares Home's navy, ice and mint through
+  `src/constants/theme/captain-markets.ts`. Market rows form a single white panel
+  with 20px outer corners and inset separators; first/last styling follows the
+  filtered FlatList so search results and Invested markets keep the same frame.
+  The single vault selector controls the
   available USDC reserve and Invested markets; public token prices stay visible
   when private balances are hidden. Top traded and Invested markets are the two
-  underlined tabs. Timeframe, asset type, liquidity, sorting and saved-market
+  underlined tabs. Timeframe, saved-market and filter controls use pale outlined
+  surfaces with 44px targets. Timeframe, asset type, liquidity, sorting and saved-market
   controls filter the local sample list. Rows open the shared pearl sheet with
   price chart, Buy/Sell, amount, Max and a fixed Review trade footer. Reviewing
   shows minimum receive, fee, exposure and remaining balance, and ends with Done.
