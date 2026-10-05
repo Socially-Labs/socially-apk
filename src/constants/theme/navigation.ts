@@ -1,18 +1,24 @@
+import { DiscoverPalette } from './discover';
 import { WalletPalette } from './wallet';
 
-/** Shared floating tabs use the same coastal navy as the wallet and Captain controls. */
+/**
+ * One coastal hue family, separated by lightness rather than competing blues.
+ * Only the current destination receives navy; inactive controls share a quiet
+ * pearl surface so Home does not look selected while another tab is open.
+ */
 export const NavigationPalette = {
-  activeGradient: [WalletPalette.hero[0], WalletPalette.hero[1]] as const,
-  homeInactiveGradient: ['#536B85', '#405874'] as const,
-  primarySurface: WalletPalette.hero[0],
+  activeGradient: [DiscoverPalette.ink, WalletPalette.ink] as const,
+  homeInactiveGradient: [DiscoverPalette.surface, '#F9FBFD'] as const,
+  homeInactiveInk: DiscoverPalette.secondary,
+  primarySurface: '#F9FBFD',
   primaryInk: WalletPalette.heroInk,
-  primaryBorder: 'rgba(202,222,237,0.5)',
-  primaryShadow: '0 6px 18px rgba(17,48,78,0.19)',
-  tray: 'rgba(241,246,250,0.97)',
-  trayBorder: 'rgba(209,223,234,0.95)',
-  trayShadow: '0 6px 20px rgba(30,57,82,0.12)',
-  selected: WalletPalette.hero[1],
-  selectedBorder: 'rgba(145,183,213,0.42)',
+  primaryBorder: DiscoverPalette.line,
+  primaryShadow: '0 5px 16px rgba(24,43,67,0.1)',
+  tray: '#F9FBFD',
+  trayBorder: DiscoverPalette.line,
+  trayShadow: '0 5px 16px rgba(24,43,67,0.08)',
+  selected: DiscoverPalette.ink,
+  selectedBorder: 'rgba(24,43,67,0.16)',
   selectedInk: WalletPalette.heroInk,
-  inactiveInk: '#546B82',
+  inactiveInk: DiscoverPalette.secondary,
 } as const;

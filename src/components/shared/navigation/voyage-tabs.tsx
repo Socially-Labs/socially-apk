@@ -21,7 +21,7 @@ function VoyageTab({ isFocused, label, icon: Icon, style: _style, compact = fals
       aria-selected={isFocused}
       onPress={event => { Keyboard.dismiss(); if (!isFocused) selectionFeedback(); onPress?.(event); }}
       testID={`nav-${label.toLowerCase()}`}
-      style={isHome ? [styles.home, compact && styles.compactHome] : styles.iconTab}>
+      style={isHome ? [styles.home, isFocused && styles.selectedHome, compact && styles.compactHome] : styles.iconTab}>
       {isHome ? <>
         {/* Clip the painted surface separately so the outer shadow/focus ring stays round and visible. */}
         <View style={[StyleSheet.absoluteFill, styles.homeSurface]} pointerEvents="none">
@@ -29,9 +29,9 @@ function VoyageTab({ isFocused, label, icon: Icon, style: _style, compact = fals
             style={[StyleSheet.absoluteFill, styles.homeGradient]} />
         </View>
         <View style={styles.homeIcon}>
-          <Icon size={24} color={N.primaryInk} strokeWidth={1.8} />
+          <Icon size={24} color={isFocused ? N.primaryInk : N.homeInactiveInk} strokeWidth={1.8} />
         </View>
-        <Text style={styles.homeLabel}>Home</Text>
+        <Text style={[styles.homeLabel, !isFocused && styles.inactiveHomeLabel]}>Home</Text>
       </> : <View style={styles.iconCircle}>
         <Icon size={22} color={isFocused ? N.selectedInk : N.inactiveInk} strokeWidth={isFocused ? 2 : 1.8} />
       </View>}
@@ -92,10 +92,12 @@ const styles = StyleSheet.create({
   routeList: { display: 'none' },
   bar: { position: 'absolute', zIndex: 20, height: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   home: { width: 138, height: 60, borderRadius: 30, outlineStyle: 'solid', backgroundColor: N.primarySurface, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 11, borderWidth: 1, borderColor: N.primaryBorder, boxShadow: N.primaryShadow },
+  selectedHome: { backgroundColor: N.selected, borderColor: N.selectedBorder },
   homeSurface: { borderRadius: 29, overflow: 'hidden' },
   homeGradient: { borderRadius: 29 },
   compactHome: { width: 122 },
   homeLabel: { fontFamily: InterFont.medium, fontSize: 15, color: N.primaryInk },
+  inactiveHomeLabel: { color: N.homeInactiveInk },
   homeIcon: { width: 24, height: 24 },
   iconGroup: { width: 174, height: 56, paddingHorizontal: 7, borderRadius: 28, flexDirection: 'row', alignItems: 'center', backgroundColor: N.tray, borderWidth: 1, borderColor: N.trayBorder, boxShadow: N.trayShadow },
   compactIconGroup: { width: 150 },
