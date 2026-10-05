@@ -1,1 +1,1 @@
-export { default } from '@/components/discover/discover-screen';
+export { default } from '@/components/discover/role-discover-screen';
