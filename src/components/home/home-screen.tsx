@@ -1,36 +1,51 @@
 import { authErrorMessage } from '@/auth/auth-errors';
 import { useAuth } from '@/auth/session';
 import { useTestAccess } from '@/auth/test-access';
-import { MarketList } from '@/components/home/market-list';
-import { PopularCaptains } from '@/components/home/popular-captains';
+import { useAppRole } from '@/hooks/use-app-role';
+import type { AccountRole } from '@/components/settings/profile-model';
 import { useAccountSettings } from '@/components/settings/settings-provider';
 import { DashboardShell } from '@/components/shared/dashboard/dashboard-shell';
-import { InterFont } from '@/constants/fonts';
-import { stakedMarkets } from '@/constants/portfolio';
-import { Dashboard } from '@/constants/theme';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useWindowDimensions } from 'react-native';
+import { CaptainOverview } from './captain-overview';
 import { HomeHeader } from './home-header';
 import { HomeSheet, type HomeSheetKind } from './home-sheet';
-import { PortfolioSummary } from './portfolio-summary';
+import { CrewHome } from './crew-home';
+import type { CaptainPanel } from './captain-home-types';
+import { sampleHomeNotifications } from '@/constants/home-notifications';
+import { NotificationPopover, type NotificationAnchor } from './notification-popover';
 
 export default function HomeScreen() {
+  const role = useAppRole();
+  // Changing the Settings preview starts a fresh Home, including scroll and sheets.
+  return <HomeContent key={role} role={role} />;
+}
+
+function HomeContent({ role }: { role: AccountRole }) {
   const { email, logout, isAuthenticated } = useAuth();
   const { hasTestAccess, leaveTestApp } = useTestAccess();
-  const { settings, updateProfileDraft } = useAccountSettings();
+  const { settings, ready: settingsReady, updateProfileDraft } = useAccountSettings();
   const { height, width } = useWindowDimensions();
   const compact = width < 360;
-  const insets = useSafeAreaInsets();
   const [sheet, setSheet] = useState<HomeSheetKind | null>(null);
+  const [captainPanel, setCaptainPanel] = useState<CaptainPanel | null>(null);
+  const [notificationAnchor, setNotificationAnchor] = useState<NotificationAnchor | null>(null);
+  const [readNotificationIds, setReadNotificationIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [portfolioHidden, setPortfolioHidden] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const previewing = hasTestAccess && !isAuthenticated;
   const firstName = settings.name.split(/\s+/)[0];
   const greeting = firstName.charAt(0).toUpperCase() + firstName.slice(1);
-  const headerTop = Math.max(insets.top + 8, 54);
-  const heroSpace = Math.max(100, Math.min(height * 0.354, 350) - headerTop - 48);
+  const heroSpace = Math.max(155, Math.min(height * 0.2, 190));
+  const isCaptain = role === 'captain';
+  const notifications = sampleHomeNotifications[role];
+  const unreadCount = notifications.filter(item => item.unread && !readNotificationIds.has(item.id)).length;
+
+  function readNotification(id: string) {
+    setReadNotificationIds(current => current.has(id) ? current : new Set([...current, id]));
+  }
 
   async function signOut() {
     if (pending) return;
@@ -47,21 +62,18 @@ export default function HomeScreen() {
   }
 
   return (
-    <DashboardShell testID="home-dashboard">
-      <HomeHeader name={settings.name} avatar={settings.avatar} photoUri={settings.photoUri} greeting={greeting}
-        onProfile={() => setSheet('profile')} onNotifications={() => setSheet('notifications')} />
-      <View style={{ height: heroSpace }} pointerEvents="none" />
-      <PortfolioSummary compact={compact} onOverview={() => setSheet('portfolio')} />
-      <Text style={styles.sectionTitle} accessibilityRole="header">Staked Markets</Text>
-      <MarketList />
-      <PopularCaptains marketCount={stakedMarkets.length} />
+    <DashboardShell testID="home-dashboard" variant={isCaptain ? 'captain' : 'crew'}>
+      <HomeHeader name={settings.name} avatar={settings.avatar} photoUri={settings.photoUri} greeting={greeting} role={role}
+        onProfile={() => setSheet('profile')} onNotifications={setNotificationAnchor} unreadCount={unreadCount} notificationsOpen={notificationAnchor !== null} />
+      {isCaptain ? <CaptainOverview compact={compact} heroSpace={heroSpace} panel={captainPanel} onPanel={setCaptainPanel} />
+        : <CrewHome compact={compact} heroSpace={heroSpace} onOverview={hidden => { setPortfolioHidden(hidden); setSheet('portfolio'); }} />}
       <HomeSheet sheet={sheet} greeting={greeting} email={email} bio={settings.bio} pending={pending} error={error}
-        previewing={previewing} onClose={() => setSheet(null)} onSignOut={() => { void signOut(); }}
+        previewing={previewing} hidden={!settingsReady || settings.hideBalances || portfolioHidden} onClose={() => setSheet(null)} onSignOut={() => { void signOut(); }}
         onSettings={() => { setSheet(null); router.push('/settings'); }} />
+      <NotificationPopover anchor={notificationAnchor} notifications={notifications} readIds={readNotificationIds}
+        hidden={!settingsReady || settings.hideBalances || portfolioHidden} onRead={readNotification}
+        onReadAll={() => setReadNotificationIds(new Set(notifications.map(item => item.id)))} onClose={() => setNotificationAnchor(null)}
+        onExitRequests={id => setCaptainPanel({ kind: 'exits', id })} />
     </DashboardShell>
   );
 }
-
-const styles = StyleSheet.create({
-  sectionTitle: { fontFamily: InterFont.semiBold, fontSize: 17, lineHeight: 23, color: Dashboard.ink, marginTop: 22, marginBottom: 9, marginLeft: 2 },
-});

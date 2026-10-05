@@ -69,7 +69,8 @@
     "logs:android": "bash scripts/android-crash-log.sh",
     "logs:android:repro": "bash scripts/android-crash-log.sh --repro",
     "test:auth": "node --test tests/auth-errors.test.mjs",
-    "test:discover": "node --test tests/discover-data.test.mjs"
+    "test:discover": "node --test tests/discover-data.test.mjs",
+    "test:markets": "node --test tests/captain-markets.test.mjs"
   },
   "private": true,
   "overrides": {

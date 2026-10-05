@@ -17,6 +17,8 @@ export const DiscoverPalette = {
   profilePhotoBorder: '#FFFFFF',
   heroOverlay: ['rgba(7,23,44,0.86)', 'rgba(7,23,44,0.78)', 'rgba(7,23,44,0.96)'] as const,
   sceneryVeil: ['rgba(245,247,251,0.38)', 'rgba(245,247,251,0.14)', 'rgba(245,247,251,0.03)'] as const,
+  // The Captain port has more detail beneath the hero copy than the Crew bay.
+  captainSceneryVeil: ['rgba(245,247,251,0.64)', 'rgba(245,247,251,0.22)', 'rgba(245,247,251,0.03)'] as const,
   backgroundGradient: ['#E4EDF5', '#F1F5F9', Dashboard.background] as const,
   heroArrow: '#2A4770', riskLower: '#468D64', riskHigher: '#C46150',
   heroRisk: ['#7EC994', '#EBAF54', '#FF8D7D'] as const,

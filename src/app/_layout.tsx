@@ -15,6 +15,7 @@ import { IntroCompleteContext } from '@/components/auth/intro-context';
 import { AppFontMap } from '@/constants/fonts';
 import { SettingsProvider } from '@/components/settings/settings-provider';
 import { DiscoverProvider } from '@/components/discover/discover-provider';
+import { useAppAccess } from '@/hooks/use-app-access';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 // Expo Go owns its native splash and cannot customize the fade animation.
@@ -28,14 +29,12 @@ if (!isRunningInExpoGo()) {
 const FONTS_FAILSAFE_MS = 4000;
 
 export default function RootLayout() {
-  return <TestAccessProvider><AuthProvider><AppLayout /></AuthProvider></TestAccessProvider>;
+  return <TestAccessProvider><AuthProvider><SettingsProvider><AppLayout /></SettingsProvider></AuthProvider></TestAccessProvider>;
 }
 
 function AuthNavigator() {
   const reduceMotion = useReducedMotion();
-  const { isAuthenticated } = useAuth();
-  const { hasTestAccess } = useTestAccess();
-  const canEnterApp = isAuthenticated || hasTestAccess;
+  const { canEnterApp } = useAppAccess();
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Protected guard={!canEnterApp}>
@@ -53,8 +52,9 @@ function AuthNavigator() {
 
 function AppLayout() {
   const colorScheme = useColorScheme();
-  const { isAuthenticated, isReady } = useAuth();
+  const { isReady } = useAuth();
   const { hasTestAccess } = useTestAccess();
+  const { hasSession, profileSettled } = useAppAccess();
   const [authTimedOut, setAuthTimedOut] = useState(false);
   const [introMode, setIntroMode] = useState<'app' | 'sign-in' | null>(null);
   const [splashComplete, setSplashComplete] = useState(false);
@@ -72,12 +72,11 @@ function AppLayout() {
   }, [fontsLoaded, fontError, fontsTimedOut]);
 
   const fontsSettled = fontsLoaded || fontError !== null || fontsTimedOut;
-  const bootSettled = fontsSettled && (isReady || hasTestAccess || authTimedOut);
-  const canEnterApp = isAuthenticated || hasTestAccess;
+  const bootSettled = fontsSettled && (isReady || hasTestAccess || authTimedOut) && profileSettled;
   // Decide once from the settled session; later sign-in keeps its existing exit fade.
   if (bootSettled && introMode === null) {
-    setIntroMode(canEnterApp ? 'app' : 'sign-in');
-    if (canEnterApp) setSplashComplete(true);
+    setIntroMode(hasSession ? 'app' : 'sign-in');
+    if (hasSession) setSplashComplete(true);
   }
 
   useEffect(() => {
@@ -107,7 +106,7 @@ function AppLayout() {
           accessibilityElementsHidden={!splashComplete}
           importantForAccessibility={splashComplete ? 'auto' : 'no-hide-descendants'}>
           <IntroCompleteContext.Provider value={splashComplete}>
-            <SettingsProvider><DiscoverProvider><AuthNavigator /></DiscoverProvider></SettingsProvider>
+            <DiscoverProvider><AuthNavigator /></DiscoverProvider>
           </IntroCompleteContext.Provider>
         </View>
         {introMode === 'sign-in' && !splashComplete && <SplashOverlay onComplete={completeSplash} />}

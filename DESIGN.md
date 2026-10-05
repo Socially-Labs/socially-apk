@@ -342,7 +342,9 @@ The counter-argument, which this repo already embodies: Inter's per-weight namin
 problem and the SDK 57 interpolation limits are documented at length in
 `fonts.ts`. A designer who has documented *why* their type system works this way
 has done the work Butterick is asking for. **This is a deliberate decision, not an
-oversight.** Revisit if small-size legibility becomes a complaint.
+oversight.** Revisit if small-size legibility becomes a complaint. Signup adds
+28px editorial headings and 12px role descriptions to the auth tokens; its
+username field retains the existing 15px input size.
 
 ### Product icon language
 
@@ -363,8 +365,59 @@ explains intended permissions without asserting that the vault is already live.
 
 ### Complexity
 
+- Captain Home layout studies must vary information hierarchy, metric containment,
+  chart placement and action grouping. Replacing artwork or rounding the same
+  card stack does not produce a new concept. Keep theme tokens and comparable
+  sample content, then require at least three structural differences between
+  alternatives. Generate new layouts without the previous Home screenshot as a
+  full-screen reference; it anchors the result to the existing composition.
+  Review mobile label sizes, utility typography and navigation clearance before
+  presenting a comparison. Explain each concept’s tradeoff rather than assigning
+  an untested usability score.
+
 - Home retains its voyage artwork and translucent surfaces. Settings uses the same
   cool page background, Inter typography, and blue accents with quiet white cards.
+  Crew Home now uses its own generated `assets/images/home/crew-harbor.webp`:
+  three sailing vessels in the same pale coastal world. Cover cropping preserves
+  the artwork proportions, with the nearer boat framed on the right. The scenery
+  scrolls away with the hero so vault positions sit on the quiet page surface. Its 40px
+  Cormorant heading (34px on compact phones) precedes a navy personal portfolio
+  card with a 46px balance (40px compact), a sample performance chart and 44px
+  period controls. Current value, invested principal, and return are distinct.
+  A seven-day loss example uses the same chart and negative-return treatment.
+  Crew positions replace the old market list; 19px personal values, since-invested
+  returns, and allocation bars lead to position sheets with Captain and investment
+  preview actions. The Discover entry uses the same Captain identities and
+  strategy returns as Discover, labeled separately from personal returns.
+  Balances and spoken amounts follow the existing privacy preference throughout
+  Home and its position/breakdown sheets. These are static sample positions,
+  with no deposits or backend. Captain Home uses a generated coastal scene,
+  `assets/images/home/captain-helm.webp`, with a Captain at the helm on the right
+  and “Lead the voyage.” in the open sky on the left. Both Home roles share the
+  same performance card, typography, privacy controls, and 7D/30D/90D/All periods.
+  Captain AUM change includes allocations and value changes. Manage vaults,
+  Your Crew, Earnings, and Create vault shortcuts finish the Home content;
+  the vault list is available inside Manage vaults. Active, Deposits paused, and
+  Draft labels provide context in the vault management sheets.
+  The shared detail sheet shows sample holdings, rules, Crew, fees,
+  and exit requests. Create vault adds an in-memory draft after name validation;
+  pause/resume changes only the preview state. These controls deploy no vaults,
+  move no funds, and grant no trading authority. Monetary values in every Captain
+  sheet follow balance privacy. Generation prompts live beside both Home assets.
+  Both Home bells open notification concept 02: a pearl popover anchored beneath
+  the bell, with a small pointer, navy Inter text, mint count badge, and a 44px
+  mark-all-read control. Its width caps at 350px and its height at 390px, further
+  constrained by safe areas. Only the notification list scrolls; there is no
+  “See all notifications” footer. Tapping a row marks it read; Captain exit
+  requests open their existing detail sheet. Read state stays in memory and
+  controls the bell dot. The feed is explicitly labeled Sample updates, and
+  notification amounts follow balance privacy. Outside tap and Back/Escape
+  dismiss the popover; reduced motion skips the short entrance.
+  Development builds show a Captain/Crew Home preview control in Settings under
+  Developer options. The selection stays in memory across app tabs, leaves the
+  saved signup role intact, and resets Home scroll and sheets when switching.
+  Signing out or reloading discards the preview selection. Production hides
+  the section and uses the saved role.
   The existing coastal voyage artwork appears in the editable profile banner,
   with a circular photo overlapping its edge. Account and Display share a group;
   invitations and support share another. Legal links sit in a compact footer.
@@ -377,7 +430,7 @@ explains intended permissions without asserting that the vault is already live.
   supplied in `assets/images/discover/captain-horizon.png`, a two-line heading,
   translucent search and strategy pills, and a dark navy Captain card with subdued
   landscape imagery, a glowing blue chart and mint positive returns. Discover's
-  bottom navigation shares the same coastal navy Home capsule and pale blue right-hand capsule
+  bottom navigation shares the same pearl Home capsule and right-hand capsule
   as Home, Wallet and Settings. Only the selected state changes between tabs;
   screen-specific backgrounds, icon circles and destination symbols are avoided.
   Reference strategy icons use a compass, rising chart, cube, leaf and flame. No extra badge
@@ -401,9 +454,11 @@ explains intended permissions without asserting that the vault is already live.
   is in the background. Reduced motion and native screen readers use manual
   navigation; motion preference changes take effect immediately. Search, filters,
   and Saved use compact white result rows. Shared floating navigation remains consistent across tabs.
-  `NavigationPalette` reuses the Wallet’s navy for active Home and the selected
-  icon circle, with ivory foregrounds, muted blue inactive controls and a pale
-  blue tray. Keep these colours shared across screens; selection changes colour
+  `NavigationPalette` reuses Discover’s navy ink (`#182B43`) for active Home and
+  the selected icon circle, with ivory foregrounds, blue-gray inactive controls
+  (`#64758B`) and a pearl tray (`#F9FBFD`). Inactive Home shares the tray’s pale
+  treatment. Keep this lightness hierarchy across screens; avoid a separate
+  slate-blue Home pill or bright blue outlines. Selection changes colour
   without changing tab size, position or hit targets.
   The main heading is 30px, carousel return 27px, row return 19px, and profile
   return 32px. Return and drawdown stay paired for the same period. Strategy chips
@@ -462,9 +517,16 @@ explains intended permissions without asserting that the vault is already live.
   animation layers also fall back to the still. The older arch-scene modules are
   no longer mounted by the auth flow.
 
-- `shared/dashboard/dashboard-sheet.tsx` adapts the October 2 modal reference to
-  the dashboard theme: 32px corners, 8px side insets, a grab handle, a centred
-  title, and a quiet inset body surface. The panel rises as one surface with a
+- `shared/dashboard/dashboard-sheet.tsx` uses the selected frosted floating
+  concept: 36px corners, 10px side insets, at least 12px bottom clearance, a grab
+  handle, a centred title and open content. A white rim and ice-blue gradient
+  surround the glass surface. Web blurs the backdrop; supported iOS devices use
+  the installed glass module, with an opaque pearl fallback on other native
+  platforms and when Reduce Transparency is enabled. There is no corner cross.
+  Sheets without a custom footer have a fixed 52px navy Done button. Crew’s
+  portfolio sheet uses a centred Cormorant balance, a mint chart with 44px period
+  targets, and a three-metric inset summary that stacks below 360px. Values and
+  chart descriptions honour balance privacy. The panel rises as one surface with a
   360ms spring and slides out over 260ms. The native modal and its last visible
   content stay mounted through the exit. The handle and heading support downward
   dragging, with a short drag returning to rest. A single haptic marks the dismiss
@@ -483,14 +545,19 @@ explains intended permissions without asserting that the vault is already live.
   implementation checklist and work that depends on live data.
 
 - Wallet keeps its original icon-led header: an 18px Wallet title, 11px
-  “Your on-chain balance” subtitle and direct Settings gear. The user's navy
-  balance-card reference applies to the main content below that header on a plain
-  pale surface. Treat content references as scoped changes; preserve the screen's
+  “Your on-chain balance” subtitle and direct Settings gear. The user's selected
+  frosted balance-card reference applies to the main content below that header on
+  a plain pale surface, sharing Home's ice-blue, navy and mint tokens. Treat
+  content references as scoped changes; preserve the screen's
   existing header and navigation unless the user explicitly replaces them.
   The bundled Cormorant Garamond semibold supplies its editorial type, including
   the 43px total, action labels, tabs and asset values. Inter supplies supporting
-  labels. A fine compass illustration sits inside the navy card. Four fixed
-  actions—Deposit, Send, Receive and Swap—open the existing connection sheets.
+  labels and the Manage tokens row. A fine pale-blue compass sits inside the
+  24px balance card with its white rim. Four 92px white action tiles—Deposit,
+  Send, Receive and Swap—open the existing connection sheets. The selected
+  Assets tab uses a pale-blue pill; tabs and utility controls have 44px targets.
+  The 58px token rows use white surfaces with fine blue borders and 18px corners.
+  Compact screens reduce icon and sparkline widths and let network labels wrap.
   Assets, Vaults and Activity have separate panels. Network filtering and local
   token visibility affect the asset list without changing the total balance.
   The preview assets are all tradable; Captain vault allocations remain zero
@@ -517,6 +584,16 @@ explains intended permissions without asserting that the vault is already live.
   with optional public environment overrides. When preview mode is disabled,
   Google sign-in dispatches the existing Privy OAuth flow; its provider and
   allowed redirects must be configured in Privy.
+  Sign in and Sign up share this card. New profiles choose a username, then
+  explicitly choose Crew or Captain in two separate steps. Each step repeats
+  the existing 36px spring rise and 520ms control reveal. Back retains the
+  username draft; validation and failed saves keep the current step open.
+  Username and role are saved with the account's local settings, and protected
+  routes and the splash exit wait for setup to finish. Existing saved roles
+  open their home view directly. Crew opens its portfolio; Captain opens its
+  AUM dashboard and sample vault management. Role selection records intent and grants no trading
+  authority. Server username reservation, Captain approval and live fund
+  management remain outside this local onboarding flow.
 
 - `src/app/_layout.tsx` gates the navigator behind font loading **without unmounting
   it**, and pins `collapsable={false}` on both wrappers. The simpler-looking
@@ -524,9 +601,26 @@ explains intended permissions without asserting that the vault is already live.
   `NativeTabs` and its fragments, and dropping `collapsable` lets Fabric flatten a
   wrapper and reparent the tabs. *Simplicity is repeatedly saying no* — the simplest
   version was also the broken one.
-- `explore.tsx` is the Expo starter's demo content, untouched. It is the largest
-  block of copy in the app and serves no product purpose. **Candidate for
-  deletion** — Teixeira, *c*: not everything needs to be visible at all times.
+- `explore.tsx` now selects Crew Discover or Captain Markets using the same role
+  as Home. Settings’ development role preview switches both screens together.
+  Captain Markets uses a compact coastal header, token/mint search, and a pearl
+  frosted reserve card with 24px corners, navy editorial balance type and a mint
+  status pill. Its theme shares Home's navy, ice and mint through
+  `src/constants/theme/captain-markets.ts`. Market rows form a single white panel
+  with 20px outer corners and inset separators; first/last styling follows the
+  filtered FlatList so search results and Invested markets keep the same frame.
+  The single vault selector controls the
+  available USDC reserve and Invested markets; public token prices stay visible
+  when private balances are hidden. Top traded and Invested markets are the two
+  underlined tabs. Timeframe, saved-market and filter controls use pale outlined
+  surfaces with 44px targets. Timeframe, asset type, liquidity, sorting and saved-market
+  controls filter the local sample list. Rows open the shared pearl sheet with
+  price chart, Buy/Sell, amount, Max and a fixed Review trade footer. Reviewing
+  shows minimum receive, fee, exposure and remaining balance, and ends with Done.
+  USDC opens reserve details instead of an invalid USDC-to-USDC trade. All prices,
+  positions, position limits and trade estimates are sample fixtures; no Jupiter
+  request, wallet signature or transaction runs. The floating navigation retains
+  its existing capsule layout. Captain Home’s vault list remains removed.
 
 ### Accessibility — and the `collapsable` trap
 
@@ -545,11 +639,9 @@ this. Toggle the a11y prop, but keep both wrappers. If you add or remove a wrapp
 
 | Fix | Where |
 | --- | --- |
-| Straight apostrophe in user-facing copy | `src/app/(app)/explore.tsx:106` → `&rsquo;` or `’` |
 | `MaxContentWidth` 800 → ~600 | `src/constants/theme.ts`, if the measure complaint is real |
-| Reduce `explore.tsx` or remove it | `src/app/(app)/explore.tsx` |
 
-None are urgent. The apostrophe is the only outright error.
+The starter Explore copy and its apostrophe issue were removed with the product screens.
 
 ---
 

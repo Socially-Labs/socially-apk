@@ -1,5 +1,6 @@
 import { useAuth } from '@/auth/session';
-import { AUTH_TEST_MODE, useTestAccess } from '@/auth/test-access';
+import { AUTH_TEST_MODE } from '@/auth/test-access';
+import { useAppAccess } from '@/hooks/use-app-access';
 import { buildTimeline, traitsOf, transition, type SplashEvent } from '@/components/auth/splash/splash-timeline';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
@@ -54,9 +55,8 @@ export function useSplashController(onComplete: () => void) {
   const ready = useRef(false);
   const clock = useSharedValue(0);
   const timeline = buildTimeline({ reduceMotion });
-  const { isAuthenticated, isReady } = useAuth();
-  const { hasTestAccess } = useTestAccess();
-  const canEnterApp = isAuthenticated || hasTestAccess;
+  const { isReady } = useAuth();
+  const { canEnterApp } = useAppAccess();
   const [authGraceOver, setAuthGraceOver] = useState(false);
   const card = useSharedValue(0);
   const showCard = phase === 'waiting' && !canEnterApp && (AUTH_TEST_MODE || isReady || authGraceOver);

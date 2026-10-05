@@ -1,5 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { X } from 'lucide-react-native';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -14,6 +12,7 @@ import { selectionFeedback } from '@/components/shared/feedback';
 import { InterFont } from '@/constants/fonts';
 import { Motion } from '@/constants/motion';
 import { Dashboard, DashboardSheetTheme as S } from '@/constants/theme';
+import { SheetSurface, sheetMaterialStyle } from './sheet-surface';
 
 type SheetProps = { visible: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode };
 const SETTLE = { duration: S.openDuration, dampingRatio: 0.94 };
@@ -42,7 +41,7 @@ function SheetPanel({ visible, title, children, footer, onClose, onExited }: She
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
-  const bottom = Math.max(insets.bottom, S.inset);
+  const bottom = Math.max(insets.bottom, S.bottomInset);
   const maxHeight = Math.min(height * 0.8, height - insets.top - bottom - 24);
   const progress = useSharedValue(reduceMotion ? 1 : 0);
   const drag = useSharedValue(0);
@@ -113,10 +112,10 @@ function SheetPanel({ visible, title, children, footer, onClose, onExited }: She
         testID="dashboard-sheet-backdrop" />
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} disabled={!visible}
         accessibilityLabel="Dismiss details" accessibilityRole="button" testID="dashboard-sheet-dismiss" />
-      <Animated.View style={[styles.sheet, { maxHeight, marginBottom: bottom }, panelStyle]}
+      <Animated.View style={[styles.sheet, sheetMaterialStyle, { maxHeight, marginBottom: bottom }, panelStyle]}
         onLayout={event => sheetHeight.set(event.nativeEvent.layout.height)}
         accessibilityViewIsModal testID="dashboard-sheet" pointerEvents={visible ? 'auto' : 'none'}>
-        <LinearGradient colors={S.gradient} style={StyleSheet.absoluteFill} pointerEvents="none" />
+        <SheetSurface />
         <GestureDetector gesture={pan}>
           <View>
           <View style={styles.handleArea} testID="dashboard-sheet-handle" accessible accessibilityRole="button"
@@ -129,10 +128,6 @@ function SheetPanel({ visible, title, children, footer, onClose, onExited }: She
           </View>
         <View style={styles.heading}>
           <Text accessibilityRole="header" style={styles.title}>{content.title}</Text>
-          <AuthButton accessibilityRole="button" accessibilityLabel="Close details" onPress={onClose} disabled={!visible}
-            style={styles.close}>
-            <X size={19} color={Dashboard.icon} strokeWidth={1.9} />
-          </AuthButton>
         </View>
           </View>
         </GestureDetector>
@@ -142,7 +137,10 @@ function SheetPanel({ visible, title, children, footer, onClose, onExited }: She
           showsVerticalScrollIndicator={false} testID="dashboard-sheet-content">
           {content.children}
         </ScrollView>
-        {content.footer ? <View style={styles.footer}>{content.footer}</View> : null}
+        <View style={styles.footer} testID="dashboard-sheet-footer">
+          {content.footer ?? <AuthButton accessibilityRole="button" testID="dashboard-sheet-done" onPress={onClose}
+            disabled={!visible} style={styles.done}><Text style={styles.doneText}>Done</Text></AuthButton>}
+        </View>
       </Animated.View>
       </KeyboardAvoidingView>
     </GestureHandlerRootView>
@@ -154,17 +152,17 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: S.inset },
   backdrop: { backgroundColor: S.backdrop },
   sheet: { width: '100%', maxWidth: Dashboard.maxWidth, alignSelf: 'center', flexShrink: 1,
-    backgroundColor: S.surface, borderRadius: S.radius, borderWidth: 1, borderColor: S.border,
-    paddingHorizontal: 16, paddingBottom: 16, overflow: 'hidden', boxShadow: S.shadow },
-  handleArea: { height: 36, alignItems: 'center', justifyContent: 'center' },
+    borderRadius: S.radius, borderWidth: 1, borderColor: S.border,
+    paddingHorizontal: S.padding, paddingBottom: S.padding, overflow: 'hidden', boxShadow: S.shadow },
+  handleArea: { height: 44, alignItems: 'center', justifyContent: 'center' },
   handle: { width: 34, height: 4, borderRadius: 2, backgroundColor: S.handle },
-  heading: { minHeight: 44, justifyContent: 'center', marginBottom: 16 },
-  title: { fontFamily: InterFont.semiBold, fontSize: S.titleSize, lineHeight: 27, color: Dashboard.ink,
-    textAlign: 'center', paddingHorizontal: 48, paddingVertical: 5 },
-  close: { position: 'absolute', right: 0, width: 44, height: 44, borderRadius: 22,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: S.close },
-  body: { flexShrink: 1, borderRadius: S.bodyRadius, backgroundColor: S.body,
-    borderWidth: 1, borderColor: S.bodyBorder },
-  bodyContent: { padding: 16 },
-  footer: { paddingTop: 12 },
+  heading: { minHeight: 32, justifyContent: 'center', marginBottom: 8 },
+  title: { fontFamily: InterFont.semiBold, fontSize: S.titleSize, lineHeight: 27, color: S.ink,
+    textAlign: 'center', paddingVertical: 2 },
+  body: { flexShrink: 1 },
+  bodyContent: { paddingVertical: 4 },
+  footer: { paddingTop: 16 },
+  done: { minHeight: S.actionHeight, borderRadius: S.bodyRadius, backgroundColor: S.ink,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },
+  doneText: { fontFamily: InterFont.semiBold, fontSize: 15, lineHeight: 21, color: S.actionText },
 });

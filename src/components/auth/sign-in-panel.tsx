@@ -1,9 +1,11 @@
 import { AUTH_TEST_MODE, useTestAccess } from '@/auth/test-access';
+import { useAccountSettings } from '@/components/settings/settings-provider';
 import { AuthIcon } from '@/components/auth/auth-icons';
 import { AuthButton, AuthReveal } from '@/components/shared/motion';
 import { InterFont } from '@/constants/fonts';
 import { AuthPanel } from '@/constants/theme';
 import { useEmailAuth } from '@/hooks/use-email-auth';
+import { useAppAccess } from '@/hooks/use-app-access';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Linking from 'expo-linking';
 import { useEffect, useRef, useState } from 'react';
@@ -12,17 +14,45 @@ import Animated, { Easing, FadeIn, FadeOut, LinearTransition, useReducedMotion, 
 import { AuthEmailField } from './auth-email-field';
 import { AuthEntryControls } from './auth-entry-controls';
 import { AuthVerificationFooter, AuthVerificationHeader } from './auth-verification-controls';
+import { SignupPanel } from './signup-panel';
+import { AuthPrimaryAction } from './auth-primary-action';
 
 const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1);
 
-/** Shared email / verification controls for the splash and sign-in screen. */
-export function SignInPanel({ progress, testIDPrefix = 'auth', onFocusChange }: {
+/** Credentials and signup share the same card on both auth entry points. */
+export function SignInPanel({ progress, testIDPrefix = 'auth', onStageChange }: {
+  progress: SharedValue<number>; testIDPrefix?: 'auth' | 'splash'; onStageChange?: (stage: string) => void;
+}) {
+  const { hasSession, needsOnboarding } = useAppAccess();
+  const { ready, loadError, reloadSettings } = useAccountSettings();
+  const [onboardingShown, setOnboardingShown] = useState(false);
+  if (!hasSession && onboardingShown) setOnboardingShown(false);
+  else if (hasSession && ready && !loadError && needsOnboarding && !onboardingShown) setOnboardingShown(true);
+
+  useEffect(() => {
+    if (!hasSession) onStageChange?.('credentials');
+  }, [hasSession, onStageChange]);
+
+  if (hasSession && ready && !loadError && (needsOnboarding || onboardingShown)) {
+    return <SignupPanel progress={progress} testIDPrefix={testIDPrefix} onStageChange={onStageChange} />;
+  }
+  if (hasSession) return <View style={styles.panel} testID={`${testIDPrefix}-profile-loading`}>
+    <Text accessibilityRole={loadError ? 'alert' : undefined} style={loadError ? styles.error : styles.status}>
+      {loadError ?? (ready ? 'Welcome aboard.' : 'Loading your profile…')}
+    </Text>
+    {loadError ? <View style={styles.primaryRow}><AuthPrimaryAction testID={`${testIDPrefix}-profile-retry`} label="Try again" onPress={reloadSettings} /></View> : null}
+  </View>;
+  return <CredentialsPanel progress={progress} testIDPrefix={testIDPrefix} />;
+}
+
+function CredentialsPanel({ progress, testIDPrefix = 'auth', onFocusChange }: {
   progress: SharedValue<number>;
   testIDPrefix?: 'auth' | 'splash';
   onFocusChange?: (focused: boolean) => void;
 }) {
   const auth = useEmailAuth();
-  const { enterTestApp } = useTestAccess();
+  const { enterTestApp, beginTestSignup } = useTestAccess();
+  const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const reduceMotion = useReducedMotion();
   const input = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
@@ -52,13 +82,14 @@ export function SignInPanel({ progress, testIDPrefix = 'auth', onFocusChange }: 
   function submit() {
     if (AUTH_TEST_MODE) {
       Keyboard.dismiss();
-      enterTestApp();
+      if (mode === 'sign-up') beginTestSignup();
+      else enterTestApp();
       return;
     }
     if (verifying) void auth.submitCode();
     else void auth.requestCode();
   }
-  const buttonLabel = AUTH_TEST_MODE ? 'Continue'
+  const buttonLabel = AUTH_TEST_MODE ? mode === 'sign-up' ? 'Create account' : 'Sign in'
     : !auth.isReady ? 'Getting ready…'
       : auth.pending === 'send' ? 'Sending code…'
         : auth.pending === 'verify' ? 'Verifying…'
@@ -73,6 +104,14 @@ export function SignInPanel({ progress, testIDPrefix = 'auth', onFocusChange }: 
 
   return (
     <View style={styles.panel} testID={`${testIDPrefix}-panel`}>
+      {!verifying ? <AuthReveal progress={progress} order={0} style={styles.modes}>
+        {(['sign-in', 'sign-up'] as const).map(value => <AuthButton key={value} testID={`${testIDPrefix}-mode-${value}`}
+          accessibilityRole="tab" accessibilityState={{ selected: mode === value, disabled: busy }} disabled={busy}
+          aria-selected={mode === value}
+          onPress={() => { setMode(value); setLinkError(null); }} style={[styles.mode, mode === value && styles.modeSelected]}>
+          <Text style={[styles.modeLabel, mode === value && styles.modeLabelSelected]}>{value === 'sign-in' ? 'Sign in' : 'Sign up'}</Text>
+        </AuthButton>)}
+      </AuthReveal> : null}
       {verifying ? (
         <AuthVerificationHeader email={auth.email} changeEmail={changeEmail} busy={busy} enter={enter} exit={exit} />
       ) : null}
@@ -109,7 +148,7 @@ export function SignInPanel({ progress, testIDPrefix = 'auth', onFocusChange }: 
         <AuthEntryControls key="social" progress={progress} testIDPrefix={testIDPrefix} busy={busy} googleBusy={auth.pending === 'google'}
           openPolicy={openPolicy} enter={enter} exit={exit} layout={layout} onGoogle={() => {
             Keyboard.dismiss();
-            if (AUTH_TEST_MODE) enterTestApp();
+            if (AUTH_TEST_MODE) { if (mode === 'sign-up') beginTestSignup(); else enterTestApp(); }
             else void auth.requestSocial('google');
           }} />
       )}
@@ -119,6 +158,12 @@ export function SignInPanel({ progress, testIDPrefix = 'auth', onFocusChange }: 
 
 const styles = StyleSheet.create({
   panel: { paddingHorizontal: 17, paddingBottom: 23 },
+  status: { fontFamily: InterFont.medium, fontSize: AuthPanel.bodySize, lineHeight: 20, color: AuthPanel.ink, paddingVertical: 12 },
+  modes: { flexDirection: 'row', gap: 4, padding: 3, borderRadius: AuthPanel.controlRadius, backgroundColor: AuthPanel.selected, marginBottom: 15 },
+  mode: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: AuthPanel.controlRadius - 3 },
+  modeSelected: { backgroundColor: AuthPanel.surface },
+  modeLabel: { fontFamily: InterFont.medium, fontSize: AuthPanel.bodySize, color: AuthPanel.placeholder },
+  modeLabelSelected: { fontFamily: InterFont.semiBold, color: AuthPanel.primary },
   primaryRow: { marginTop: 9 },
   primaryButton: {
     minHeight: 44, borderRadius: AuthPanel.controlRadius, overflow: 'hidden',
