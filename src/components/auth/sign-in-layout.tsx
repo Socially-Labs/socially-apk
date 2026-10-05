@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
 import Animated, {
@@ -9,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SignInBrand } from '@/components/auth/sign-in-brand';
 import { SignInPanel } from '@/components/auth/sign-in-panel';
+import { SheetSurface, sheetMaterialStyle } from '@/components/shared/dashboard/sheet-surface';
 import { AuthPanel } from '@/constants/theme';
 
 /** Both launch sign-in and the returning auth route use the same form and framing. */
@@ -39,7 +39,8 @@ export function SignInLayout({ reveal, testIDPrefix, enabled = true }: {
 
   const brandStyle = useAnimatedStyle(() => ({ opacity: reveal.get() }));
   const cardStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(reveal.get(), [0, 0.4], [0, 1], Extrapolation.CLAMP) * stepReveal.get(),
+    // Native glass must never have a fully transparent ancestor during its reveal.
+    opacity: Math.max(0.01, interpolate(reveal.get(), [0, 0.4], [0, 1], Extrapolation.CLAMP) * stepReveal.get()),
     transform: [{ translateY: reduceMotion ? 0 : (1 - reveal.get() * stepReveal.get()) * 36 }],
   }));
 
@@ -65,8 +66,8 @@ export function SignInLayout({ reveal, testIDPrefix, enabled = true }: {
         <Animated.View
           testID={testIDPrefix === 'splash' ? 'splash-sign-in' : 'auth-panel-reveal'}
           layout={reduceMotion ? undefined : LinearTransition.duration(280)}
-          style={[styles.card, cardStyle]}>
-          <LinearGradient colors={AuthPanel.glass} style={StyleSheet.absoluteFill} pointerEvents="none" />
+          style={[styles.card, sheetMaterialStyle, cardStyle]}>
+          <SheetSurface />
           {enabled ? <SignInPanel progress={contentReveal} testIDPrefix={testIDPrefix} onStageChange={setStage} /> : null}
         </Animated.View>
       </Animated.ScrollView>
@@ -76,11 +77,11 @@ export function SignInLayout({ reveal, testIDPrefix, enabled = true }: {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { flexGrow: 1, paddingHorizontal: 20 },
+  content: { flexGrow: 1, paddingHorizontal: 14 },
   dismissArea: { flex: 1, minHeight: 36 },
   card: {
     width: '100%', maxWidth: 420, alignSelf: 'center', overflow: 'hidden',
-    paddingTop: 20, borderRadius: AuthPanel.panelRadius,
+    paddingTop: 22, borderRadius: AuthPanel.panelRadius,
     borderWidth: 1, borderColor: AuthPanel.glassBorder,
     boxShadow: AuthPanel.panelShadow,
   },

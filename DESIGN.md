@@ -318,16 +318,19 @@ Measured against Parts 1–3. Not a to-do list; a record of where we stand.
 | Body size | 15–25px | `default` = **16px** ✅ · `small`/`link` = 14px | 14 is just under; fine for secondary text, not body prose |
 | Line height | 120–145% | 16/24 = **150%** · 14/20 = 143% | Slightly loose on `default`, within range on `small` |
 | Measure | 45–90 chars | `MaxContentWidth = 800` ≈ 100+ chars | **Over.** Caps the tablet/web column too wide |
-| Caps letterspacing | 5–12% | Auth field uses sentence case; no uppercase label | Reference uses an inline email field |
+| Caps letterspacing | 5–12% | Auth field uses a sentence-case label | Reference groups the email field and action in an inset |
 | | | `APP_NAME` 30px + `ls:4` = **13%** | Slightly over |
 | Italic on sans | Never | Not bundled ✅ | Already correct |
 | Kerning | On | default ✅ | React Native enables kerning; not disabled anywhere |
 
 The auth panel uses `AuthPanel` tokens in `theme.ts`: 15px email input and primary
 button, 26px verification code, 14px social labels and errors, and 11px secondary
-captions. The OR divider is 10px. The panel has 22px corners, 10px control corners,
-a translucent white gradient, a navy primary button, and an outlined Google button.
-The shared form is at most 420px wide, with 20px side margins on phones.
+captions. The welcome heading is 20px and the email label is 12px. The OR divider
+is 10px. Design 08 uses 36px outer corners and the dashboard's shared frosted
+material, a 22px translucent inset around the email field and navy primary
+button, and an outlined Google pill. Controls have 18px corners and a 48px
+minimum height. The shared form is at most 420px wide, with 14px side margins
+on phones. The footer reads “Secured by Privy”.
 
 ### The free-font tension — unresolved, on purpose
 
@@ -413,19 +416,20 @@ explains intended permissions without asserting that the vault is already live.
   controls the bell dot. The feed is explicitly labeled Sample updates, and
   notification amounts follow balance privacy. Outside tap and Back/Escape
   dismiss the popover; reduced motion skips the short entrance.
-  Development builds show a Captain/Crew Home preview control in Settings under
-  Developer options. The selection stays in memory across app tabs, leaves the
+  Development builds show a Captain/Crew Home preview control in a sheet opened
+  from Settings' heading menu. The selection stays in memory across app tabs, leaves the
   saved signup role intact, and resets Home scroll and sheets when switching.
   Signing out or reloading discards the preview selection. Production hides
-  the section and uses the saved role.
-  The existing coastal voyage artwork appears in the editable profile banner,
-  with a circular photo overlapping its edge. Account and Display share a group;
-  invitations and support share another. Legal links sit in a compact footer.
-  Logout is available in the top-right Settings header and as a session row inside
+  the menu and uses the saved role.
+  The existing coastal voyage artwork remains in the profile editor's banner,
+  with a circular photo overlapping its edge. The Settings landing page uses a
+  compact identity row, four destination tiles, and an About/legal panel.
+  Logout is available below that panel and as a session row inside
   Account; both open the same confirmation flow. Profile
   editing includes display name, username, bio, banner, and photo, with previews,
   save/discard actions, and drafts that survive route changes. The 14px introduction
-  and form copy are secondary text; headings remain 28px and row titles 15px.
+  and form copy are secondary text. The landing page's 40px Cormorant heading
+  shares Home and Wallet's editorial type; detail pages retain their existing type.
   Discover follows the user's latest reference: a coastal Captain scene,
   supplied in `assets/images/discover/captain-horizon.png`, a two-line heading,
   translucent search and strategy pills, and a dark navy Captain card with subdued
@@ -495,15 +499,24 @@ explains intended permissions without asserting that the vault is already live.
   All fixtures are explicitly sample data. No verification badges or allocation
   actions imply a live deployed vault.
 
-- `settings/settings-screen.tsx` uses an editable coastal profile card and grouped
-  rows, 24px profile corners, a 28px heading, and 15px row titles.
+- `settings/settings-screen.tsx` uses selected concept 2: a compact avatar/profile
+  row and four pearl tiles in a two-by-two grid, with a mint Invite a friend tile.
+  The landing heading uses 40px Cormorant (36px below 360px); 22px tile corners,
+  40px icon wells and compact copy keep the main destinations visible together.
+  About and legal routes share a small panel, followed by a 44px Log out row.
+  `SettingsHubPalette` in `theme/settings.ts` shares Home's pearl, ice and mint
+  colours; detail screens retain their existing settings tokens. The landing
+  surface reserves 112px minimum navigation clearance and can scroll on smaller
+  phones or enlarged text. Development role previews live behind the heading's
+  development-only menu. Profile banners and bios remain editable in the detail
+  route instead of taking space on the landing page.
   Detail routes sit outside the bottom tabs and use a 44px back control. Profile
   forms save per account on this device and update the home greeting and avatar.
   Username validation accepts 3–24 lowercase letters, numbers, and underscores,
   starting with a letter. Photos are resized to 512px squares and banners to
   1200×400px JPEGs before local persistence. Display preferences control wallet
-  amounts, including asset details and spoken labels. The top-right Settings logout
-  button and Account session row use the shared detail sheet, with confirmation
+  amounts, including asset details and spoken labels. The Settings logout row
+  and Account session row use the shared detail sheet, with confirmation
   and retry on failure.
 
 - `auth/coastal-scene.tsx` is shared by launch sign-in and the regular auth route.
@@ -580,11 +593,10 @@ explains intended permissions without asserting that the vault is already live.
   the person and coastline still. The keyboard opens on tap, and the verification field
   receives focus after an email code is sent. Small viewports can scroll.
   Reduced motion skips spatial movement, stagger, fades, and layout animation.
-  The default policy destinations are `socially.trade/terms` and `/privacy`,
-  with optional public environment overrides. When preview mode is disabled,
+  The auth card has no sign-in/sign-up tabs or terms footer. When preview mode is disabled,
   Google sign-in dispatches the existing Privy OAuth flow; its provider and
   allowed redirects must be configured in Privy.
-  Sign in and Sign up share this card. New profiles choose a username, then
+  One Continue action handles new and returning accounts. New profiles choose a username, then
   explicitly choose Crew or Captain in two separate steps. Each step repeats
   the existing 36px spring rise and 520ms control reveal. Back retains the
   username draft; validation and failed saves keep the current step open.

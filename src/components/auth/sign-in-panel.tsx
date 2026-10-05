@@ -7,7 +7,6 @@ import { AuthPanel } from '@/constants/theme';
 import { useEmailAuth } from '@/hooks/use-email-auth';
 import { useAppAccess } from '@/hooks/use-app-access';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Linking from 'expo-linking';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeOut, LinearTransition, useReducedMotion, type SharedValue } from 'react-native-reanimated';
@@ -52,16 +51,15 @@ function CredentialsPanel({ progress, testIDPrefix = 'auth', onFocusChange }: {
 }) {
   const auth = useEmailAuth();
   const { enterTestApp, beginTestSignup } = useTestAccess();
-  const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
+  const { settings, ready: profileReady } = useAccountSettings();
   const reduceMotion = useReducedMotion();
   const input = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
-  const [linkError, setLinkError] = useState<string | null>(null);
   const verifying = !AUTH_TEST_MODE && auth.stage === 'code';
-  const busy = !AUTH_TEST_MODE && (auth.pending !== null || auth.oauthPending || !auth.isReady);
-  const disabled = !AUTH_TEST_MODE && (busy || (verifying ? auth.code.length !== 6 : !auth.email.trim()));
+  const busy = AUTH_TEST_MODE ? !profileReady : auth.pending !== null || auth.oauthPending || !auth.isReady;
+  const disabled = busy || (!AUTH_TEST_MODE && (verifying ? auth.code.length !== 6 : !auth.email.trim()));
   const { changeEmail } = auth;
-  const error = (AUTH_TEST_MODE ? null : auth.error) || linkError;
+  const error = AUTH_TEST_MODE ? null : auth.error;
   const layout = reduceMotion ? undefined : LinearTransition.duration(280).easing(EASE_OUT);
   const enter = reduceMotion ? undefined : FadeIn.duration(200);
   const exit = reduceMotion ? undefined : FadeOut.duration(120);
@@ -79,76 +77,75 @@ function CredentialsPanel({ progress, testIDPrefix = 'auth', onFocusChange }: {
     return () => subscription.remove();
   }, [verifying, busy, changeEmail]);
 
+  function continuePreview() {
+    if (!profileReady) return;
+    Keyboard.dismiss();
+    if (settings.role === null) beginTestSignup();
+    else enterTestApp();
+  }
+
   function submit() {
+    if (disabled) return;
     if (AUTH_TEST_MODE) {
-      Keyboard.dismiss();
-      if (mode === 'sign-up') beginTestSignup();
-      else enterTestApp();
+      continuePreview();
       return;
     }
     if (verifying) void auth.submitCode();
     else void auth.requestCode();
   }
-  const buttonLabel = AUTH_TEST_MODE ? mode === 'sign-up' ? 'Create account' : 'Sign in'
+  const buttonLabel = AUTH_TEST_MODE ? 'Continue'
     : !auth.isReady ? 'Getting ready…'
       : auth.pending === 'send' ? 'Sending code…'
         : auth.pending === 'verify' ? 'Verifying…'
           : verifying ? 'Verify & continue' : 'Continue';
   const emailBusy = !AUTH_TEST_MODE && (auth.pending === 'send' || auth.pending === 'verify' || !auth.isReady);
 
-  function openPolicy(url: string | undefined) {
-    if (!url?.startsWith('https://')) return;
-    setLinkError(null);
-    void Linking.openURL(url).catch (() => setLinkError('Couldn’t open the page. Please try again.'));
-  }
-
   return (
     <View style={styles.panel} testID={`${testIDPrefix}-panel`}>
-      {!verifying ? <AuthReveal progress={progress} order={0} style={styles.modes}>
-        {(['sign-in', 'sign-up'] as const).map(value => <AuthButton key={value} testID={`${testIDPrefix}-mode-${value}`}
-          accessibilityRole="tab" accessibilityState={{ selected: mode === value, disabled: busy }} disabled={busy}
-          aria-selected={mode === value}
-          onPress={() => { setMode(value); setLinkError(null); }} style={[styles.mode, mode === value && styles.modeSelected]}>
-          <Text style={[styles.modeLabel, mode === value && styles.modeLabelSelected]}>{value === 'sign-in' ? 'Sign in' : 'Sign up'}</Text>
-        </AuthButton>)}
+      {!verifying ? <AuthReveal progress={progress} order={0} style={styles.headingRow}>
+        <Text accessibilityRole="header" style={styles.heading}>Welcome aboard</Text>
       </AuthReveal> : null}
-      {verifying ? (
-        <AuthVerificationHeader email={auth.email} changeEmail={changeEmail} busy={busy} enter={enter} exit={exit} />
-      ) : null}
+      <View style={styles.emailGroup} testID={`${testIDPrefix}-email-group`}>
+        {verifying ? (
+          <AuthVerificationHeader email={auth.email} changeEmail={changeEmail} busy={busy} enter={enter} exit={exit} />
+        ) : <AuthReveal progress={progress} order={0}>
+          <Text style={styles.fieldLabel}>Email address</Text>
+        </AuthReveal>}
 
-      <AuthEmailField auth={auth} input={input} progress={progress} verifying={verifying} busy={busy}
-        focused={focused} invalid={!!error} testIDPrefix={testIDPrefix} enter={enter} exit={exit} layout={layout} submit={submit}
-        onFocus={() => { setFocused(true); onFocusChange?.(true); }}
-        onBlur={() => { setFocused(false); onFocusChange?.(false); }} />
+        <AuthEmailField auth={auth} input={input} progress={progress} verifying={verifying} busy={busy}
+          focused={focused} invalid={!!error} testIDPrefix={testIDPrefix} enter={enter} exit={exit} layout={layout} submit={submit}
+          onFocus={() => { setFocused(true); onFocusChange?.(true); }}
+          onBlur={() => { setFocused(false); onFocusChange?.(false); }} />
 
-      {error ? (
-        <Animated.View entering={enter} exiting={exit} layout={layout} style={styles.feedback}>
-          <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.error}>{error}</Text>
-        </Animated.View>
-      ) : null}
+        {error ? (
+          <Animated.View entering={enter} exiting={exit} layout={layout} style={styles.feedback}>
+            <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.error}>{error}</Text>
+          </Animated.View>
+        ) : null}
 
-      <AuthReveal progress={progress} order={1} style={styles.primaryRow} layout={layout}>
-        <AuthButton
-          testID={`${testIDPrefix}-submit`} accessibilityRole="button" accessibilityState={{ disabled, busy: emailBusy }}
-          onPress={submit} disabled={disabled} style={[styles.primaryButton, disabled && styles.buttonDisabled]}>
-          <LinearGradient colors={AuthPanel.primaryGradient} style={StyleSheet.absoluteFill} pointerEvents="none" />
-          <View style={styles.buttonLabelFrame}>
-            <Animated.Text key={buttonLabel} entering={enter} exiting={exit} style={styles.buttonText}>{buttonLabel}</Animated.Text>
-          </View>
-          <View style={styles.buttonArrow}>
-            {emailBusy ? <ActivityIndicator color={AuthPanel.surface} size="small" /> : <AuthIcon name="arrow" size={21} />}
-          </View>
-        </AuthButton>
-      </AuthReveal>
+        <AuthReveal progress={progress} order={1} style={styles.primaryRow} layout={layout}>
+          <AuthButton
+            testID={`${testIDPrefix}-submit`} accessibilityRole="button" accessibilityState={{ disabled, busy: emailBusy }}
+            onPress={submit} disabled={disabled} style={[styles.primaryButton, disabled && styles.buttonDisabled]}>
+            <LinearGradient colors={AuthPanel.primaryGradient} style={StyleSheet.absoluteFill} pointerEvents="none" />
+            <View style={styles.buttonLabelFrame}>
+              <Animated.Text key={buttonLabel} entering={enter} exiting={exit} style={styles.buttonText}>{buttonLabel}</Animated.Text>
+            </View>
+            <View style={styles.buttonArrow}>
+              {emailBusy ? <ActivityIndicator color={AuthPanel.surface} size="small" /> : <AuthIcon name="arrow" size={21} />}
+            </View>
+          </AuthButton>
+        </AuthReveal>
+      </View>
 
       {verifying ? (
         <AuthVerificationFooter key="resend" notice={auth.notice} resendIn={auth.resendIn} pending={auth.pending} busy={busy}
           testIDPrefix={testIDPrefix} onResend={() => { void auth.requestCode(true); }} enter={enter} exit={exit} layout={layout} />
       ) : (
         <AuthEntryControls key="social" progress={progress} testIDPrefix={testIDPrefix} busy={busy} googleBusy={auth.pending === 'google'}
-          openPolicy={openPolicy} enter={enter} exit={exit} layout={layout} onGoogle={() => {
+          enter={enter} exit={exit} layout={layout} onGoogle={() => {
             Keyboard.dismiss();
-            if (AUTH_TEST_MODE) { if (mode === 'sign-up') beginTestSignup(); else enterTestApp(); }
+            if (AUTH_TEST_MODE) continuePreview();
             else void auth.requestSocial('google');
           }} />
       )}
@@ -157,16 +154,15 @@ function CredentialsPanel({ progress, testIDPrefix = 'auth', onFocusChange }: {
 }
 
 const styles = StyleSheet.create({
-  panel: { paddingHorizontal: 17, paddingBottom: 23 },
+  panel: { paddingHorizontal: 16, paddingBottom: 22 },
   status: { fontFamily: InterFont.medium, fontSize: AuthPanel.bodySize, lineHeight: 20, color: AuthPanel.ink, paddingVertical: 12 },
-  modes: { flexDirection: 'row', gap: 4, padding: 3, borderRadius: AuthPanel.controlRadius, backgroundColor: AuthPanel.selected, marginBottom: 15 },
-  mode: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: AuthPanel.controlRadius - 3 },
-  modeSelected: { backgroundColor: AuthPanel.surface },
-  modeLabel: { fontFamily: InterFont.medium, fontSize: AuthPanel.bodySize, color: AuthPanel.placeholder },
-  modeLabelSelected: { fontFamily: InterFont.semiBold, color: AuthPanel.primary },
-  primaryRow: { marginTop: 9 },
+  headingRow: { paddingHorizontal: 10, marginBottom: 14 },
+  heading: { fontFamily: InterFont.semiBold, fontSize: AuthPanel.welcomeSize, lineHeight: 26, color: AuthPanel.ink },
+  emailGroup: { padding: 14, borderRadius: AuthPanel.groupRadius, borderWidth: 1, borderColor: AuthPanel.groupBorder, backgroundColor: AuthPanel.groupSurface },
+  fieldLabel: { fontFamily: InterFont.medium, fontSize: AuthPanel.fieldLabelSize, lineHeight: 18, color: AuthPanel.secondary, marginBottom: 8, paddingHorizontal: 6 },
+  primaryRow: { marginTop: 12 },
   primaryButton: {
-    minHeight: 44, borderRadius: AuthPanel.controlRadius, overflow: 'hidden',
+    minHeight: AuthPanel.controlHeight, borderRadius: AuthPanel.controlRadius, overflow: 'hidden',
     paddingHorizontal: 38, paddingVertical: 10,
     justifyContent: 'center', alignItems: 'center', backgroundColor: AuthPanel.primary,
     boxShadow: AuthPanel.buttonShadow,

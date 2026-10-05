@@ -52,9 +52,9 @@ export function AuthEmailField({ auth, input, progress, verifying, busy, focused
 
 const styles = StyleSheet.create({
   inputFrame: {
-    minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 15,
-    paddingLeft: 10, borderRadius: AuthPanel.controlRadius,
-    borderWidth: 1, borderColor: AuthPanel.border, backgroundColor: AuthPanel.field,
+    minHeight: AuthPanel.controlHeight, flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingLeft: 14, borderRadius: AuthPanel.controlRadius,
+    borderWidth: 1, borderColor: 'transparent', backgroundColor: AuthPanel.field,
   },
   fieldIcon: { width: 20, height: 22, justifyContent: 'center', alignItems: 'center' },
   inputFocused: { borderColor: AuthPanel.focusBorder, backgroundColor: 'rgba(255,255,255,0.72)' },
@@ -65,5 +65,5 @@ const styles = StyleSheet.create({
     color: AuthPanel.ink, borderWidth: 0, outlineWidth: 0,
   },
   codeInput: { fontSize: AuthPanel.codeSize, letterSpacing: 8, textAlign: 'center' },
-  clearButton: { width: 36, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  clearButton: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });
