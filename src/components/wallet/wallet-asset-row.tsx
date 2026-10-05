@@ -5,7 +5,7 @@ import { WalletPalette as W } from '@/constants/theme';
 import { formatWalletValue, type WalletAsset } from '@/constants/wallet';
 import { ChevronRight } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { sharedStyles } from './wallet-section-styles';
 
@@ -16,9 +16,9 @@ export function WalletAssetRow({ asset, visible, compact, reduceMotion, onSelect
     <AuthButton accessibilityRole="button" accessibilityLabel={visible ? `${asset.name}, ${asset.quantity}, ${formatWalletValue(asset.value)}, ${asset.network}` : `${asset.name}, balances hidden, ${asset.network}`} testID={`wallet-asset-${asset.symbol.toLowerCase()}`} onPress={() => onSelect(asset)} style={[styles.asset, compact && styles.compactAsset]}>
       <TokenIcon symbol={asset.symbol} size={compact ? 30 : 36} /><View style={styles.assetName}><Text style={styles.assetSymbol}>{asset.symbol}</Text><Text style={[styles.caption, compact && styles.compactCaption]} numberOfLines={compact ? 2 : 1}>{asset.network}</Text></View>
       <View style={[styles.sparkline, compact && styles.compactSparkline]} testID={`wallet-chart-${asset.symbol.toLowerCase()}`}><MarketSparkline market={asset} width={compact ? 28 : 44} height={28} /></View>
-      <Animated.View key={visible ? 'visible' : 'hidden'} entering={visible && !reduceMotion ? FadeIn.duration(160) : undefined} style={[styles.assetAmount, compact && styles.compactAmount]}>
+      <View style={[styles.assetAmount, compact && styles.compactAmount]}>
         <Text style={[styles.assetValue, compact && styles.compactValue]} testID={`wallet-value-${asset.symbol.toLowerCase()}`} numberOfLines={1}>{visible ? formatWalletValue(asset.value) : '••••'}</Text><Text style={[styles.caption, styles.quantity, compact && styles.compactCaption]} testID={`wallet-quantity-${asset.symbol.toLowerCase()}`} numberOfLines={1}>{visible ? asset.quantity : '••••'}</Text>
-      </Animated.View><ChevronRight size={compact ? 14 : 15} color={W.secondary} strokeWidth={1.6} />
+      </View><ChevronRight size={compact ? 14 : 15} color={W.secondary} strokeWidth={1.6} />
     </AuthButton>
   </Animated.View>;
 }

@@ -72,7 +72,7 @@ export default function WalletScreen() {
       <WalletActions onAction={showSheet} compact={compact} />
       <View style={styles.sectionHeading}>
         <View style={[styles.tabs, compact && styles.compactTabs]} testID="wallet-tabs">
-          {tabs.map((item, index) => <AuthButton key={item} accessibilityRole="button" accessibilityState={{ selected: tab === item }} onPress={() => changeTab(item)} testID={`wallet-tab-${item.toLowerCase()}`} style={[styles.tab, compact && styles.compactTab, tab === item && styles.activeTab]}><Text style={[styles.tabText, tab === item && styles.activeTabText]}>{item}</Text>{index === 1 && tab === 'Assets' ? <View style={styles.tabDivider} pointerEvents="none" /> : null}</AuthButton>)}
+          {tabs.map((item, index) => <AuthButton key={item} accessibilityRole="button" accessibilityState={{ selected: tab === item }} onPress={() => changeTab(item)} testID={`wallet-tab-${item.toLowerCase()}`} style={[styles.tab, compact && styles.compactTab, tab === item && styles.activeTab]}><Text style={[styles.tabText, compact && styles.compactTabText, tab === item && styles.activeTabText]}>{item}</Text>{index === 1 && tab === 'Assets' ? <View style={styles.tabDivider} pointerEvents="none" /> : null}</AuthButton>)}
         </View>
         {tab === 'Assets' ? <AuthButton accessibilityRole="button" accessibilityLabel={`Filter assets. ${network} selected`} testID="wallet-networks" onPress={() => showSheet('networks')} style={[styles.filter, compact && styles.compactFilter]}>
           <Text style={[styles.filterLabel, compact && styles.compactFilterLabel]} numberOfLines={1}>{network}</Text><ChevronDown size={13} color={W.ink} />
@@ -117,10 +117,11 @@ const styles = StyleSheet.create({
   tab: { paddingHorizontal: 13, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 13 },
   compactTabs: { flex: 1 },
   compactTab: { flex: 1, paddingHorizontal: 5 },
-  compactFilter: { width: 92, paddingHorizontal: 7 },
-  compactFilterLabel: { fontSize: 12 },
+  compactFilter: { width: 100, paddingHorizontal: 7 },
+  compactFilterLabel: { fontSize: 11 },
   activeTab: { backgroundColor: W.selected },
   tabText: { fontFamily: BrandFont.editorial, fontSize: 15, color: W.ink },
+  compactTabText: { fontSize: 14 },
   activeTabText: { color: W.ink },
   tabDivider: { position: 'absolute', right: 0, width: 1, height: 14, backgroundColor: W.balanceLine },
   filter: { minHeight: 44, paddingHorizontal: 10, borderRadius: 22, backgroundColor: W.muted, flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: '46%' },
