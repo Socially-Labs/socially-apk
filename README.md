@@ -4,20 +4,29 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 ## App screenshots
 
-Captured from the running web preview at a 390 × 844 phone viewport (2× resolution). Screens use the app’s demo mode and sample data; native rendering may differ.
+Updated October 6, 2026. Captured from the running web preview at a 390 × 844 phone viewport (2× resolution). Screens use the app’s demo mode and sample data; native rendering may differ.
 
 | Crew home | Captain home | Discover Captains |
 | --- | --- | --- |
 | <img src="assets/readme/screenshots/crew-home.webp" width="250" alt="Crew home with portfolio performance and Captain vaults"> | <img src="assets/readme/screenshots/captain-home.webp" width="250" alt="Captain home with assets under management and vault actions"> | <img src="assets/readme/screenshots/discover.webp" width="250" alt="Discover Captains with featured strategies and search"> |
 | **Wallet** | **Captain markets** | **Settings** |
-| <img src="assets/readme/screenshots/wallet.webp" width="250" alt="Wallet with sample balances, assets, and crypto actions"> | <img src="assets/readme/screenshots/markets.webp" width="250" alt="Captain markets with trading vault and token prices"> | <img src="assets/readme/screenshots/settings.webp" width="250" alt="Settings with profile, account, and preferences"> |
+| <img src="assets/readme/screenshots/wallet.webp" width="250" alt="Wallet with sample balances, assets, and crypto actions"> | <img src="assets/readme/screenshots/markets.webp" width="250" alt="Captain markets with trading vault and token prices"> | <img src="assets/readme/screenshots/settings.webp" width="250" alt="Settings with profile, account and display tiles, invites, and support"> |
+
+<details>
+<summary>Portfolio breakdown & notifications</summary>
+
+| Portfolio breakdown | Notifications |
+| --- | --- |
+| <img src="assets/readme/screenshots/crew-portfolio.webp" width="250" alt="Crew portfolio breakdown with performance chart and investment summary"> | <img src="assets/readme/screenshots/crew-notifications.webp" width="250" alt="Notifications popover with unread portfolio updates"> |
+
+</details>
 
 <details>
 <summary>Sign-in & onboarding</summary>
 
 | Welcome / sign-in | Returning sign-in | Choose a username |
 | --- | --- | --- |
-| <img src="assets/readme/screenshots/sign-in.webp" width="250" alt="Socially welcome screen with email and Google sign-in"> | <img src="assets/readme/screenshots/sign-in-panel.webp" width="250" alt="Returning sign-in screen"> | <img src="assets/readme/screenshots/signup-username.webp" width="250" alt="Signup username step"> |
+| <img src="assets/readme/screenshots/sign-in.webp" width="250" alt="Socially coastal welcome screen with a frosted email form and Google sign-in"> | <img src="assets/readme/screenshots/sign-in-panel.webp" width="250" alt="Returning sign-in screen with the shared frosted auth card"> | <img src="assets/readme/screenshots/signup-username.webp" width="250" alt="Signup username step"> |
 
 | Choose your role |
 | --- |

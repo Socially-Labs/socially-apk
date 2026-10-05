@@ -18,7 +18,7 @@ export function AuthPrimaryAction({ label, testID, onPress, disabled = false, bu
 }
 
 const styles = StyleSheet.create({
-  button: { minHeight: 44, borderRadius: AuthPanel.controlRadius, overflow: 'hidden', paddingHorizontal: 38, paddingVertical: 10,
+  button: { minHeight: AuthPanel.controlHeight, borderRadius: AuthPanel.controlRadius, overflow: 'hidden', paddingHorizontal: 38, paddingVertical: 10,
     justifyContent: 'center', alignItems: 'center', backgroundColor: AuthPanel.primary, boxShadow: AuthPanel.buttonShadow },
   disabled: { opacity: 0.82 },
   label: { fontFamily: InterFont.semiBold, color: AuthPanel.surface, fontSize: AuthPanel.buttonSize, lineHeight: 22, textAlign: 'center' },

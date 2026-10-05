@@ -1,4 +1,3 @@
-import { policyUrls } from '@/auth/config';
 import { AuthIcon } from '@/components/auth/auth-icons';
 import { AuthButton, AuthReveal } from '@/components/shared/motion';
 import { InterFont } from '@/constants/fonts';
@@ -7,12 +6,9 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import type { AuthControlAnimation, AuthTestIDPrefix } from './auth-control-types';
 
-const { terms: termsUrl, privacy: privacyUrl } = policyUrls;
-const hasPolicies = !!termsUrl?.startsWith('https://') && !!privacyUrl?.startsWith('https://');
-
-export function AuthEntryControls({ progress, testIDPrefix, busy, googleBusy, onGoogle, openPolicy, enter, exit, layout }: AuthControlAnimation & {
+export function AuthEntryControls({ progress, testIDPrefix, busy, googleBusy, onGoogle, enter, exit, layout }: AuthControlAnimation & {
   progress: SharedValue<number>; testIDPrefix: AuthTestIDPrefix; busy: boolean; googleBusy: boolean;
-  onGoogle: () => void; openPolicy: (url: string | undefined) => void;
+  onGoogle: () => void;
 }) {
   return (
     <Animated.View key="social" entering={enter} exiting={exit} layout={layout}>
@@ -35,16 +31,10 @@ export function AuthEntryControls({ progress, testIDPrefix, busy, googleBusy, on
         </AuthButton>
       </AuthReveal>
       <AuthReveal progress={progress} order={4}>
-        {hasPolicies ? (
-          <Text style={styles.footer}>
-            By continuing, you agree to our{' '}
-            <Text accessibilityRole="link" onPress={() => openPolicy(termsUrl)} style={styles.policy}>Terms</Text>
-            {' '}and{' '}
-            <Text accessibilityRole="link" onPress={() => openPolicy(privacyUrl)} style={styles.policy}>Privacy Policy.</Text>
-          </Text>
-        ) : (
-          <Text style={styles.footer}>Sign in or create your account.{'\n'}No password needed.</Text>
-        )}
+        <View style={styles.footer} testID={`${testIDPrefix}-security-footer`}>
+          <AuthIcon name="lock" size={13} />
+          <Text style={styles.securityText}>Secured by <Text style={styles.provider}>Privy</Text></Text>
+        </View>
       </AuthReveal>
     </Animated.View>
   );
@@ -55,14 +45,15 @@ const styles = StyleSheet.create({
   dividerLine: { height: 1, flex: 1, backgroundColor: AuthPanel.divider },
   or: { fontFamily: InterFont.medium, fontSize: 10, color: AuthPanel.caption },
   socialButton: {
-    minHeight: 44, borderRadius: AuthPanel.controlRadius,
+    minHeight: AuthPanel.controlHeight, borderRadius: AuthPanel.socialRadius,
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12,
-    borderWidth: 1, borderColor: AuthPanel.border, backgroundColor: AuthPanel.field,
+    borderWidth: 1, borderColor: AuthPanel.border, backgroundColor: AuthPanel.socialSurface,
   },
   socialText: { fontFamily: InterFont.regular, fontSize: AuthPanel.socialSize, color: AuthPanel.ink },
-  footer: {
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 16 },
+  securityText: {
     fontFamily: InterFont.regular, fontSize: AuthPanel.captionSize, lineHeight: 15,
-    color: AuthPanel.caption, textAlign: 'center', marginTop: 17,
+    color: AuthPanel.caption,
   },
-  policy: { fontFamily: InterFont.semiBold, color: AuthPanel.secondary },
+  provider: { fontFamily: InterFont.semiBold },
 });

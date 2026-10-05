@@ -1,4 +1,6 @@
 import { Dashboard } from './dashboard';
+import { CaptainHomePalette as C } from './captain-home';
+import { DiscoverPalette as D } from './discover';
 
 /** Settings extend the voyage cards with quieter icon wells and a blue crew badge. */
 export const SettingsPalette = {
@@ -26,4 +28,15 @@ export const SettingsPalette = {
   titleSize: 28,
   rowTitleSize: 15,
   bodySize: 14,
+} as const;
+
+/** Selected Settings concept 2: a pearl hub with a mint invitation tile. */
+export const SettingsHubPalette = {
+  ink: D.ink, secondary: D.secondary,
+  tile: ['#FFFFFF', '#F3FAFE'] as const,
+  invite: ['#EDFCF6', '#DEFAF1'] as const,
+  border: C.tileBorder, rim: C.border, line: C.line,
+  iconSurface: C.tileIcon, arrow: '#E3F2FD',
+  inviteIcon: C.earningsIcon, inviteArrow: C.gainSurface, inviteInk: C.gain,
+  shadow: C.shadow,
 } as const;
