@@ -1,9 +1,11 @@
 export type ProfileAvatarKind = 'captain' | 'initials';
+export type AccountRole = 'crew' | 'captain';
 export type AccountSettings = {
   name: string; username: string; bio: string; avatar: ProfileAvatarKind;
   photoUri: string | null; bannerUri: string | null; hideBalances: boolean;
+  role: AccountRole | null;
 };
-export type ProfileDraft = Omit<AccountSettings, 'hideBalances'>;
+export type ProfileDraft = Omit<AccountSettings, 'hideBalances' | 'role'>;
 
 export function usernameError(username: string): string | null {
   if (!username) return 'Choose a username.';
@@ -18,6 +20,6 @@ export function defaultUsername(name: string) {
 }
 
 export function profileFromSettings(settings: AccountSettings): ProfileDraft {
-  const { hideBalances: _, ...profile } = settings;
+  const { hideBalances: _, role: __, ...profile } = settings;
   return profile;
 }

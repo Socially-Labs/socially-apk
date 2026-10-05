@@ -1,9 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
 import Animated, {
   Easing, Extrapolation, LinearTransition, cancelAnimation, interpolate,
-  useAnimatedStyle, useReducedMotion, useSharedValue, withTiming, type SharedValue,
+  useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming, type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,16 +20,27 @@ export function SignInLayout({ reveal, testIDPrefix, enabled = true }: {
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const contentReveal = useSharedValue(0);
+  const stepReveal = useSharedValue(1);
+  const [stage, setStage] = useState('credentials');
+  const scroll = useRef<ScrollView>(null);
 
   useEffect(() => {
+    contentReveal.set(0);
     contentReveal.set(enabled ? (reduceMotion ? 1 : withTiming(1, { duration: 520, easing: Easing.linear })) : 0);
     return () => cancelAnimation(contentReveal);
-  }, [enabled, reduceMotion, contentReveal]);
+  }, [enabled, reduceMotion, contentReveal, stage]);
+
+  useEffect(() => {
+    if (!enabled || stage === 'credentials') { stepReveal.set(1); return; }
+    stepReveal.set(reduceMotion ? 1 : 0);
+    if (!reduceMotion) stepReveal.set(withSpring(1, { damping: 28, stiffness: 240, mass: 0.9, overshootClamping: true }));
+    return () => cancelAnimation(stepReveal);
+  }, [stage, enabled, reduceMotion, stepReveal]);
 
   const brandStyle = useAnimatedStyle(() => ({ opacity: reveal.get() }));
   const cardStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(reveal.get(), [0, 0.4], [0, 1], Extrapolation.CLAMP),
-    transform: [{ translateY: reduceMotion ? 0 : (1 - reveal.get()) * 36 }],
+    opacity: interpolate(reveal.get(), [0, 0.4], [0, 1], Extrapolation.CLAMP) * stepReveal.get(),
+    transform: [{ translateY: reduceMotion ? 0 : (1 - reveal.get() * stepReveal.get()) * 36 }],
   }));
 
   return (
@@ -38,13 +49,14 @@ export function SignInLayout({ reveal, testIDPrefix, enabled = true }: {
       accessibilityElementsHidden={!enabled}
       importantForAccessibility={enabled ? 'auto' : 'no-hide-descendants'}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <Animated.ScrollView style={styles.scroll}
+      <Animated.ScrollView ref={scroll} style={styles.scroll}
         contentContainerStyle={[styles.content, {
           paddingTop: Math.max(insets.top + 20, 44),
           paddingBottom: Math.max(insets.bottom + 12, 24),
         }]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        onContentSizeChange={() => { if (enabled) scroll.current?.scrollToEnd({ animated: false }); }}
         showsVerticalScrollIndicator={false}>
         <Animated.View style={brandStyle}>
           <SignInBrand testIDPrefix={testIDPrefix} />
@@ -55,7 +67,7 @@ export function SignInLayout({ reveal, testIDPrefix, enabled = true }: {
           layout={reduceMotion ? undefined : LinearTransition.duration(280)}
           style={[styles.card, cardStyle]}>
           <LinearGradient colors={AuthPanel.glass} style={StyleSheet.absoluteFill} pointerEvents="none" />
-          <SignInPanel progress={contentReveal} testIDPrefix={testIDPrefix} />
+          {enabled ? <SignInPanel progress={contentReveal} testIDPrefix={testIDPrefix} onStageChange={setStage} /> : null}
         </Animated.View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
