@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
-import { ChevronRight, Plus, Users, ArrowDownLeft, Clock3, ArrowLeft } from 'lucide-react-native';
+import { ChevronRight, Plus, Clock3, ArrowLeft } from 'lucide-react-native';
 
 import { DashboardSheet } from '@/components/shared/dashboard/dashboard-sheet';
 import { FundVaultIcon } from '@/components/shared/icons/product-icons';
@@ -22,7 +22,7 @@ export function CaptainDashboardSheet({ panel, vaults, hidden, onClose, onPanel,
   const [formError, setFormError] = useState<string | null>(null);
   const total = captainTotals(vaults);
   const selected = panel && 'id' in panel ? vaults.find(vault => vault.id === panel.id) : undefined;
-  const titles = { overview: 'Assets under management', manage: 'Manage your vaults', crew: 'Your Crew', earnings: 'Your earnings', create: 'Create a vault', notifications: 'Captain updates', vault: selected?.name ?? 'Vault', rules: 'Vault rules', exits: 'Exit requests' };
+  const titles = { overview: 'Assets under management', manage: 'Manage your vaults', crew: 'Your Crew', earnings: 'Your earnings', create: 'Create a vault', vault: selected?.name ?? 'Vault', rules: 'Vault rules', exits: 'Exit requests' };
   function create() {
     if (name.trim().length < 3) { setFormError('Use at least 3 characters for your vault name.'); return; }
     Keyboard.dismiss(); onCreate(name.trim(), strategy); setName(''); setStrategy('Balanced'); setFormError(null);
@@ -99,23 +99,11 @@ export function CaptainDashboardSheet({ panel, vaults, hidden, onClose, onPanel,
         {selected.exits > 0 ? ['Maya', 'Isha'].slice(0, selected.exits).map((member, index) => <View key={member} style={styles.listRow}><View style={styles.icon}><Clock3 size={21} color={D.risk} /></View><View style={styles.flex}><Text style={styles.rowTitle}>{member}</Text><Text style={styles.caption}>Awaiting liquidity · {index === 0 ? '2 hours ago' : '4 hours ago'}</Text></View><Text style={styles.rowValue}>{hidden ? '••••' : captainMoney(index === 0 ? 120000 : 80000)}</Text></View>) : <View style={styles.empty}><Clock3 size={26} color={D.secondary} /><Text style={styles.rowTitle}>No pending exits</Text><Text style={styles.copy}>Crew exit requests will appear here.</Text></View>}
         <Text style={styles.caption}>Exit-request preview only. No liquidation or settlement takes place.</Text>
       </> : null}
-
-      {panel?.kind === 'notifications' ? <>
-        <Text style={styles.caption}>Sample updates from your vaults</Text>
-        <Notification icon={<ArrowDownLeft size={20} color={D.accent} />} title="A new allocation aboard" copy={`Horizon Growth received ${hidden ? 'a new allocation' : 'a $2,500.00 allocation'}.`} time="12 minutes ago" />
-        <Notification icon={<Users size={20} color={D.accent} />} title="Your Crew is growing" copy="Two new members joined Solana Current." time="1 hour ago" />
-        <AuthButton accessibilityRole="button" testID="captain-notification-exits" onPress={() => onPanel({ kind: 'exits', id: 'long-view' })} style={styles.notificationAction}>
-          <Notification icon={<Clock3 size={20} color={D.risk} />} title="Exit requests to review" copy="The Long View has 2 requests awaiting liquidity." time="2 hours ago" /><ChevronRight size={18} color={D.secondary} />
-        </AuthButton>
-      </> : null}
     </View>
   </DashboardSheet>;
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) { return <View style={styles.detailRow}><Text style={[styles.copy, styles.flex]}>{label}</Text><Text style={styles.rowValue}>{value}</Text></View>; }
-function Notification({ icon, title, copy, time }: { icon: ReactNode; title: string; copy: string; time: string }) {
-  return <View style={[styles.listRow, styles.flex]}><View style={styles.icon}>{icon}</View><View style={styles.flex}><Text style={styles.rowTitle}>{title}</Text><Text style={styles.copy}>{copy}</Text><Text style={styles.caption}>{time}</Text></View></View>;
-}
 
 const styles = StyleSheet.create({
   content: { gap: 14, paddingVertical: 4 }, flex: { flex: 1, minWidth: 0 },
@@ -145,5 +133,4 @@ const styles = StyleSheet.create({
   vaultIdentity: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 9 },
   holdings: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, holding: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 9, borderRadius: 12, backgroundColor: D.soft },
   empty: { paddingVertical: 18, alignItems: 'center', gap: 10 },
-  notificationAction: { flexDirection: 'row', alignItems: 'center', gap: 5 },
 });

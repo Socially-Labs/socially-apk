@@ -67,17 +67,19 @@ export function HomePerformanceCard({ label, balance, change, changeCaption, pos
   </LinearGradient>;
 }
 
-function PortfolioChart({ values, hidden, color, description, testID, frosted }: { values: number[]; hidden: boolean; color: string; description: string; testID: string; frosted: boolean }) {
+export function PortfolioChart({ values, hidden, color, description, testID, frosted = false, light = false, height = frosted ? 52 : 70 }: {
+  values: number[]; hidden: boolean; color: string; description: string; testID: string; frosted?: boolean; light?: boolean; height?: number;
+}) {
   const min = Math.min(...values), max = Math.max(...values), range = Math.max(1, max - min);
   const points = values.map((value, index) => [4 + index / (values.length - 1) * 312, 75 - (value - min) / range * 58]);
   const path = points.map(([x, y], index) => `${index ? 'L' : 'M'}${x.toFixed(2)} ${y.toFixed(2)}`).join(' ');
   const last = points[points.length - 1];
   const gradientId = `${testID}-fill`;
-  return <View style={[styles.chart, frosted && glass.chart]} testID={testID} accessible accessibilityRole="image"
+  return <View style={[styles.chart, frosted && glass.chart, { height }]} testID={testID} accessible accessibilityRole="image"
     accessibilityLabel={hidden ? 'Performance chart. Balances hidden.' : description}>
-    <Svg width="100%" height={frosted ? 52 : 70} viewBox="0 0 320 88" preserveAspectRatio="none">
+    <Svg width="100%" height={height} viewBox="0 0 320 88" preserveAspectRatio="none">
       <Defs><SvgGradient id={gradientId} x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor={frosted ? '#6BA4D5' : color} stopOpacity={0.2} /><Stop offset="1" stopColor={color} stopOpacity={0} /></SvgGradient></Defs>
-      {frosted ? null : <Path d="M4 25 H316 M4 53 H316 M4 81 H316" stroke={D.heroLine} strokeWidth={0.6} strokeDasharray="3 5" />}
+      {frosted ? null : <Path d="M4 25 H316 M4 53 H316 M4 81 H316" stroke={light ? D.line : D.heroLine} strokeWidth={0.6} strokeDasharray="3 5" />}
       <Path d={`${path} L316 88 L4 88 Z`} fill={`url(#${gradientId})`} />
       <Path d={path} stroke={color} strokeWidth={frosted ? 1.8 : 2.2} fill="none" strokeLinejoin="round" strokeLinecap="round" />
       {frosted ? null : <Circle cx={last[0]} cy={last[1]} r={5} fill={color} fillOpacity={0.16} />}<Circle cx={last[0]} cy={last[1]} r={frosted ? 2.7 : 2.4} fill={color} />
