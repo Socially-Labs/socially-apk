@@ -1,17 +1,18 @@
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowUpRight, ChevronRight, Compass, Plus } from 'lucide-react-native';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { CaptainAvatar, RiskLabel } from '@/components/discover/discover-controls';
 import { DashboardSheet } from '@/components/shared/dashboard/dashboard-sheet';
 import { AuthButton } from '@/components/shared/motion';
 import { crewGainCents, crewInvestedCents, crewMoney, crewPercent, crewPositions, crewSignedMoney, crewTotalCents, type CrewPosition } from '@/constants/crew-portfolio';
-import { discoverCaptains, percent } from '@/constants/discover';
+import { discoverCaptains } from '@/constants/discover';
 import { BrandFont, InterFont } from '@/constants/fonts';
-import { DiscoverPalette as D } from '@/constants/theme';
+import { CaptainHomePalette as H, DiscoverPalette as D } from '@/constants/theme';
 
-export function CrewVaults({ hidden }: { hidden: boolean }) {
+export function CrewVaults({ hidden, compact }: { hidden: boolean; compact: boolean }) {
   const [selected, setSelected] = useState<CrewPosition | null>(null);
   function openCaptain(invest = false) {
     if (!selected) return;
@@ -20,18 +21,25 @@ export function CrewVaults({ hidden }: { hidden: boolean }) {
   }
   return <View style={styles.section} testID="crew-vaults">
     <View style={styles.heading}><Text accessibilityRole="header" style={styles.title}>Your Captain vaults</Text><Text style={styles.count}>{crewPositions.length} vaults</Text></View>
-    <Text style={styles.subtitle}>Your share of each voyage.</Text>
+    <View style={styles.vaultCaptions}><Text style={styles.subtitle}>Your share of each voyage.</Text><Text style={styles.sinceInvested}>Since invested</Text></View>
     <View style={styles.vaultList}>{crewPositions.map(position => {
       const { captain } = position;
       const allocation = position.valueCents / crewTotalCents * 100;
       return <AuthButton key={captain.id} testID={`home-vault-${captain.id}`} accessibilityRole="button"
         accessibilityLabel={`${captain.name}, ${captain.fund}. ${hidden ? 'Balances hidden.' : `Your value ${crewMoney(position.valueCents)}, gain ${crewSignedMoney(position.gainCents)} since invested.`} View your position.`}
         onPress={() => setSelected(position)} style={styles.vault}>
-        <View style={styles.identity}><CaptainAvatar captain={captain} size={42} /><View style={styles.flex}><Text style={styles.captainName}>{captain.name}</Text><Text style={styles.fund}>{captain.fund}</Text></View><ChevronRight size={17} color={D.muted} /></View>
-        <View style={styles.positionRow}><View style={styles.flex}><Text style={styles.smallLabel}>Your value</Text><Text style={styles.value} testID={`home-vault-value-${captain.id}`}>{hidden ? '••••' : crewMoney(position.valueCents)}</Text></View>
-          <View style={styles.returnColumn}><Text style={styles.smallLabel}>Since invested</Text><Text style={styles.gain} testID={`home-vault-gain-${captain.id}`}>{hidden ? '••••' : `${crewSignedMoney(position.gainCents)} · ${crewPercent(position.gainCents / position.investedCents * 100)}`}</Text></View>
+        <CaptainAvatar captain={captain} size={compact ? 34 : 40} />
+        <View style={styles.flex}>
+          <View style={styles.vaultTop}>
+            <View style={styles.flex}><Text style={styles.vaultName}>{captain.name}</Text><Text style={styles.vaultFund} numberOfLines={1}>{captain.fund}</Text></View>
+            <View style={styles.returnColumn}>
+              <Text style={styles.value} testID={`home-vault-value-${captain.id}`}>{hidden ? '••••' : crewMoney(position.valueCents)}</Text>
+              <Text style={[styles.gain, compact && styles.compactGain]} testID={`home-vault-gain-${captain.id}`}>{hidden ? '••••' : `${crewSignedMoney(position.gainCents)} (${crewPercent(position.gainCents / position.investedCents * 100)})`}</Text>
+            </View>
+          </View>
+          <View style={styles.allocationRow}><View style={styles.allocationTrack}><View style={[styles.allocationFill, { width: `${allocation}%` }]} /></View><Text style={styles.allocationLabel}>{Math.round(allocation)}% allocation</Text></View>
         </View>
-        <View style={styles.allocationRow}><View style={styles.allocationTrack}><View style={[styles.allocationFill, { width: `${allocation}%` }]} /></View><Text style={styles.smallLabel}>{Math.round(allocation)}% allocation</Text></View>
+        <ChevronRight size={15} color={H.secondary} strokeWidth={1.7} />
       </AuthButton>;
     })}</View>
     <DashboardSheet visible={selected !== null} title="Your vault position" onClose={() => setSelected(null)}
@@ -58,21 +66,17 @@ export function CrewPortfolioBreakdown({ hidden }: { hidden: boolean }) {
   </View>;
 }
 
-export function CrewDiscoverEntry() {
+export function CrewDiscoverEntry({ compact }: { compact: boolean }) {
   const captains = discoverCaptains.filter(captain => captain.id === 'bluewater' || captain.id === 'tide');
-  return <View style={styles.section} testID="home-discover-captains">
-    <View style={styles.heading}><Text style={styles.title} accessibilityRole="header">Find your next Captain</Text>
-      <AuthButton testID="view-all-captains" accessibilityRole="button" accessibilityLabel="Explore all Captains" onPress={() => router.navigate('/explore')} style={styles.explore}><Text style={styles.exploreText}>Explore</Text><ArrowUpRight size={15} color={D.accent} /></AuthButton>
-    </View>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
-      {captains.map(captain => <AuthButton key={captain.id} accessibilityRole="button" testID={`home-discover-${captain.id}`} accessibilityLabel={`View ${captain.name}, ${captain.strategy}, ${percent(captain.returns['30D'])} sample 30 day strategy return`}
-        onPress={() => router.push({ pathname: '/captain/[id]', params: { id: captain.id, period: '30D' } })} style={styles.discoverCard}>
-        <View style={styles.identity}><CaptainAvatar captain={captain} size={36} /><View style={styles.flex}><Text style={styles.captainName}>{captain.name}</Text><Text style={styles.fund}>{captain.strategy}</Text></View></View>
-        <View style={styles.discoverReturn}><Text style={styles.discoverValue}>{percent(captain.returns['30D'])}</Text><Compass size={18} color={D.accent} /></View>
-        <Text style={styles.smallLabel}>30D strategy return · Sample</Text>
-        <RiskLabel captain={captain} />
-      </AuthButton>)}
-    </ScrollView>
+  return <View style={styles.discoverSection} testID="home-discover-captains">
+    <AuthButton testID="view-all-captains" accessibilityRole="button" accessibilityLabel="Find your next Captain. Explore all Captains."
+      onPress={() => router.navigate('/explore')} style={styles.discoverEntry}>
+      <LinearGradient colors={H.create} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <View style={styles.discoverIcon}><Compass size={21} color={H.createInk} strokeWidth={1.7} /></View>
+      <View style={styles.flex}><Text style={styles.discoverTitle}>Find your next Captain</Text><Text style={styles.discoverCaption}>Explore new strategies</Text></View>
+      {!compact ? <View style={styles.discoverPortraits}>{captains.map(captain => <View key={captain.id} style={styles.discoverPortrait}><CaptainAvatar captain={captain} size={24} /></View>)}</View> : null}
+      <ChevronRight size={16} color={H.createSecondary} strokeWidth={1.7} />
+    </AuthButton>
   </View>;
 }
 
@@ -81,22 +85,29 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  section: { marginTop: 25 }, heading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-  title: { fontFamily: InterFont.semiBold, fontSize: 18, lineHeight: 25, color: D.ink, flexShrink: 1 },
-  count: { fontFamily: InterFont.medium, fontSize: 12, color: D.secondary },
-  subtitle: { fontFamily: InterFont.regular, fontSize: 12, lineHeight: 18, color: D.secondary, marginTop: 4, marginBottom: 13 },
-  vaultList: { gap: 10 }, vault: { backgroundColor: D.surface, padding: 16, borderRadius: 20, borderWidth: 1, borderColor: D.line },
+  section: { marginTop: 18 }, heading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  title: { fontFamily: InterFont.semiBold, fontSize: 16, lineHeight: 22, color: H.ink, flexShrink: 1 },
+  count: { fontFamily: InterFont.medium, fontSize: 11, color: H.secondary },
+  vaultCaptions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: 8, rowGap: 3, marginTop: 3, marginBottom: 10 },
+  subtitle: { fontFamily: InterFont.regular, fontSize: 11, lineHeight: 16, color: H.secondary },
+  sinceInvested: { fontFamily: InterFont.regular, fontSize: 9, lineHeight: 16, color: H.secondary },
+  vaultList: { gap: 8 },
+  vault: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 64, backgroundColor: H.tile, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 18, borderCurve: 'continuous', borderWidth: 1, borderColor: H.tileBorder, boxShadow: H.shadow },
+  vaultTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  vaultName: { fontFamily: InterFont.semiBold, fontSize: 13, lineHeight: 18, color: H.ink },
+  vaultFund: { fontFamily: InterFont.regular, fontSize: 10, lineHeight: 14, color: H.secondary },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 11 }, flex: { flex: 1, minWidth: 0 },
   captainName: { fontFamily: InterFont.semiBold, fontSize: 15, lineHeight: 21, color: D.ink },
   fund: { fontFamily: InterFont.regular, fontSize: 12, lineHeight: 18, color: D.secondary, marginTop: 1 },
-  positionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 16 },
   smallLabel: { fontFamily: InterFont.regular, fontSize: 11, lineHeight: 16, color: D.secondary },
-  value: { fontFamily: InterFont.medium, fontSize: 19, lineHeight: 27, color: D.ink, fontVariant: ['tabular-nums'], marginTop: 2 },
-  returnColumn: { alignItems: 'flex-end', gap: 5 },
-  gain: { fontFamily: InterFont.medium, fontSize: 11, lineHeight: 17, color: D.positive, fontVariant: ['tabular-nums'] },
-  allocationRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 14 },
-  allocationTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: D.soft, overflow: 'hidden' },
-  allocationFill: { height: 3, borderRadius: 2, backgroundColor: D.accent },
+  value: { fontFamily: InterFont.semiBold, fontSize: 14, lineHeight: 18, color: H.ink, fontVariant: ['tabular-nums'] },
+  returnColumn: { alignItems: 'flex-end', gap: 1, flexShrink: 0 },
+  gain: { fontFamily: InterFont.medium, fontSize: 10, lineHeight: 14, color: H.gain, fontVariant: ['tabular-nums'] },
+  compactGain: { fontSize: 9 },
+  allocationRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  allocationLabel: { fontFamily: InterFont.regular, fontSize: 9, lineHeight: 12, color: H.secondary },
+  allocationTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: '#E9F0F7', overflow: 'hidden' },
+  allocationFill: { height: 3, borderRadius: 2, backgroundColor: H.secondary },
   details: { gap: 14, paddingVertical: 10 }, detailCopy: { fontFamily: InterFont.regular, fontSize: 13, lineHeight: 20, color: D.secondary },
   detailValue: { fontFamily: BrandFont.editorial, fontSize: 42, lineHeight: 48, color: D.ink, fontVariant: ['lining-nums', 'tabular-nums'] },
   detailRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 8, rowGap: 4, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: D.line },
@@ -106,10 +117,11 @@ const styles = StyleSheet.create({
   primaryText: { fontFamily: InterFont.semiBold, fontSize: 13, color: D.heroInk },
   secondaryAction: { flex: 1, minHeight: 50, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, backgroundColor: D.soft, borderRadius: 25 },
   secondaryText: { fontFamily: InterFont.medium, fontSize: 13, color: D.ink },
-  explore: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  exploreText: { fontFamily: InterFont.medium, fontSize: 12, color: D.accent },
-  carousel: { gap: 12, paddingTop: 10, paddingBottom: 4 },
-  discoverCard: { width: 218, backgroundColor: D.surface, borderWidth: 1, borderColor: D.line, borderRadius: 20, padding: 16, gap: 9 },
-  discoverReturn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 3 },
-  discoverValue: { fontFamily: BrandFont.editorial, fontSize: 30, lineHeight: 35, color: D.positive, fontVariant: ['lining-nums', 'tabular-nums'] },
+  discoverSection: { marginTop: 12 },
+  discoverEntry: { minHeight: 58, padding: 10, gap: 8, flexDirection: 'row', alignItems: 'center', borderRadius: 18, borderCurve: 'continuous', borderWidth: 1, borderColor: H.createBorder, backgroundColor: H.create[1], boxShadow: H.shadow, overflow: 'hidden' },
+  discoverIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: H.createIcon, alignItems: 'center', justifyContent: 'center' },
+  discoverTitle: { fontFamily: InterFont.medium, fontSize: 12, lineHeight: 17, color: H.createInk },
+  discoverCaption: { fontFamily: InterFont.regular, fontSize: 10, lineHeight: 15, color: H.createSecondary, marginTop: 2 },
+  discoverPortraits: { flexDirection: 'row', gap: 3 },
+  discoverPortrait: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, borderColor: H.createSecondary, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
 });

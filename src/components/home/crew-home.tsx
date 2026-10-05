@@ -29,8 +29,8 @@ export function CrewHome({ compact, heroSpace, onOverview }: { compact: boolean;
     </View>
     <CrewPortfolioCard compact={compact} period={period} onPeriod={value => { selectionFeedback(); setPeriod(value); }}
       hidden={hidden} canToggle={ready && !saving} onToggle={() => { void toggleBalances(); }} error={error} onOverview={() => onOverview(hidden)} />
-    <CrewVaults hidden={hidden} />
-    <CrewDiscoverEntry />
+    <CrewVaults hidden={hidden} compact={compact} />
+    <CrewDiscoverEntry compact={compact} />
   </>;
 }
 

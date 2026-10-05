@@ -6,7 +6,7 @@ export function CrewPortfolioCard({ hidden, canToggle, onToggle, onOverview, per
   period: CrewPeriod; onPeriod: (period: CrewPeriod) => void; compact: boolean; error: string | null;
 }) {
   const performance = crewPerformance(period);
-  return <HomePerformanceCard label="Portfolio value" balance={crewMoney(crewTotalCents)}
+  return <HomePerformanceCard variant="frosted-pills" label="Portfolio value" balance={crewMoney(crewTotalCents)}
     change={`${crewSignedMoney(performance.gainCents)} (${crewPercent(performance.percent)})`} positive={performance.gainCents >= 0}
     changeCaption={period === 'ALL' ? 'since invested' : `past ${period === '7D' ? '7' : period === '30D' ? '30' : '90'} days`}
     values={performance.values} chartDescription={`Sample portfolio value, from ${crewMoney(performance.values[0])} to ${crewMoney(crewTotalCents)}`}

@@ -20,17 +20,18 @@ export function HomePerformanceCard({ label, balance, change, changeCaption, pos
   hidden: boolean; canToggle: boolean; onToggle: () => void; onOverview: () => void; overviewLabel: string;
   period: HomePeriod; onPeriod: (period: HomePeriod) => void; compact: boolean; error: string | null;
   testIDPrefix: string; summaryTestID: string; balanceTestID: string; changeTestID: string; overviewTestID: string;
-  variant?: 'default' | 'frosted';
+  variant?: 'default' | 'frosted' | 'frosted-pills';
 }) {
-  const frosted = variant === 'frosted';
+  const frosted = variant !== 'default';
+  const pillPeriods = variant === 'frosted-pills';
   const color = frosted ? positive ? C.gain : C.loss : positive ? D.heroPositive : D.heroNegative;
-  const periodControls = <View accessibilityRole={frosted ? 'tablist' : undefined} accessibilityLabel={frosted ? 'AUM chart period' : undefined}
-    style={[styles.periods, frosted && glass.periods]}>{periods.map(item => <AuthButton key={item} testID={`${testIDPrefix}-period-${item}`} accessibilityRole={frosted ? 'tab' : 'button'}
+  const periodControls = <View accessibilityRole={frosted ? 'tablist' : undefined} accessibilityLabel={frosted ? `${label} chart period` : undefined}
+    style={[styles.periods, frosted && glass.periods, pillPeriods && glass.pillPeriods]}>{periods.map(item => <AuthButton key={item} testID={`${testIDPrefix}-period-${item}`} accessibilityRole={frosted ? 'tab' : 'button'}
     accessibilityLabel={`${item === 'ALL' ? 'All time' : item} performance`} accessibilityState={{ selected: item === period }}
     aria-selected={frosted ? item === period : undefined}
-    onPress={() => onPeriod(item)} style={[styles.period, frosted && glass.period, item === period && (frosted ? glass.selectedPeriod : styles.selectedPeriod)]}>
+    onPress={() => onPeriod(item)} style={[styles.period, frosted && glass.period, pillPeriods && glass.pillPeriod, item === period && (frosted ? glass.selectedPeriod : styles.selectedPeriod), pillPeriods && item === period && glass.selectedPillPeriod]}>
     <Text style={[styles.periodText, frosted && glass.periodText, item === period && (frosted ? glass.selectedPeriodText : styles.selectedPeriodText)]}>{frosted ? item : item === 'ALL' ? 'All' : item}</Text>
-    {frosted && item === period ? <View style={glass.periodIndicator}><View style={glass.periodDot} /></View> : null}
+    {frosted && !pillPeriods && item === period ? <View style={glass.periodIndicator}><View style={glass.periodDot} /></View> : null}
   </AuthButton>)}</View>;
   return <LinearGradient colors={frosted ? C.card : D.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.card, frosted && glass.card]} testID={summaryTestID}>
     <View style={[styles.row, frosted && glass.row]}>
@@ -125,6 +126,9 @@ const glass = StyleSheet.create({
   periods: { alignSelf: 'flex-end', justifyContent: 'flex-end', gap: 0, marginTop: 2 },
   period: { flex: 0, flexBasis: 44, flexShrink: 0, width: 44, borderRadius: 0 },
   selectedPeriod: { backgroundColor: 'transparent' },
+  pillPeriods: { alignSelf: 'stretch', justifyContent: 'space-between', gap: 4, marginTop: 8 },
+  pillPeriod: { flex: 1, flexBasis: 0, flexShrink: 1, width: 'auto', borderRadius: 13, borderCurve: 'continuous' },
+  selectedPillPeriod: { backgroundColor: '#D5EAFB' },
   periodText: { fontFamily: InterFont.regular, fontSize: 10, color: C.secondary },
   selectedPeriodText: { fontFamily: InterFont.semiBold, color: C.ink },
   periodIndicator: { position: 'absolute', bottom: 7, width: 17, height: 1.5, backgroundColor: C.chart, alignItems: 'center', justifyContent: 'center' },
