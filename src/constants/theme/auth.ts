@@ -8,6 +8,8 @@ export const AuthPanel = {
   field: 'rgba(255,255,255,0.54)',
   socialSurface: 'rgba(255,255,255,0.12)',
   selected: '#EDF2F7',
+  otpSurface: '#F3F6FA',
+  successSurface: '#EAF1F6',
   ink: '#191E43',
   secondary: '#64758B',
   caption: '#64758B',

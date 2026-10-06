@@ -14,11 +14,12 @@ import { Motion } from '@/constants/motion';
 import { Dashboard, DashboardSheetTheme as S } from '@/constants/theme';
 import { SheetSurface, sheetMaterialStyle } from './sheet-surface';
 
-type SheetProps = { visible: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode };
+type SheetProps = { visible: boolean; title: string; onClose: () => void; onDismiss?: () => void; children: ReactNode; footer?: ReactNode };
 const SETTLE = { duration: S.openDuration, dampingRatio: 0.94 };
 const EXIT = Easing.bezier(0.4, 0, 1, 1);
 
 export function DashboardSheet(props: SheetProps) {
+  const { onDismiss } = props;
   const [presented, setPresented] = useState(props.visible);
   const visible = useRef(props.visible);
   useLayoutEffect(() => { visible.current = props.visible; }, [props.visible]);
@@ -26,8 +27,8 @@ export function DashboardSheet(props: SheetProps) {
   // Keep the native modal mounted until its slide-out has actually finished.
   if (props.visible && !presented) setPresented(true);
   const finishDismiss = useCallback(() => {
-    if (!visible.current) setPresented(false);
-  }, []);
+    if (!visible.current) { setPresented(false); onDismiss?.(); }
+  }, [onDismiss]);
 
   return (
     <Modal visible={presented} transparent animationType="none" statusBarTranslucent navigationBarTranslucent
