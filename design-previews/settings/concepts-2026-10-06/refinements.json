@@ -1,0 +1,46 @@
+{
+  "tool": "built-in image_gen",
+  "note": "Append these refinements to corresponding prompts.json entries to reproduce final images. Entry 1 is a replacement of the first draft. Reference 1 is Captain Markets implemented/full.png; reference 2, for concepts 4–10, is assets/images/splash-icon.png.",
+  "refinements": [
+    {
+      "number": 1,
+      "prompt": "\nCritical layout correction: About Socially is ONE small text link beside Terms and Privacy in a lightweight FOOTER. Absolutely no About card, no separate Terms or Privacy rows. The four main destination rows have TITLES ONLY: no subtitles. Identity uses a small avatar and a short horizontal Edit action. Overall screen should feel much shorter and quieter than existing Settings. Do not add the 'Make it yours, Captain' copy."
+    },
+    {
+      "number": 2,
+      "prompt": "\nThis concept has a plain pale canvas, no photographic header. Do not add extra About/Terms/Privacy cards or long vertical explanatory copy."
+    },
+    {
+      "number": 3,
+      "prompt": "\nPlain pale background, no photograph. Make this a SINGLE CHAPTER interface, never show all settings groups below the tabs. Terms and Privacy are small text links in ONE footer line, never list rows. Compact identity, a modest title, no huge empty spacer. Keep useful content and footer comfortably above navigation."
+    },
+    {
+      "number": 4,
+      "prompt": "\nReference 2 is the EXACT app avatar emblem; use it, do not draw a generic sailor. Plain pale canvas without scenery. Terms / Privacy / v1.0.0 form a SINGLE compact footer line. Only Account expanded; Display and Community MUST be collapsed, three distinct accordion boxes, no additional rows below except About and Log out. No long subtitles or oversized spacing."
+    },
+    {
+      "number": 5,
+      "prompt": "\nReference 2 is the actual avatar emblem. The main screen MUST be card-free: NO boxes behind profile or destination list, no icon wells, no coastal photograph. Only fine separators and typographic rhythm. The existing bottom navigation keeps its capsules. About, Log out, Terms, Privacy remain small text actions. Make this the cleanest and most minimal option of the set."
+    },
+    {
+      "number": 6,
+      "prompt": "\nReference 2 is the app avatar, preserve its silver pirate emblem. The coastal masthead is short and restrained; identity is a slim overlap capsule, not a huge profile card. FOUR destination rows only, split into two paired groups. About / Terms / Privacy / v1.0.0 are small footer links in one line, NOT full legal rows or an About card. Quiet logout icon in header. No tall hero, no long copy."
+    },
+    {
+      "number": 7,
+      "prompt": "\nUse reference 2's silver avatar emblem. Plain pale page. Identity card is NAVY, all four destination cards are PEARL, do not turn the whole screen dark. Short paired horizontal destination cards with compact outline icon and one title, avoid big equal square tiles. About is ONE slim row. Terms / Privacy / v1.0.0 are ONE small text footer. No legal cards. No oversized captions."
+    },
+    {
+      "number": 8,
+      "prompt": "\nReference 2 is the exact silver captain avatar. Put the compact identity in the header OUTSIDE the one glass content panel. Panel is visibly translucent pearl with white rim, subtle blur and ice-blue gradient. Only FOUR main destination rows plus one short About row; small Terms / Privacy / v1.0.0 text footer and Log out inside panel. No extra cards outside, no huge explanatory subtitles, no modal handle or Done button."
+    },
+    {
+      "number": 9,
+      "prompt": "\nReference 2 is the real silver app avatar. Plain pale canvas, no coastal photograph. Direct controls are the focal point: hide balance switch, fixed light-theme status and English/USD. Main Display card is compact, not a full form. Show THREE short destination rows below: Account, Invite a friend, Help & support. About Socially / Terms / Privacy / v1.0.0 are ONE compact footer line, never a large About/legal card. Quiet Log out action. Avoid oversize vertical spacers."
+    },
+    {
+      "number": 10,
+      "prompt": "\nReference 2 is the silver pirate app avatar. Plain pale canvas. The mosaic MUST be asymmetric: Account full-width, one TALL Display tile below LEFT, TWO short STACKED community tiles RIGHT (Invite a friend and Help & support), About full-width below. Not four equal tiles. Text should fit comfortably; minimal short copy. Terms / Privacy / v1.0.0 in ONE small text line and Log out as a quiet action. A short profile strip and no tall photographic header."
+    }
+  ]
+}

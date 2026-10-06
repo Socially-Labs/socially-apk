@@ -1,8 +1,0 @@
-{
-  "concepts": [
-    "01-compact-groups",
-    "03-editorial-ledger",
-    "05-navy-identity"
-  ],
-  "prompt": "Use case: ui-mockup. Refine this Socially Settings screenshot to make it genuinely minimal and avoid too much scrolling. Keep the exact existing identity/profile header, palette, typography, main menu arrangement and bottom navigation. Delete the entire Preferences group and all four preference rows: Hide wallet balances, Appearance, Language, Currency. Those belong inside the existing Display destination. The only five main destinations should be Account, Display, Invite a friend, Help & support, About Socially, exactly once each. Keep Edit profile, Crew, Vikas Kumar, @vikaskumar. Preserve the quiet Log out action, Terms, Privacy and v1.0.0. Move the footer up modestly after deleting the group, leaving generous purposeful open pearl space before bottom navigation. Do not enlarge the other controls to consume the removed space. Preserve single screenshot portrait aspect and flat edge-to-edge frame. Every remaining label stays crisp. No new elements or controls. The selected bottom navigation gear stays navy/white; inactive Home pill and compass/wallet unchanged."
-}
