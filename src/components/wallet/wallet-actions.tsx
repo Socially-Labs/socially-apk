@@ -6,10 +6,10 @@ import { WalletPalette as W } from '@/constants/theme';
 
 export type WalletAction = 'deposit' | 'send' | 'receive' | 'swap';
 const actions = [
-  { id: 'deposit', label: 'Deposit', caption: 'Add crypto', icon: Plus },
-  { id: 'send', label: 'Send', caption: 'To any address', icon: ArrowUpRight },
+  { id: 'deposit', label: 'Deposit', caption: 'Test USDC', icon: Plus },
+  { id: 'send', label: 'Send', caption: 'Coming soon', icon: ArrowUpRight },
   { id: 'receive', label: 'Receive', caption: 'From any wallet', icon: ArrowDown },
-  { id: 'swap', label: 'Swap', caption: 'Trade assets', icon: ArrowRightLeft },
+  { id: 'swap', label: 'Swap', caption: 'Coming soon', icon: ArrowRightLeft },
 ] as const;
 export function WalletActions({ onAction, compact }: { onAction: (action: WalletAction) => void; compact: boolean }) {
   return <View style={styles.actions} testID="wallet-actions">

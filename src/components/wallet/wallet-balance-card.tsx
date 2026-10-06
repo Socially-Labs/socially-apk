@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowUpRight, ChevronRight, Eye, EyeOff, LockKeyhole, MoreHorizontal } from 'lucide-react-native';
+import { ChevronRight, Eye, EyeOff, LockKeyhole, MoreHorizontal } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 
@@ -7,29 +7,29 @@ import { AuthButton } from '@/components/shared/motion';
 import { ReserveIcon } from '@/components/shared/icons/product-icons';
 import { BrandFont, InterFont } from '@/constants/fonts';
 import { WalletPalette as W } from '@/constants/theme';
-import { walletBalance } from '@/constants/wallet';
+import { formatUsdc } from '@/api/wallet';
 
-export function WalletBalanceCard({ visible, canToggle, compact, error, onToggle, onMore, onVaults }: {
+export function WalletBalanceCard({ visible, canToggle, compact, error, total, available, vault, onToggle, onMore, onVaults }: {
   visible: boolean; canToggle: boolean; compact: boolean; error: string | null; onToggle: () => void;
-  onMore: () => void; onVaults: () => void;
+  onMore: () => void; onVaults: () => void; total: string | null; available: string | null; vault: string | null;
 }) {
   return <View style={styles.card} testID="wallet-balance-card">
     <LinearGradient colors={W.balanceCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
     <View style={[styles.compass, compact && styles.compactCompass]} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><BalanceCompass /></View>
-    <View style={styles.header}><View style={styles.labelRow}><Text style={styles.label}>TOTAL BALANCE <Text style={styles.preview}>· Sample</Text></Text>
+    <View style={styles.header}><View style={styles.labelRow}><Text style={styles.label}>TOTAL USDC <Text style={styles.preview}>· Devnet</Text></Text>
       <AuthButton accessibilityRole="button" accessibilityLabel={visible ? 'Hide balance' : 'Show balance'} testID="wallet-balance-visibility" disabled={!canToggle} onPress={onToggle} style={styles.iconButton}>
         {visible ? <Eye size={17} color={W.ink} /> : <EyeOff size={17} color={W.ink} />}
       </AuthButton></View>
       <AuthButton accessibilityRole="button" accessibilityLabel="Wallet options" testID="wallet-options" onPress={onMore} style={styles.iconButton}><MoreHorizontal size={22} color={W.secondary} /></AuthButton>
     </View>
-    <Text style={styles.balance} testID="wallet-balance" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>{visible ? walletBalance : '••••••'}</Text>
-    <View style={styles.changeRow}><View style={styles.changePill}><ArrowUpRight size={15} color={W.gain} /><Text style={styles.change}>+2.4%</Text></View><Text style={styles.changeCaption}>All assets (24h)</Text></View>
+    <Text style={styles.balance} testID="wallet-balance" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>{visible ? formatUsdc(total) : '••••••'}</Text>
+    <View style={styles.changeRow}><Text style={styles.changeCaption}>Test USDC · Available + Captain allocations</Text></View>
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     <View style={[styles.breakdown, compact && styles.compactBreakdown]}>
-      <View style={[styles.bucket, compact && styles.compactBucket]}><View style={[styles.bucketIcon, compact && styles.compactBucketIcon]}><ReserveIcon size={compact ? 15 : 17} color={W.ink} /></View><View style={styles.bucketCopy}><Text style={[styles.bucketValue, compact && styles.compactBucketValue]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{visible ? walletBalance : '••••'}</Text><Text style={[styles.bucketLabel, compact && styles.compactBucketLabel]}>Tradable</Text></View></View>
+      <View style={[styles.bucket, compact && styles.compactBucket]}><View style={[styles.bucketIcon, compact && styles.compactBucketIcon]}><ReserveIcon size={compact ? 15 : 17} color={W.ink} /></View><View style={styles.bucketCopy}><Text style={[styles.bucketValue, compact && styles.compactBucketValue]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{visible ? formatUsdc(available) : '••••'}</Text><Text style={[styles.bucketLabel, compact && styles.compactBucketLabel]}>Available to trade</Text></View></View>
       <View style={styles.divider} />
-      <AuthButton accessibilityRole="button" accessibilityLabel={visible ? 'Captain vaults, zero dollars' : 'Captain vaults, balance hidden'} onPress={onVaults} testID="wallet-vault-balance" style={[styles.bucket, compact && styles.compactBucket]}>
-        <View style={[styles.bucketIcon, compact && styles.compactBucketIcon]}><LockKeyhole size={compact ? 15 : 17} color={W.ink} /></View><View style={styles.bucketCopy}><Text style={[styles.bucketValue, compact && styles.compactBucketValue]} numberOfLines={1}>{visible ? '$0.00' : '••••'}</Text><Text style={[styles.bucketLabel, compact && styles.compactBucketLabel]} numberOfLines={compact ? 2 : 1}>In Captain Vaults</Text></View>
+      <AuthButton accessibilityRole="button" accessibilityLabel={visible ? 'View Captain allocations' : 'Captain vaults, balance hidden'} onPress={onVaults} testID="wallet-vault-balance" style={[styles.bucket, compact && styles.compactBucket]}>
+        <View style={[styles.bucketIcon, compact && styles.compactBucketIcon]}><LockKeyhole size={compact ? 15 : 17} color={W.ink} /></View><View style={styles.bucketCopy}><Text style={[styles.bucketValue, compact && styles.compactBucketValue]} numberOfLines={1}>{visible ? formatUsdc(vault) : '••••'}</Text><Text style={[styles.bucketLabel, compact && styles.compactBucketLabel]} numberOfLines={compact ? 2 : 1}>In Captain Vaults</Text></View>
       </AuthButton>
       <AuthButton accessibilityRole="button" accessibilityLabel="View Captain vaults" onPress={onVaults} style={styles.vaultArrow}><View style={styles.arrowCircle}><ChevronRight size={19} color={W.ink} /></View></AuthButton>
     </View>
