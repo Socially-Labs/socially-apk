@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
+import { reportAuthFailure } from '@/auth/auth-diagnostics';
+import { otpEdit } from '@/auth/otp-model';
 
 import { authErrorMessage, RESEND_COOLDOWN_MS, secondsUntilResend, validEmail } from '@/auth/auth-errors';
 import { useAuth, type SocialProvider } from '@/auth/session';
@@ -15,6 +18,7 @@ export function useEmailAuth() {
   const [resendAt, setResendAt] = useState(0);
   const [now, setNow] = useState(Date.now);
   const busy = useRef(false);
+  const lastAutoAttempt = useRef<string | null>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -39,10 +43,14 @@ export function useEmailAuth() {
     setDismissedOAuthError(oauthError);
   };
   const updateCode = (value: string) => {
-    setCode(value.replace(/\D/g, '').slice(0, 6));
+    if (busy.current) return;
+    const edit = otpEdit(value, lastAutoAttempt.current);
+    setCode(edit.code);
     setError(null);
     setDismissedOAuthError(oauthError);
     setNotice(null);
+    lastAutoAttempt.current = edit.lastAttempt;
+    if (edit.autoSubmit && stage === 'code' && isReady && !oauthPending) void submitCode(edit.code);
   };
 
   async function requestCode(resend = false) {
@@ -63,12 +71,14 @@ export function useEmailAuth() {
       if (!mounted.current) return;
       setEmail(address);
       setCode('');
+      lastAutoAttempt.current = null;
       setStage('code');
       const time = Date.now();
       setNow(time);
       setResendAt(time + RESEND_COOLDOWN_MS);
       if (resend) setNotice('A new code is on its way.');
     } catch (cause) {
+      void reportAuthFailure('send', cause, Platform.OS);
       if (mounted.current) setError(authErrorMessage(cause, 'send'));
     } finally {
       busy.current = false;
@@ -76,9 +86,9 @@ export function useEmailAuth() {
     }
   }
 
-  async function submitCode() {
+  async function submitCode(candidate = code) {
     if (busy.current || oauthPending || !isReady) return;
-    if (!/^\d{6}$/.test(code)) {
+    if (!/^\d{6}$/.test(candidate)) {
       setError('Enter the 6-digit code from your email.');
       return;
     }
@@ -87,9 +97,10 @@ export function useEmailAuth() {
     setError(null);
     setNotice(null);
     try {
-      await verifyCode(email, code);
+      await verifyCode(email, candidate);
       // The session provider updates the protected routes after verification.
     } catch (cause) {
+      void reportAuthFailure('verify', cause, Platform.OS);
       if (mounted.current) setError(authErrorMessage(cause, 'verify'));
     } finally {
       busy.current = false;
@@ -101,6 +112,7 @@ export function useEmailAuth() {
     if (busy.current) return;
     setStage('email');
     setCode('');
+    lastAutoAttempt.current = null;
     setError(null);
     setDismissedOAuthError(oauthError);
     setNotice(null);
@@ -115,6 +127,7 @@ export function useEmailAuth() {
     try {
       await loginWithSocial(provider);
     } catch (cause) {
+      void reportAuthFailure('oauth', cause, Platform.OS);
       const message = cause instanceof Error ? cause.message : '';
       if (mounted.current && !/cancel|dismiss/i.test(message)) setError(authErrorMessage(cause, 'oauth'));
     } finally {
