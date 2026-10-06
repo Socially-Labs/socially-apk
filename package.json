@@ -16,6 +16,7 @@
     "expo": "~57.0.26",
     "expo-apple-authentication": "~57.0.2",
     "expo-application": "~57.0.3",
+    "expo-clipboard": "~57.0.2",
     "expo-constants": "~57.0.20",
     "expo-crypto": "~57.0.3",
     "expo-device": "~57.0.2",
@@ -43,6 +44,7 @@
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-get-random-values": "~1.11.0",
+    "react-native-qrcode-svg": "^6.3.26",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
@@ -69,8 +71,13 @@
     "logs:android": "bash scripts/android-crash-log.sh",
     "logs:android:repro": "bash scripts/android-crash-log.sh --repro",
     "test:auth": "node --test tests/auth-errors.test.mjs",
+    "test:otp": "node --test tests/otp-flow.test.mjs",
     "test:discover": "node --test tests/discover-data.test.mjs",
-    "test:markets": "node --test tests/captain-markets.test.mjs"
+    "test:markets": "node --test tests/captain-markets.test.mjs",
+    "test:market-api": "node --test tests/markets-api.test.mjs",
+    "test:account": "node --test tests/backend-account.test.mjs",
+    "test:integration": "node --test tests/backend-http-integration.test.mjs",
+    "test:wallet": "node --test tests/wallet-funding.test.mjs"
   },
   "private": true,
   "overrides": {
