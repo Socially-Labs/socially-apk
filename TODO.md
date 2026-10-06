@@ -1,4 +1,25 @@
-# Crew UI TODO
+# Project TODO
+
+## Privy mobile authentication
+
+- [ ] In [Privy Dashboard → App settings → Clients](https://dashboard.privy.io/apps?page=settings&setting=clients), select/add a mobile client for Socially and allow app identifier `com.socially.trade` and URL scheme `apk`.
+- [ ] Add its Client ID to `EXPO_PUBLIC_PRIVY_CLIENT_ID` in the APK `.env`, then restart Expo. Keep the app secret only in the backend environment.
+- [ ] Enable Google login in Privy if wanted; it is currently disabled. Email login is enabled.
+- [ ] Validate real Android email OTP, OAuth redirects if enabled, session restoration, signup, profile persistence, logout, and account switching against the local backend. For a connected device using `http://127.0.0.1:3000`, run `adb reverse tcp:3000 tcp:3000`.
+
+Implementation and configuration details: [Privy integration documentation](docs/privy-auth-integration-plan.md).
+
+## Wallet funding integration
+
+- [x] External-wallet QR requests for Solana devnet test USDC, with exact amounts and payment references.
+- [x] Persistent backend detection, finalized transaction verification, shared receipt deduplication, and restart recovery.
+- [x] Live available trading balance, Captain allocations, resumable deposit requests, and recent deposit history.
+- [x] Ethereum, Base, Polygon, and Arbitrum shown as coming soon.
+- [x] Provision local test token/treasury and verify a real 12.345678 test-USDC deposit on devnet.
+- [ ] Validate QR scanning and payment from an external wallet on a physical Android device using the updated development build.
+- [ ] Implement outgoing wallet transfers and swaps; both are currently marked coming soon.
+
+## Crew UI
 
 Scope: Mock UI screens and interactions only; no backend integration or shared portfolio data work. Use sample content to demonstrate each flow.
 
@@ -6,7 +27,7 @@ Suggested implementation order: Join completion → Exit flow → Buy USDC / Cas
 
 - [ ] Join completion: extend the existing investment review with confirmation, processing, and success screens.
 - [ ] Exit flow: add partial withdrawal and Leave vault screens with amount entry, review, and status.
-- [ ] Wallet funding: build Buy USDC and Cash out screens in place of connection placeholders.
+- [ ] Cash out: add the withdrawal UI for the existing backend payout flow. QR funding is integrated above.
 - [ ] Position details: add sample owned shares, share price, and fee breakdown to the existing position sheet.
 - [ ] Activity: design sample transaction rows, status badges, and transaction details.
 - [ ] Notifications: add sample trade/risk alerts, withdrawal updates, and notification preferences.

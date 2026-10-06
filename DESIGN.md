@@ -567,7 +567,7 @@ explains intended permissions without asserting that the vault is already live.
   the 43px total, action labels, tabs and asset values. Inter supplies supporting
   labels and the Manage tokens row. A fine pale-blue compass sits inside the
   24px balance card with its white rim. Four 92px white action tiles—Deposit,
-  Send, Receive and Swap—open the existing connection sheets. The selected
+  Send, Receive and Swap—open their funding or action views. The selected
   Assets tab uses a pale-blue pill; tabs and utility controls have 44px targets.
   The 58px token rows use white surfaces with fine blue borders and 18px corners.
   Compact screens reduce icon and sparkline widths and let network labels wrap.
@@ -577,6 +577,13 @@ explains intended permissions without asserting that the vault is already live.
   until live positions are available. Balance privacy masks the total, both
   buckets, asset values and holding sheets. The shared bottom navigation keeps
   its existing form. `docs/wallet-motion.md` records the superseded motion study.
+
+- Receive funds uses a dedicated pale page with an 18px Inter header, a 42px
+  editorial amount, and a navy QR card with a white scanning surface. Copy and
+  Share use 54px controls and preserve the payment reference in the link.
+  Payment checking runs automatically; mint, fees and expiry guidance live in
+  the existing frosted info sheet. The entry step asks only for an amount and
+  uses “Continue”; active payments reopen without a separate resume action.
 
 - `auth-screen.tsx` and `auth/splash/splash-sign-in-card.tsx` share
   `auth/sign-in-layout.tsx`: the 48px brand mark and 30px editorial wordmark sit

@@ -14,7 +14,8 @@ scripts/*
 !scripts/splash-timeline-check.mjs
 !scripts/android-crash-log.sh
 
-docs
+/docs/*
+!/docs/privy-auth-integration-plan.md
 
 skills-lock.json
 # Expo
