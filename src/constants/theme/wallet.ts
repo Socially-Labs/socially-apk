@@ -15,6 +15,7 @@ export const WalletPalette = {
   heroPill: 'rgba(138,179,212,0.13)', heroPositive: '#85DDC3', compass: '#C8BD98',
   primaryAction: ['#2B4D74', '#183857'] as const,
   heroShadow: '0 6px 14px rgba(17,48,78,0.12)',
+  receiveCard: '#173652', receivePill: '#E5EDF7', receiveQrInk: '#102C46',
   balanceCard: C.card, balanceBorder: C.border, balanceLine: C.line,
   balanceIcon: '#DCEFFC', balanceCompass: '#9ABEDB', balanceShadow: C.shadow,
   gain: C.gain, gainSurface: C.gainSurface, error: C.loss,

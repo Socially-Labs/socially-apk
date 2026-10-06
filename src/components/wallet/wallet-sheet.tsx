@@ -3,40 +3,45 @@ import { TokenIcon } from '@/components/shared/markets/market-graphics';
 import { AuthButton } from '@/components/shared/motion';
 import { BrandFont, InterFont } from '@/constants/fonts';
 import { Dashboard, WalletPalette as W } from '@/constants/theme';
-import { formatWalletValue, walletAssets, type WalletAsset } from '@/constants/wallet';
+import { type WalletAsset } from '@/constants/wallet';
 import { Check, ChevronRight, History, Plus, Settings, Wallet } from 'lucide-react-native';
 import { StyleSheet, Switch, Text, View } from 'react-native';
+import { ReceiveFundsScreen } from './receive-funds-screen';
+import { formatUsdc } from '@/api/wallet';
+import type { useWalletFunding } from '@/hooks/use-wallet-funding';
 import { sharedStyles } from './wallet-section-styles';
-import { filters, type NetworkFilter, type WalletSheet as WalletSheetKind } from './wallet-types';
+import { filters, upcomingNetworks, type NetworkFilter, type WalletSheet as WalletSheetKind } from './wallet-types';
 
-export function WalletSheet({ sheet, network, hiddenTokens, balanceVisible, onClose, onNetwork, onSettings, onActivity, onTokenVisibility, onShowSheet }: {
+export function WalletSheet({ funding, assets, selectedDepositId, onSelectDeposit, sheet, network, hiddenTokens, balanceVisible, onClose, onNetwork, onSettings, onActivity, onTokenVisibility, onShowSheet }: {
+  funding: ReturnType<typeof useWalletFunding>; assets: WalletAsset[]; selectedDepositId: string | null; onSelectDeposit: (id: string | null) => void;
   sheet: WalletSheetKind | null; network: NetworkFilter; hiddenTokens: WalletAsset['symbol'][]; balanceVisible: boolean;
   onClose: () => void; onNetwork: (filter: NetworkFilter) => void; onSettings: () => void; onActivity: () => void;
   onTokenVisibility: (symbol: WalletAsset['symbol'], visible: boolean) => void; onShowSheet: (sheet: WalletSheetKind) => void;
 }) {
+  if (sheet === 'deposit' || sheet === 'receive') return <ReceiveFundsScreen onClose={onClose} summary={funding.summary} creating={funding.creating} serviceError={funding.error} selectedId={selectedDepositId} onSelect={onSelectDeposit} onCreate={funding.createDeposit} onRefresh={funding.refresh} />;
   const title = sheet === null ? '' : typeof sheet === 'object' ? sheet.name : {
-    deposit: 'Deposit crypto', send: 'Send crypto', receive: 'Receive on Solana', swap: 'Swap assets', networks: 'Networks', options: 'Wallet options', manage: 'Manage tokens', 'custom-token': 'Add a custom token',
+    deposit: 'Add funds', send: 'Send crypto', receive: 'Add funds from another wallet', swap: 'Swap assets', networks: 'Networks', options: 'Wallet options', manage: 'Manage tokens', 'custom-token': 'Add a custom token',
   }[sheet];
 
   return (
     <DashboardSheet visible={sheet !== null} title={title} onClose={onClose}>
-      {sheet === 'networks' ? filters.map(filter => <AuthButton key={filter} accessibilityRole="button" accessibilityState={{ selected: filter === network }} onPress={() => onNetwork(filter)} style={styles.networkOption}>
+      {sheet === 'networks' ? <View>{filters.map(filter => <AuthButton key={filter} accessibilityRole="button" accessibilityState={{ selected: filter === network }} onPress={() => onNetwork(filter)} style={styles.networkOption}>
         <Text style={styles.networkLabel}>{filter}</Text>{filter === network ? <Check size={20} color={W.selectedInk} /> : null}
-      </AuthButton>) : sheet === 'options' ? <View style={styles.options}>
+      </AuthButton>)}{upcomingNetworks.map(name => <View key={name} accessible accessibilityLabel={`${name}. Coming soon`} style={styles.networkOption}><Text style={styles.networkLabel}>{name}</Text><Text style={styles.caption}>Coming soon</Text></View>)}</View> : sheet === 'options' ? <View style={styles.options}>
         <AuthButton accessibilityRole="button" onPress={onSettings} testID="wallet-options-settings" style={styles.option}><Settings size={20} color={W.ink} /><Text style={styles.networkLabel}>Settings</Text><ChevronRight size={17} color={W.secondary} /></AuthButton>
         <AuthButton accessibilityRole="button" onPress={onActivity} testID="wallet-history" style={styles.option}><History size={20} color={W.ink} /><Text style={styles.networkLabel}>View activity</Text><ChevronRight size={17} color={W.secondary} /></AuthButton>
-        <Text style={styles.detailCopy}>These sample balances illustrate the wallet. No live balance or transfer is connected.</Text>
+        <Text style={styles.detailCopy}>Verified deposits fund the same USDC balance used for trading and Captain allocations. Solana devnet only.</Text>
       </View> : sheet === 'manage' ? <View style={styles.options}>
-        {walletAssets.map(asset => <View key={asset.symbol} style={styles.tokenOption}>
+        {assets.map(asset => <View key={asset.symbol} style={styles.tokenOption}>
           <TokenIcon symbol={asset.symbol} size={34} /><View style={styles.manageCopy}><Text style={styles.assetSymbol}>{asset.symbol}</Text><Text style={styles.caption}>{asset.network}</Text></View>
           <Switch accessibilityLabel={`Show ${asset.symbol}`} testID={`wallet-show-${asset.symbol.toLowerCase()}`} value={!hiddenTokens.includes(asset.symbol)} onValueChange={value => onTokenVisibility(asset.symbol, value)} trackColor={{ false: W.muted, true: W.primaryAction[0] }} thumbColor={W.white} />
         </View>)}
         <AuthButton accessibilityRole="button" onPress={() => onShowSheet('custom-token')} style={styles.option}><Plus size={21} color={W.ink} /><Text style={styles.networkLabel}>Add a custom token</Text><ChevronRight size={17} color={W.secondary} /></AuthButton>
       </View> : typeof sheet === 'object' && sheet !== null ? <View style={styles.detail}>
-        <TokenIcon symbol={sheet.symbol} size={56} /><Text style={styles.detailValue}>{balanceVisible ? formatWalletValue(sheet.value) : '••••'}</Text><Text style={styles.detailCopy}>{balanceVisible ? sheet.quantity : '••••'}</Text><Text style={styles.detailCopy}>{sheet.network}</Text><Text style={styles.previewNote}>Preview holding</Text>
+        <TokenIcon symbol={sheet.symbol} size={56} /><Text style={styles.detailValue}>{balanceVisible ? formatUsdc(funding.summary?.available.amount) : '••••'}</Text><Text style={styles.detailCopy}>{balanceVisible ? sheet.quantity : '••••'}</Text><Text style={styles.detailCopy}>{sheet.network}</Text><Text style={styles.previewNote}>Available trading balance · Test USDC</Text>
         <AuthButton accessibilityRole="button" accessibilityLabel="View wallet activity" testID="wallet-history" onPress={onActivity} style={styles.option}><History size={18} color={W.secondary} /><Text style={styles.networkLabel}>View activity</Text></AuthButton>
       </View> : <View style={styles.detail}>
-        <Wallet size={32} color={W.selectedInk} /><Text style={styles.detailHeading}>Connect your wallet</Text><Text style={styles.detailCopy}>{sheet === 'send' ? 'Connect your wallet to send crypto to a Solana address.' : sheet === 'swap' ? 'Connect your wallet to choose tokens and review a swap quote.' : sheet === 'custom-token' ? 'Connect your wallet to add a token by its Solana mint address.' : 'Connect your wallet to get your Solana deposit address.'}</Text><Text style={styles.previewNote}>You’re viewing a preview portfolio.</Text>
+        <Wallet size={32} color={W.selectedInk} /><Text style={styles.detailHeading}>Coming soon</Text><Text style={styles.detailCopy}>{sheet === 'send' ? 'Sending to another wallet will be available in a later update.' : sheet === 'swap' ? 'Wallet swaps will be available in a later update.' : sheet === 'custom-token' ? 'Funding currently supports the configured test USDC token only.' : 'Connect your wallet to get your Solana deposit address.'}</Text>
       </View>}
     </DashboardSheet>
   );
