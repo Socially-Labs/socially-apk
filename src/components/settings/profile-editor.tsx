@@ -32,7 +32,7 @@ export function ProfileEditor() {
   const dirty = name.trim() !== settings.name || username !== settings.username || bio.trim() !== settings.bio || avatar !== settings.avatar || photoUri !== settings.photoUri || bannerUri !== settings.bannerUri;
   const locked = !ready || saving || picking !== null;
   const nameError = touched.name && !name.trim() ? 'Please enter your display name.' : null;
-  const handleError = touched.username ? usernameError(username) : null;
+  const handleError = touched.username && username !== settings.username ? usernameError(username) : null;
   function edit(patch: Partial<ProfileDraft>) {
     updateProfileDraft({ ...draft, ...patch });
     setSaved(false); setError(null); setMediaError(null);
@@ -50,7 +50,7 @@ export function ProfileEditor() {
     if (locked || !dirty) return;
     setTouched({ name: true, username: true });
     if (!name.trim()) { errorFeedback(); nameInput.current?.focus(); return; }
-    if (usernameError(username)) { errorFeedback(); usernameInput.current?.focus(); return; }
+    if (username !== settings.username && usernameError(username)) { errorFeedback(); usernameInput.current?.focus(); return; }
     setError(null); setSaved(false); Keyboard.dismiss();
     try { await updateSettings({ ...draft, name: name.trim(), bio: bio.trim() }); setSaved(true); successFeedback(); }
     catch (cause) { errorFeedback(); setError(cause instanceof Error ? cause.message : 'Your profile couldn’t be saved. Please try again.'); }
@@ -102,16 +102,16 @@ export function ProfileEditor() {
       <ErrorCopy>{handleError}</ErrorCopy>
       <Text style={styles.note}>3–24 letters, numbers or underscores. Start with a letter.</Text>
       <Text style={styles.label}>Bio <Text style={styles.optional}>(optional)</Text></Text>
-      <TextInput ref={bioInput} testID="profile-bio" accessibilityLabel="Bio" accessibilityHint="Optional, up to 140 characters" value={bio} maxLength={140} editable={!locked}
+      <TextInput ref={bioInput} testID="profile-bio" accessibilityLabel="Bio" accessibilityHint="Optional, up to 500 characters" value={bio} maxLength={500} editable={!locked}
         onChangeText={value => edit({ bio: value })} placeholder="A little about you and your horizon" placeholderTextColor={S.secondary}
         onFocus={() => setFocusedField('bio')} onBlur={() => setFocusedField(null)} multiline textAlignVertical="top" style={[styles.input, styles.bio, focusedField === 'bio' && styles.inputFocused]} />
-      <Text style={styles.characterCount}>{bio.length}/140</Text>
+      <Text style={styles.characterCount}>{bio.length}/500</Text>
       <ErrorCopy>{error ?? storageError}</ErrorCopy>
       {saved ? <Text accessibilityLiveRegion="polite" style={styles.success}>Profile saved.</Text> : null}
       {dirty ? <Text style={styles.note}>Unsaved changes · Your draft stays here while you explore.</Text> : null}
       <Action label={saving ? 'Saving…' : saved ? 'Saved' : 'Save changes'} busy={saving} disabled={locked || !dirty} testID="profile-save" onPress={() => { void save(); }} />
       {dirty ? <AuthButton testID="profile-discard" accessibilityRole="button" disabled={locked} onPress={() => { updateProfileDraft(null); setError(null); setMediaError(null); setSaved(false); setTouched({ name: false, username: false }); Keyboard.dismiss(); }} style={styles.discard}><Text style={styles.resetText}>Discard changes</Text></AuthButton> : null}
-      <Text style={styles.note}>Profile changes are saved on this device. Your username doesn’t change how you sign in.</Text>
+      <Text style={styles.note}>Your profile is saved to your account. Your username doesn’t change how you sign in.</Text>
     </Card>
   </>;
 }

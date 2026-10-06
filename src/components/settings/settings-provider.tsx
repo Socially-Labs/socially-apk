@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react';
 
+import { useBackendAccount } from '@/auth/backend-account-provider';
+import type { ProfilePatch } from '@/api/client';
 import { useAuth } from '@/auth/session';
 import { settingsStorage } from './settings-storage';
 import { defaultUsername, usernameError, type AccountSettings, type ProfileDraft } from './profile-model';
@@ -32,6 +34,8 @@ function initialSettings(identity: string, email: string | null): AccountSetting
 function AccountSettingsProvider({ identity, email, children }: PropsWithChildren<{ identity: string; email: string | null }>) {
   // Stable account IDs prevent social-login accounts from sharing another user's profile.
   // Hex encoding also satisfies SecureStore's restricted key character set.
+  const backend = useBackendAccount();
+  const { isAuthenticated } = useAuth();
   const storageKey = `socially.settings.v1.${Array.from(identity, c => c.charCodeAt(0).toString(16).padStart(4, '0')).join('')}`;
   const [settings, setSettings] = useState<AccountSettings>(() => initialSettings(identity, email));
   const [settingsIdentity, setSettingsIdentity] = useState(identity);
@@ -77,7 +81,7 @@ function AccountSettingsProvider({ identity, email, children }: PropsWithChildre
       if (!stored || typeof stored !== 'object') return;
       const next: AccountSettings = {
         name: typeof stored.name === 'string' && stored.name.trim() ? stored.name.trim().slice(0, 40) : current.current.name,
-        bio: typeof stored.bio === 'string' ? stored.bio.slice(0, 140) : '',
+        bio: typeof stored.bio === 'string' ? stored.bio.slice(0, 500) : '',
         username: typeof stored.username === 'string' && !usernameError(stored.username) ? stored.username : defaultUsername(typeof stored.name === 'string' ? stored.name : current.current.name),
         avatar: stored.avatar === 'initials' ? 'initials' : 'captain',
         photoUri: restoreMediaUri(stored.photoUri),
@@ -98,15 +102,23 @@ function AccountSettingsProvider({ identity, email, children }: PropsWithChildre
     setLoadAttempt(attempt => attempt + 1);
   }
 
+  const account = backend.account;
+  const displayedSettings: AccountSettings = isAuthenticated ? {
+    ...settings,
+    name: account?.displayName ?? '', username: account?.username ?? '', role: account?.role ?? null,
+    bio: account?.bio ?? '', photoUri: account?.avatarUrl ?? null, bannerUri: account?.bannerUrl ?? null,
+    hideBalances: account?.hideBalances ?? settings.hideBalances, avatar: account?.avatarKind ?? settings.avatar,
+  } : settings;
+
   async function updateSettings(patch: Partial<AccountSettings>) {
     if (!ready || writing.current) throw new Error('Please wait for your settings to finish loading or saving.');
-    const next = { ...current.current, ...patch };
-    if (!next.name.trim() || next.name.length > 40 || next.bio.length > 140) throw new Error('Enter a name of up to 40 characters and a bio of up to 140 characters.');
+    const next = { ...displayedSettings, ...patch };
+    if (!next.name.trim() || next.name.length > 40 || next.bio.length > 500) throw new Error('Enter a name of up to 40 characters and a bio of up to 500 characters.');
     const validationError = usernameError(next.username);
-    if (validationError) throw new Error(validationError);
+    if (validationError && next.username !== account?.username) throw new Error(validationError);
     if (next.role !== null && next.role !== 'crew' && next.role !== 'captain') throw new Error('Choose Captain or Crew.');
     if (loadError) throw new Error(loadError);
-    const previous = current.current;
+    const previous = displayedSettings;
     const saveGeneration = generation.current;
     writing.current = true;
     setSaving(true);
@@ -114,9 +126,39 @@ function AccountSettingsProvider({ identity, email, children }: PropsWithChildre
     try {
       // Copy out of the picker cache before committing metadata. A failed write
       // leaves the previous profile intact and the draft available for retry.
-      next.photoUri = await persistMedia(next.photoUri);
-      next.bannerUri = await persistMedia(next.bannerUri);
-      await settingsStorage.write(storageKey, JSON.stringify(next));
+      if (isAuthenticated) {
+        if (backend.status !== 'ready' || !account?.username) throw new Error('Wait for your account to connect.');
+        const remote: ProfilePatch = {};
+        if (patch.name !== undefined) remote.displayName = next.name;
+        if (patch.username !== undefined) remote.username = next.username;
+        if (patch.bio !== undefined) remote.bio = next.bio;
+        if (patch.hideBalances !== undefined) remote.hideBalances = next.hideBalances;
+        if (patch.avatar !== undefined) remote.avatarKind = next.avatar;
+        if (patch.role !== undefined && patch.role !== null) remote.role = patch.role;
+        if (patch.photoUri !== undefined && next.photoUri !== account.avatarUrl) {
+          remote.avatarUrl = next.photoUri ? await backend.uploadImage('avatar', next.photoUri) : null;
+        }
+        if (patch.bannerUri !== undefined && next.bannerUri !== account.bannerUrl) {
+          remote.bannerUrl = next.bannerUri ? await backend.uploadImage('banner', next.bannerUri) : null;
+        }
+        if (generation.current !== saveGeneration) throw new Error('Account changed. Please try again.');
+        if (Object.keys(remote).length) {
+          const saved = await backend.saveProfile(remote);
+          next.name = saved.displayName; next.username = saved.username!; next.role = saved.role;
+          next.bio = saved.bio; next.photoUri = saved.avatarUrl; next.bannerUri = saved.bannerUrl;
+          next.hideBalances = saved.hideBalances; next.avatar = saved.avatarKind;
+        }
+        // Server profile changes remain successful even if caching device preferences fails.
+        if (Object.keys(remote).length) {
+          await settingsStorage.write(storageKey, JSON.stringify({ hideBalances: next.hideBalances, avatar: next.avatar })).catch(() => {});
+        } else {
+          await settingsStorage.write(storageKey, JSON.stringify({ hideBalances: next.hideBalances, avatar: next.avatar }));
+        }
+      } else {
+        next.photoUri = await persistMedia(next.photoUri);
+        next.bannerUri = await persistMedia(next.bannerUri);
+        await settingsStorage.write(storageKey, JSON.stringify(next));
+      }
       if (generation.current === saveGeneration) {
         current.current = next;
         setSettings(next);
@@ -124,16 +166,16 @@ function AccountSettingsProvider({ identity, email, children }: PropsWithChildre
       }
       if (previous.photoUri !== next.photoUri) void deleteMedia(previous.photoUri);
       if (previous.bannerUri !== next.bannerUri) void deleteMedia(previous.bannerUri);
-    } catch {
+    } catch (cause) {
       if (next.photoUri !== previous.photoUri) void deleteMedia(next.photoUri);
       if (next.bannerUri !== previous.bannerUri) void deleteMedia(next.bannerUri);
-      const message = 'Your changes couldn’t be saved. Please try again.';
+      const message = cause instanceof Error ? cause.message : 'Your changes couldn’t be saved. Please try again.';
       if (generation.current === saveGeneration) setError(message);
       throw new Error(message);
     } finally { if (generation.current === saveGeneration) { writing.current = false; setSaving(false); } }
   }
 
-  return <SettingsContext.Provider value={{ settings, ready, saving, error, loadError, reloadSettings, profileDraft, updateProfileDraft, updateSettings }}>{children}</SettingsContext.Provider>;
+  return <SettingsContext.Provider value={{ settings: displayedSettings, ready, saving, error, loadError, reloadSettings, profileDraft, updateProfileDraft, updateSettings }}>{children}</SettingsContext.Provider>;
 }
 
 export function useAccountSettings() {
