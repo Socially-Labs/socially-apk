@@ -18,7 +18,7 @@ export function About() {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'The website couldn’t be opened.'); }
   }
   return <Card><View style={styles.aboutBrand}><ProfileAvatar name="Socially" avatar="captain" size={88} /><Text style={styles.wordmark}>SOCIALLY</Text></View>
-    <Text style={styles.heroTitle}>Pick a Captain. Join the Crew.</Text><Text style={styles.copy}>Socially is designed for shared trading funds on Solana. Crew members own fund shares. Captains get permission to trade within fund rules, without permission to withdraw Crew funds. This app currently shows sample funds.</Text>
+    <Text style={styles.heroTitle}>Pick a Captain. Join the Crew.</Text><Text style={styles.copy}>Socially is designed for shared trading funds on Solana. Crew members own fund shares. Captains get permission to trade within fund rules, without permission to withdraw Crew funds.</Text>
     <View style={styles.divider} /><View style={styles.meta}><Text style={styles.copy}>Version</Text><Text style={styles.itemTitle}>{appVersion}</Text></View>
     <View style={styles.meta}><Text style={styles.copy}>Platform</Text><Text style={styles.itemTitle}>{Platform.OS === 'ios' ? 'iOS' : Platform.OS === 'android' ? 'Android' : 'Web'}</Text></View>
     <ErrorCopy>{error}</ErrorCopy><AuthButton accessibilityRole="button" onPress={() => { void openSite(); }} style={styles.inlineAction}><ExternalLink size={17} color={S.accent} /><Text style={styles.inlineActionText}>Visit Socially</Text></AuthButton>
