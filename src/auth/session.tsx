@@ -14,6 +14,7 @@ export type AuthSession = {
   oauthPending: boolean;
   oauthError: unknown;
   logout: () => Promise<void>;
+  getAccessToken: () => Promise<string | null>;
 };
 
 export const AuthContext = createContext<AuthSession | null>(null);
@@ -33,7 +34,7 @@ export function UnconfiguredAuthProvider({ children, isReady = true }: PropsWith
     <AuthContext.Provider value={{
       isReady, isConfigured: false, isAuthenticated: false, email: null, accountId: null,
       sendCode: unavailable, verifyCode: unavailable, loginWithSocial: unavailable,
-      oauthPending: false, oauthError: null, logout: unavailable,
+      oauthPending: false, oauthError: null, logout: unavailable, getAccessToken: async () => null,
     }}>
       {children}
     </AuthContext.Provider>

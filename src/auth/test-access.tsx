@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, type PropsWithChildren } from 'react';
 
-// Temporary app-preview switch. Set to false to restore email / Google sign-in.
-export const AUTH_TEST_MODE = true;
+// Preview is opt-in, development-only, and never creates a backend session.
+export const AUTH_TEST_MODE = __DEV__ && process.env.EXPO_PUBLIC_AUTH_PREVIEW === 'true';
 
 type TestAccess = {
   hasTestAccess: boolean;

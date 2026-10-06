@@ -5,7 +5,7 @@ import { privyConfig } from './config';
 import { AuthContext, UnconfiguredAuthProvider } from './session';
 
 function SessionBridge({ children }: PropsWithChildren) {
-  const { isReady, user, logout } = usePrivy();
+  const { isReady, user, logout, getAccessToken } = usePrivy();
   const { sendCode, loginWithCode } = useLoginWithEmail();
   const { login, state: oauthState } = useLoginWithOAuth();
   const emailAccount = user?.linked_accounts.find((account) => account.type === 'email');
@@ -25,6 +25,7 @@ function SessionBridge({ children }: PropsWithChildren) {
       oauthPending: oauthState.status === 'loading',
       oauthError: oauthState.status === 'error' ? oauthState.error : null,
       logout,
+      getAccessToken,
     }}>
       {children}
     </AuthContext.Provider>

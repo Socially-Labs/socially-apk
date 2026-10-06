@@ -9,7 +9,7 @@ const clientSnapshot = () => true;
 const serverSnapshot = () => false;
 
 function SessionBridge({ children }: PropsWithChildren) {
-  const { ready, authenticated, user, logout } = usePrivy();
+  const { ready, authenticated, user, logout, getAccessToken } = usePrivy();
   const { sendCode, loginWithCode } = useLoginWithEmail();
   const { initOAuth, state: oauthState } = useLoginWithOAuth();
 
@@ -26,6 +26,7 @@ function SessionBridge({ children }: PropsWithChildren) {
       oauthPending: oauthState.status === 'loading',
       oauthError: oauthState.status === 'error' ? oauthState.error : null,
       logout,
+      getAccessToken,
     }}>
       {children}
     </AuthContext.Provider>
