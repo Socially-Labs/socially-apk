@@ -2,6 +2,7 @@ import { ArrowLeft, Check, Compass, Users } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { BackHandler, Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { useBackendAccount } from '@/auth/backend-account-provider';
 import { useAuth } from '@/auth/session';
 import { useTestAccess } from '@/auth/test-access';
 import { AuthButton, AuthReveal } from '@/components/shared/motion';
@@ -24,6 +25,8 @@ export function SignupPanel({ progress, testIDPrefix, onStageChange }: {
   const { isAuthenticated, logout } = useAuth();
   const { leaveTestApp, completeTestSignup } = useTestAccess();
   const { updateSettings, saving } = useAccountSettings();
+  const backend = useBackendAccount();
+  const [checking, setChecking] = useState(false);
   const [step, setStep] = useState<'username' | 'role'>('username');
   const [username, setUsername] = useState('');
   const [role, setRole] = useState<AccountRole | null>(null);
@@ -32,7 +35,7 @@ export function SignupPanel({ progress, testIDPrefix, onStageChange }: {
   const [leaving, setLeaving] = useState(false);
   const input = useRef<TextInput>(null);
   const writing = useRef(false);
-  const busy = saving || leaving;
+  const busy = saving || leaving || checking;
 
   useEffect(() => { onStageChange?.(step); }, [step, onStageChange]);
 
@@ -60,15 +63,26 @@ export function SignupPanel({ progress, testIDPrefix, onStageChange }: {
     if (validationError) { setError(validationError); input.current?.focus(); return; }
     setError(null);
     Keyboard.dismiss();
-    if (step === 'username') { setStep('role'); return; }
+    if (step === 'username') {
+      writing.current = true; setChecking(true);
+      try {
+        if (isAuthenticated && !await backend.usernameAvailable(username)) {
+          setError('That username is already taken. Choose another one.'); return;
+        }
+        setStep('role');
+      } catch (cause) { setError(cause instanceof Error ? cause.message : 'Username availability could not be checked.'); }
+      finally { writing.current = false; setChecking(false); }
+      return;
+    }
     if (!role) { setError('Choose Captain or Crew to continue.'); return; }
-    writing.current = true;
+    writing.current = true; setChecking(true);
     try {
-      await updateSettings({ username, role, ...(!isAuthenticated ? { name: username } : {}) });
+      if (isAuthenticated) await backend.completeSignup(username, role, username);
+      else await updateSettings({ username, role, name: username });
       completeTestSignup();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Your profile couldn’t be saved. Please try again.');
-    } finally { writing.current = false; }
+    } finally { writing.current = false; setChecking(false); }
   }
 
   return <View style={styles.panel} testID={`${testIDPrefix}-signup-${step}`}>
@@ -112,11 +126,11 @@ export function SignupPanel({ progress, testIDPrefix, onStageChange }: {
 
     {error ? <Text testID={`${testIDPrefix}-signup-error`} accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.error}>{error}</Text> : null}
     <AuthReveal progress={progress} order={2} style={styles.action}>
-      <AuthPrimaryAction testID={`${testIDPrefix}-signup-continue`} label={saving ? 'Saving your profile…' : step === 'username' ? 'Continue' : role === 'captain' ? 'Continue as Captain' : role === 'crew' ? 'Continue as Crew' : 'Choose your role'}
+      <AuthPrimaryAction testID={`${testIDPrefix}-signup-continue`} label={checking ? (step === 'username' ? 'Checking username…' : 'Saving your profile…') : saving ? 'Saving your profile…' : step === 'username' ? 'Continue' : role === 'captain' ? 'Continue as Captain' : role === 'crew' ? 'Continue as Crew' : 'Choose your role'}
         busy={busy} disabled={busy || (step === 'username' ? !username.trim() : !role)} onPress={() => { void submit(); }} />
     </AuthReveal>
     {step === 'role' ? <AuthReveal progress={progress} order={3}>
-      <Text style={styles.hint}>{role === 'captain' ? 'Captains need approval before managing a fund.' : 'Pick a Captain. Join the Crew. Keep your keys.'}</Text>
+      <Text style={styles.hint}>{role === 'captain' ? 'Build your track record with a paper trading fund.' : 'Pick a Captain. Join the Crew. Keep your keys.'}</Text>
     </AuthReveal> : null}
   </View>;
 }

@@ -1,3 +1,5 @@
+import { useBackendAccount } from '@/auth/backend-account-provider';
+import { useAuth } from '@/auth/session';
 import { AUTH_TEST_MODE, useTestAccess } from '@/auth/test-access';
 import { useAccountSettings } from '@/components/settings/settings-provider';
 import { AuthIcon } from '@/components/auth/auth-icons';
@@ -12,9 +14,10 @@ import { ActivityIndicator, BackHandler, Keyboard, StyleSheet, Text, TextInput, 
 import Animated, { Easing, FadeIn, FadeOut, LinearTransition, useReducedMotion, type SharedValue } from 'react-native-reanimated';
 import { AuthEmailField } from './auth-email-field';
 import { AuthEntryControls } from './auth-entry-controls';
-import { AuthVerificationFooter, AuthVerificationHeader } from './auth-verification-controls';
 import { SignupPanel } from './signup-panel';
 import { AuthPrimaryAction } from './auth-primary-action';
+import { AuthOtpPanel } from './auth-otp-panel';
+import { useAuthCompletion } from '@/auth/auth-completion-provider';
 
 const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1);
 
@@ -22,25 +25,39 @@ const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1);
 export function SignInPanel({ progress, testIDPrefix = 'auth', onStageChange }: {
   progress: SharedValue<number>; testIDPrefix?: 'auth' | 'splash'; onStageChange?: (stage: string) => void;
 }) {
+  const backend = useBackendAccount();
+  const { pending: loginCompleting } = useAuthCompletion();
+  const { isAuthenticated, logout } = useAuth();
+  const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const accountReady = !isAuthenticated || backend.status === 'ready';
   const { hasSession, needsOnboarding } = useAppAccess();
   const { ready, loadError, reloadSettings } = useAccountSettings();
   const [onboardingShown, setOnboardingShown] = useState(false);
   if (!hasSession && onboardingShown) setOnboardingShown(false);
-  else if (hasSession && ready && !loadError && needsOnboarding && !onboardingShown) setOnboardingShown(true);
+  else if (hasSession && accountReady && ready && !loadError && needsOnboarding && !onboardingShown) setOnboardingShown(true);
 
   useEffect(() => {
     if (!hasSession) onStageChange?.('credentials');
   }, [hasSession, onStageChange]);
 
-  if (hasSession && ready && !loadError && (needsOnboarding || onboardingShown)) {
+  if (!loginCompleting && hasSession && accountReady && ready && !loadError && (needsOnboarding || onboardingShown)) {
     return <SignupPanel progress={progress} testIDPrefix={testIDPrefix} onStageChange={onStageChange} />;
   }
-  if (hasSession) return <View style={styles.panel} testID={`${testIDPrefix}-profile-loading`}>
-    <Text accessibilityRole={loadError ? 'alert' : undefined} style={loadError ? styles.error : styles.status}>
-      {loadError ?? (ready ? 'Welcome aboard.' : 'Loading your profile…')}
-    </Text>
-    {loadError ? <View style={styles.primaryRow}><AuthPrimaryAction testID={`${testIDPrefix}-profile-retry`} label="Try again" onPress={reloadSettings} /></View> : null}
-  </View>;
+  if (hasSession) {
+    const error = logoutError ?? backend.error ?? loadError;
+    return <View style={styles.panel} testID={`${testIDPrefix}-profile-loading`}>
+      <Text accessibilityRole={error ? 'alert' : undefined} style={error ? styles.error : styles.status}>
+        {error ?? (accountReady && ready ? 'Welcome aboard.' : 'Connecting your account…')}
+      </Text>
+      {error ? <View style={styles.primaryRow}><AuthPrimaryAction testID={`${testIDPrefix}-profile-retry`} label="Try again" disabled={signingOut}
+        onPress={() => { setLogoutError(null); if (loadError) reloadSettings(); if (isAuthenticated) backend.retry(); }} /></View> : null}
+      {isAuthenticated ? <AuthButton accessibilityRole="button" testID={`${testIDPrefix}-bootstrap-signout`} disabled={signingOut}
+        onPress={() => { setSigningOut(true); setLogoutError(null); void logout().catch(() => setLogoutError('Couldn’t sign out. Please try again.')).finally(() => setSigningOut(false)); }}>
+        <Text style={styles.status}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
+      </AuthButton> : null}
+    </View>;
+  }
   return <CredentialsPanel progress={progress} testIDPrefix={testIDPrefix} />;
 }
 
@@ -96,21 +113,21 @@ function CredentialsPanel({ progress, testIDPrefix = 'auth', onFocusChange }: {
   const buttonLabel = AUTH_TEST_MODE ? 'Continue'
     : !auth.isReady ? 'Getting ready…'
       : auth.pending === 'send' ? 'Sending code…'
-        : auth.pending === 'verify' ? 'Verifying…'
-          : verifying ? 'Verify & continue' : 'Continue';
+        : 'Continue';
   const emailBusy = !AUTH_TEST_MODE && (auth.pending === 'send' || auth.pending === 'verify' || !auth.isReady);
+
+  if (verifying) return <AuthOtpPanel auth={auth} input={input} focused={focused} busy={busy} testIDPrefix={testIDPrefix}
+    onFocus={() => { setFocused(true); onFocusChange?.(true); }} onBlur={() => { setFocused(false); onFocusChange?.(false); }} />;
 
   return (
     <View style={styles.panel} testID={`${testIDPrefix}-panel`}>
-      {!verifying ? <AuthReveal progress={progress} order={0} style={styles.headingRow}>
+      <AuthReveal progress={progress} order={0} style={styles.headingRow}>
         <Text accessibilityRole="header" style={styles.heading}>Welcome aboard</Text>
-      </AuthReveal> : null}
+      </AuthReveal>
       <View style={styles.emailGroup} testID={`${testIDPrefix}-email-group`}>
-        {verifying ? (
-          <AuthVerificationHeader email={auth.email} changeEmail={changeEmail} busy={busy} enter={enter} exit={exit} />
-        ) : <AuthReveal progress={progress} order={0}>
+        <AuthReveal progress={progress} order={0}>
           <Text style={styles.fieldLabel}>Email address</Text>
-        </AuthReveal>}
+        </AuthReveal>
 
         <AuthEmailField auth={auth} input={input} progress={progress} verifying={verifying} busy={busy}
           focused={focused} invalid={!!error} testIDPrefix={testIDPrefix} enter={enter} exit={exit} layout={layout} submit={submit}
@@ -138,17 +155,12 @@ function CredentialsPanel({ progress, testIDPrefix = 'auth', onFocusChange }: {
         </AuthReveal>
       </View>
 
-      {verifying ? (
-        <AuthVerificationFooter key="resend" notice={auth.notice} resendIn={auth.resendIn} pending={auth.pending} busy={busy}
-          testIDPrefix={testIDPrefix} onResend={() => { void auth.requestCode(true); }} enter={enter} exit={exit} layout={layout} />
-      ) : (
-        <AuthEntryControls key="social" progress={progress} testIDPrefix={testIDPrefix} busy={busy} googleBusy={auth.pending === 'google'}
+      <AuthEntryControls key="social" progress={progress} testIDPrefix={testIDPrefix} busy={busy} googleBusy={auth.pending === 'google'}
           enter={enter} exit={exit} layout={layout} onGoogle={() => {
             Keyboard.dismiss();
             if (AUTH_TEST_MODE) continuePreview();
             else void auth.requestSocial('google');
           }} />
-      )}
     </View>
   );
 }

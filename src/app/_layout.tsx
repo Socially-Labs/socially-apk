@@ -6,6 +6,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View, useColorScheme } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
+import { BackendAccountProvider } from '@/auth/backend-account-provider';
+import { AuthCompletionProvider } from '@/auth/auth-completion-provider';
+import { AuthSuccessSheet } from '@/components/auth/auth-success-sheet';
 import { AuthProvider } from '@/auth/auth-provider';
 import { useAuth } from '@/auth/session';
 import { TestAccessProvider, useTestAccess } from '@/auth/test-access';
@@ -29,7 +32,7 @@ if (!isRunningInExpoGo()) {
 const FONTS_FAILSAFE_MS = 4000;
 
 export default function RootLayout() {
-  return <TestAccessProvider><AuthProvider><SettingsProvider><AppLayout /></SettingsProvider></AuthProvider></TestAccessProvider>;
+  return <TestAccessProvider><AuthProvider><AuthCompletionProvider><BackendAccountProvider><SettingsProvider><AppLayout /></SettingsProvider></BackendAccountProvider></AuthCompletionProvider></AuthProvider></TestAccessProvider>;
 }
 
 function AuthNavigator() {
@@ -111,6 +114,7 @@ function AppLayout() {
         </View>
         {introMode === 'sign-in' && !splashComplete && <SplashOverlay onComplete={completeSplash} />}
         {introMode === null && <BootLoadingScreen />}
+        <AuthSuccessSheet />
       </View>
     </ThemeProvider>
   );
