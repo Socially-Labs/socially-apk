@@ -1,12 +1,16 @@
 import { useFocusEffect } from 'expo-router';
 import { Bookmark, ChevronDown, SlidersHorizontal } from 'lucide-react-native';
-import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Keyboard, Platform, Text, View, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, Keyboard, Platform, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAccountSettings } from '@/components/settings/settings-provider';
 import { AuthButton } from '@/components/shared/motion';
-import { sampleCaptainVaults } from '@/constants/captain-dashboard';
-import { defaultMarketFilters, selectMarkets, type MarketFilters, type MarketPeriod, type MarketTab, type MarketToken, type TokenSymbol } from '@/constants/captain-markets';
+import { randomUUID } from 'expo-crypto';
+import { ApiError } from '@/api/client';
+import type { Token } from '@/api/markets';
+import { useMarkets } from '@/hooks/use-markets';
+import { filterTokens } from './market-data';
+import { defaultMarketFilters, type MarketFilters, type MarketPeriod, type MarketTab } from '@/constants/captain-markets';
 import { DiscoverPalette as D } from '@/constants/theme';
 import { CaptainMarketsPalette as M } from '@/constants/theme/captain-markets';
 import { MarketHero, MarketRow, MarketVaultCard } from './market-components';
@@ -18,28 +22,52 @@ export default function CaptainMarketsScreen() {
   const insets = useSafeAreaInsets(), { width } = useWindowDimensions();
   const { settings, ready, saving, updateSettings } = useAccountSettings();
   const hidden = !ready || settings.hideBalances;
-  const [vaultId, setVaultId] = useState('horizon');
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<MarketTab>('top');
   const [period, setPeriod] = useState<MarketPeriod>('24H');
   const [filters, setFilters] = useState<MarketFilters>(defaultMarketFilters);
-  const [saved, setSaved] = useState<TokenSymbol[]>(['SOL', 'JUP']);
   const [savedOnly, setSavedOnly] = useState(false);
   const [options, setOptions] = useState<MarketOptionSheet>(null);
-  const [tradeToken, setTradeToken] = useState<MarketToken | null>(null);
+  const [tradeToken, setTradeToken] = useState<Token | null>(null);
   const [tradeOpen, setTradeOpen] = useState(false);
   const [tradeSession, setTradeSession] = useState(0);
   const [privacyError, setPrivacyError] = useState<string | null>(null);
-  const vault = sampleCaptainVaults.find(item => item.id === vaultId) ?? sampleCaptainVaults[0];
-  const markets = useMemo(() => selectMarkets({ vault, tab, query, period, filters, savedOnly, saved }), [vault, tab, query, period, filters, savedOnly, saved]);
+  const [debouncedQuery, setDebouncedQuery] = useState(''), [focused, setFocused] = useState(false);
+  const [trialName, setTrialName] = useState('My paper vault'), [creating, setCreating] = useState(false), [trialError, setTrialError] = useState<string | null>(null);
+  const [trialLocked, setTrialLocked] = useState(false);
+  const trialAttempt = useRef<{ subject: string; name: string; key: string } | null>(null);
+  const trialRequests = useRef<AbortController | null>(null);
+  useEffect(() => { const timer = setTimeout(() => setDebouncedQuery(query.trim()), 400); return () => clearTimeout(timer); }, [query]);
+  const data = useMarkets(debouncedQuery), context = data.context;
+  const markets = useMemo(() => filterTokens(data.tokens, context, filters, tab === 'invested', savedOnly, data.saved, period), [data.tokens, context, filters, tab, savedOnly, data.saved, period]);
+  const liveTradeToken = tradeToken ? data.tokens.find(token => token.mint === tradeToken.mint) ?? tradeToken : null;
+  useEffect(() => {
+    trialAttempt.current = null;
+    const controller = new AbortController(); trialRequests.current = controller;
+    const timer = setTimeout(() => { setCreating(false); setTrialLocked(false); setTrialError(null); }, 0);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [data.subject]);
+  const createTrial = async () => {
+    if (!data.subject || creating) return;
+    const controller = trialRequests.current;
+    if (trialAttempt.current?.subject !== data.subject) trialAttempt.current = { subject: data.subject, name: trialName.trim(), key: randomUUID() };
+    setCreating(true); setTrialLocked(true); setTrialError(null);
+    try {
+      const id = await data.api.startTrial(trialAttempt.current.name, trialAttempt.current.key, controller?.signal);
+      if (controller?.signal.aborted) return;
+      trialAttempt.current = null; setTrialLocked(false); data.selectFund(id); data.refresh();
+    }
+    catch (e) { if (controller?.signal.aborted) return; if (e instanceof ApiError && e.status >= 400 && e.status < 500 && ![408, 429].includes(e.status)) { trialAttempt.current = null; setTrialLocked(false); } setTrialError(e instanceof Error ? e.message : 'Could not start your trial.'); }
+    finally { if (!controller?.signal.aborted) setCreating(false); }
+  };
   const filterCount = Number(filters.category !== 'All') + Number(filters.liquidity !== 0) + Number(filters.sort !== 'Volume');
-  useFocusEffect(useCallback(() => () => { setOptions(null); setTradeOpen(false); Keyboard.dismiss(); }, []));
-  const selectToken = useCallback((token: MarketToken) => {
+  useFocusEffect(useCallback(() => { setFocused(true); return () => { setFocused(false); setOptions(null); setTradeOpen(false); Keyboard.dismiss(); }; }, []));
+  const selectToken = useCallback((token: Token) => {
     Keyboard.dismiss();
-    if (token.symbol === 'USDC') { setOptions('cash'); return; }
+    if (token.instrumentId === 'USDC' && context) { setOptions('cash'); return; }
     setTradeToken(token); setTradeSession(value => value + 1); setTradeOpen(true);
-  }, []);
-  const renderItem = useCallback(({ item, index }: { item: MarketToken; index: number }) => <MarketRow token={item} vault={vault} invested={tab === 'invested'} hidden={hidden} period={period} compact={width < 360} first={index === 0} last={index === markets.length - 1} onSelect={selectToken} />, [vault, tab, hidden, period, width, selectToken, markets.length]);
+  }, [context]);
+  const renderItem = useCallback(({ item, index }: { item: Token; index: number }) => <MarketRow token={item} context={context} invested={tab === 'invested'} hidden={hidden} period={period} compact={width < 360} first={index === 0} last={index === markets.length - 1} onSelect={selectToken} api={data.api} active={focused} />, [context, tab, hidden, period, width, selectToken, markets.length, data.api, focused]);
   const reset = () => { setQuery(''); setFilters(defaultMarketFilters); setSavedOnly(false); };
   const togglePrivacy = async () => {
     setPrivacyError(null);
@@ -47,14 +75,17 @@ export default function CaptainMarketsScreen() {
     catch { setPrivacyError('Could not update balance visibility. Try again.'); }
   };
   return <View style={s.screen} testID="captain-markets-screen">
-    <FlatList data={markets} keyExtractor={item => item.symbol} renderItem={renderItem} style={{ flex: 1 }} contentContainerStyle={[s.content, { paddingBottom: Math.max(insets.bottom + 142, 154) }]} keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'} contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} testID="captain-markets-list" ListHeaderComponent={<>
+    <FlatList data={markets} keyExtractor={item => item.mint} renderItem={renderItem} style={{ flex: 1 }} contentContainerStyle={[s.content, { paddingBottom: Math.max(insets.bottom + 142, 154) }]} keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'} contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} testID="captain-markets-list" ListHeaderComponent={<>
       <MarketHero top={Math.max(insets.top, 16) + 12} query={query} onQuery={setQuery} />
-      <MarketVaultCard vault={vault} hidden={hidden} canToggle={ready && !saving} onToggle={togglePrivacy} onSelect={() => { Keyboard.dismiss(); setOptions('vault'); }} onInvested={() => { reset(); setTab('invested'); }} />
+      <MarketVaultCard context={context} hidden={hidden} canToggle={ready && !saving} onToggle={togglePrivacy} onSelect={() => { Keyboard.dismiss(); setOptions('vault'); }} onInvested={() => { reset(); setTab('invested'); }} />
+      {data.error || data.privateError ? <Text style={s.error} accessibilityRole="alert">{data.error ?? data.privateError}</Text> : null}
+      <AuthButton accessibilityRole="button" onPress={data.refresh} style={s.secondary}><Text style={s.secondaryText}>Refresh markets</Text></AuthButton>
+      {data.subject && !data.privateError && (!data.funds.length || data.funds.every(f => f.status === 'COMPLETED')) ? <View style={{ marginVertical: 12 }}><Text style={s.label}>Start a 30-day paper trial with 1,000 USDC from your paper balance.</Text><TextInput accessibilityLabel="Paper vault name" value={trialName} onChangeText={setTrialName} editable={!creating && !trialLocked} maxLength={80} style={s.searchInput} /><AuthButton accessibilityRole="button" disabled={creating || trialName.trim().length < 3} onPress={() => { void createTrial(); }} style={s.primary}><Text style={s.primaryText}>{creating ? 'Starting…' : 'Start paper trial'}</Text></AuthButton>{trialError ? <Text style={s.error}>{trialError}</Text> : null}</View> : null}
       {privacyError ? <Text style={s.error} accessibilityRole="alert">{privacyError}</Text> : null}
       <View style={s.tabs}>{([{ id: 'top', label: 'Top traded' }, { id: 'invested', label: 'Invested markets' }] as const).map(item => <AuthButton key={item.id} accessibilityRole="tab" accessibilityLabel={item.label} accessibilityState={{ selected: item.id === tab }} testID={`market-tab-${item.id}`} onPress={() => setTab(item.id)} style={[s.tab, tab === item.id && s.selectedTab]}><Text style={[s.tabText, tab === item.id && s.selectedTabText]}>{item.label}</Text></AuthButton>)}</View>
       <View style={s.toolbar}><AuthButton accessibilityRole="button" accessibilityLabel={`Change market timeframe, currently ${period}`} testID="market-period-select" onPress={() => { Keyboard.dismiss(); setOptions('period'); }} style={[s.toolbarButton, width < 360 && s.compactToolbarButton]}><Text style={[s.label, s.toolbarLabel, width < 360 && s.compactToolbarLabel]}>{tab === 'top' ? 'Top' : 'Performance'} · {period}</Text><ChevronDown size={14} color={M.ink} /></AuthButton><View style={s.toolbarActions}><AuthButton accessibilityRole="button" accessibilityLabel={savedOnly ? 'Show all markets' : 'Show saved markets'} accessibilityState={{ selected: savedOnly }} testID="market-saved-only" onPress={() => setSavedOnly(value => !value)} style={[s.iconButton, s.toolbarSaved, savedOnly && { backgroundColor: D.accentTint }]}><Bookmark size={18} color={M.ink} fill={savedOnly ? M.ink : 'transparent'} /></AuthButton><AuthButton accessibilityRole="button" accessibilityLabel={`Market filters${filterCount ? `, ${filterCount} active` : ''}`} testID="market-filters-open" onPress={() => { Keyboard.dismiss(); setOptions('filters'); }} style={[s.toolbarButton, width < 360 && s.compactToolbarButton, filterCount > 0 && { backgroundColor: D.accentTint }]}><SlidersHorizontal size={16} color={M.ink} /><Text style={[s.label, s.toolbarLabel, width < 360 && s.compactToolbarLabel]}>Filter{filterCount ? ` · ${filterCount}` : ''}</Text></AuthButton></View></View>
-    </>} ListEmptyComponent={<View style={s.empty} testID="market-empty"><Text style={s.emptyTitle}>{savedOnly ? 'No saved markets here' : tab === 'invested' && !query ? 'No matching positions' : 'No markets found'}</Text><Text style={s.emptyText}>Try a token name, symbol or mint address,{ '\n' }or clear your filters to see more markets.</Text><AuthButton accessibilityRole="button" accessibilityLabel="Clear search and market filters" testID="market-empty-reset" onPress={reset} style={s.secondary}><Text style={s.secondaryText}>Clear search & filters</Text></AuthButton></View>} ListFooterComponent={<Text style={s.sample}>Sample market data · Jupiter trading preview</Text>} />
-    <MarketOptionsSheet kind={options} onClose={() => setOptions(null)} vault={vault} onVault={setVaultId} hidden={hidden} period={period} onPeriod={setPeriod} filters={filters} onFilters={setFilters} onExplore={() => { reset(); setTab('top'); }} />
-    {tradeToken ? <MarketTradeSheet key={`${vault.id}-${tradeToken.symbol}-${tradeSession}`} visible={tradeOpen} token={tradeToken} vault={vault} hidden={hidden} initialPeriod={period} saved={saved.includes(tradeToken.symbol)} onSaved={() => setSaved(items => items.includes(tradeToken.symbol) ? items.filter(symbol => symbol !== tradeToken.symbol) : [...items, tradeToken.symbol])} onClose={() => setTradeOpen(false)} /> : null}
+    </>} ListEmptyComponent={<View style={s.empty} testID="market-empty"><Text style={s.emptyTitle}>{data.loading ? 'Loading markets…' : savedOnly ? 'No saved markets here' : tab === 'invested' && !query ? 'No matching positions' : 'No markets found'}</Text><Text style={s.emptyText}>Try a token name, symbol or mint address,{ '\n' }or clear your filters to see more markets.</Text><AuthButton accessibilityRole="button" accessibilityLabel="Clear search and market filters" testID="market-empty-reset" onPress={reset} style={s.secondary}><Text style={s.secondaryText}>Clear search & filters</Text></AuthButton></View>} ListFooterComponent={<Text style={s.sample}>Live supported markets · USD prices · paper trading</Text>} />
+    <MarketOptionsSheet kind={options} onClose={() => setOptions(null)} context={context} funds={data.funds} onVault={data.selectFund} hidden={hidden} period={period} onPeriod={setPeriod} filters={filters} onFilters={setFilters} onExplore={() => { reset(); setTab('top'); }} />
+    {liveTradeToken ? <MarketTradeSheet key={`${data.subject}-${context?.fund.id}-${liveTradeToken.mint}-${tradeSession}`} visible={tradeOpen} token={liveTradeToken} context={context} hidden={hidden} initialPeriod={period} saved={data.saved.includes(liveTradeToken.mint)} onSaved={() => { void data.toggleSaved(liveTradeToken.mint); }} onClose={() => setTradeOpen(false)} api={data.api} subject={data.subject} onTerminal={data.refresh} /> : null}
   </View>;
 }
