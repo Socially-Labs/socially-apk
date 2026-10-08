@@ -8,6 +8,7 @@ export type AuthSession = {
   isAuthenticated: boolean;
   email: string | null;
   accountId: string | null;
+  solanaAddress?: string | null;
   sendCode: (email: string) => Promise<void>;
   verifyCode: (email: string, code: string) => Promise<void>;
   loginWithSocial: (provider: SocialProvider) => Promise<void>;

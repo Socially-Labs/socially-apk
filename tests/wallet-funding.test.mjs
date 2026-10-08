@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createApiClient } from '../src/api/client.ts';
 import { formatUsdc, formatPaymentAmount, parseQrDeposit, parseWalletSummary, validDepositAmount, walletApi, walletTotals } from '../src/api/wallet.ts';
+import { linkedSolanaAddress } from '../src/auth/solana-address.ts';
 
 const address = '11111111111111111111111111111111';
 const deposit = { canPay: true, id: '11111111-1111-4111-8111-111111111111', reference: address,
@@ -10,6 +11,21 @@ const deposit = { canPay: true, id: '11111111-1111-4111-8111-111111111111', refe
   token: { label: 'Test USDC (devnet)', mint: address, decimals: 6, cluster: 'devnet' },
   paymentUrl: `solana:${address}?amount=10.000000&spl-token=${address}&reference=${address}` };
 const summary = { mode: 'PAPER', enabled: true, token: deposit.token, available: { amount: '123.456789', asset: 'USDC' }, positions: [], deposits: [deposit] };
+test('receive uses the user’s Solana wallet and never an EVM or malformed address', () => {
+  const external = 'So11111111111111111111111111111111111111112';
+  assert.equal(linkedSolanaAddress(undefined), null);
+  assert.equal(linkedSolanaAddress([
+    { type: 'email', address: 'crew@example.com' },
+    { type: 'wallet', chainType: 'ethereum', address: '0x1234567890123456789012345678901234567890' },
+    { type: 'wallet', chainType: 'solana', address: 'invalid' },
+  ]), null);
+  assert.equal(linkedSolanaAddress([{ type: 'wallet', chainType: 'solana', address: external }]), external);
+  assert.equal(linkedSolanaAddress([
+    { type: 'wallet', chainType: 'solana', walletClientType: 'phantom', address: external },
+    { type: 'wallet', chainType: 'solana', walletClientType: 'privy', address },
+  ]), address);
+  assert.equal(linkedSolanaAddress([{ type: 'wallet', chain_type: 'solana', wallet_client_type: 'privy', address }]), address);
+});
 test('payment response must match its token, amount and unique reference', () => {
   assert.equal(parseQrDeposit(deposit).id, deposit.id);
   for (const invalid of [{ ...deposit, paymentUrl: 'https://example.com' }, { ...deposit, paymentUrl: deposit.paymentUrl.replace('10.000000', '20.000000') },
