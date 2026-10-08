@@ -1,0 +1,5 @@
+{
+  "tool": "built-in image_gen",
+  "promptTemplate": "Edit this comparison board. Change ONLY the large title at the very top left, outside the two phone mockups, to exactly <title>. Preserve the two UI screens, their text, all geometry, background, colors, icons and bottom animation caption. Do not redesign any part of the UI. Keep the same composition and dimensions.",
+  "titles": ["Option 2 — Boarding pass", "Option 3 — Open editorial", "Option 4 — Navy anchor", "Option 5 — Floating seal"]
+}

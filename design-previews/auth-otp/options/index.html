@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Socially · OTP design options</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#e4edf5;color:#191e43;font:16px/1.6 system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:40px 24px 72px}h1,h2{font-family:Georgia,serif;font-weight:400;line-height:1.15}h1{font-size:42px;margin:0 0 16px}h2{font-size:30px;margin:12px 0}p{color:#64758b;margin:8px 0 20px}nav{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}a{color:#2c4864}nav a{padding:8px 14px;background:#fff;border-radius:12px;text-decoration:none}section{margin-top:40px;scroll-margin-top:20px}.current{display:flex;gap:20px;justify-content:center;padding:24px;background:#f7faff;border-radius:24px;flex-wrap:wrap}.current img{display:block;width:100%;max-width:300px;border-radius:20px}.current figure{margin:0}.current figcaption{text-align:center;color:#64758b;margin-top:10px}.concept{width:100%;height:auto;border-radius:24px;display:block;background:#f7faff}small{color:#64758b}strong{color:#2c4864}footer{margin-top:40px;color:#64758b;font-size:13px}
+</style>
+</head>
+<body><main>
+<h1>Socially auth, five directions.</h1>
+<p>Based on the 34 screens linked in the app README. Each generated concept pairs OTP entry with successful login. These are design proposals; the current app remains as implemented.</p>
+<nav><a href="#current">Current screens</a><a href="#one">1 · Coastal glass</a><a href="#two">2 · Boarding pass</a><a href="#three">3 · Open editorial</a><a href="#four">4 · Navy anchor</a><a href="#five">5 · Floating seal</a></nav>
+<section id="current"><h2>Current implementation</h2><p>Browser captures at 390 × 844 using the production auth screen and a mocked login. Native rendering may differ.</p><div class="current"><figure><a href="../current-full-otp-390-no-preference.png"><img src="../current-full-otp-390-no-preference.png" alt="Current Socially OTP screen"></a><figcaption>OTP entry</figcaption></figure><figure><a href="../current-full-success-390-no-preference.png"><img src="../current-full-success-390-no-preference.png" alt="Current Socially login success sheet"></a><figcaption>Successful login</figcaption></figure></div></section>
+<section id="one"><h2>1 · Coastal glass</h2><p><strong>Closest fit to the existing app.</strong> Retains the familiar coastal backdrop and frosted bottom sheet. Proposed motion: mail → lock → check, with a gentle sheet rise.</p><a href="01-coastal-glass.png"><img class="concept" src="01-coastal-glass.png" alt="Coastal glass OTP and success concept"></a></section>
+<section id="two"><h2>2 · Boarding pass</h2><p>A nautical card with subtle notches and a dashed divider. Proposed motion: focus moves between digits, then the card transforms into confirmation.</p><a href="02-boarding-pass.png"><img class="concept" src="02-boarding-pass.png" alt="Boarding pass OTP and success concept"></a></section>
+<section id="three"><h2>3 · Open editorial</h2><p>A quieter layout with generous space and underline inputs. Proposed motion: the active underline travels, then the content settles into success.</p><a href="03-open-editorial.png"><img class="concept" src="03-open-editorial.png" alt="Open editorial OTP and success concept"></a></section>
+<section id="four"><h2>4 · Navy anchor</h2><p>Brings the app’s navy vault-card treatment into the digit field. Proposed motion: subtle focus glow, then the inset panel becomes confirmation.</p><a href="04-navy-anchor.png"><img class="concept" src="04-navy-anchor.png" alt="Navy anchor OTP and success concept"></a></section>
+<section id="five"><h2>5 · Floating seal</h2><p>A compact floating card with an overlapping seal and digits grouped three plus three. Proposed motion: the seal morphs as the card gently reshapes.</p><a href="05-floating-seal.png"><img class="concept" src="05-floating-seal.png" alt="Floating seal OTP and success concept"></a></section>
+<footer>Generated with the built-in image generation tool. Images illustrate visual direction and motion endpoints; they are not runnable interfaces or animations. Use the gallery headings and filenames to identify the five options.</footer>
+</main></body></html>
