@@ -48,6 +48,7 @@ These are the source of truth. This document describes them; it does not overrid
 | Colours (light/dark) | `src/constants/theme.ts` → `Colors` |
 | Auth panel colours, shadows, type sizes | `src/constants/theme.ts` → `AuthPanel` |
 | Auth scene water highlights | `src/constants/theme.ts` → `CoastalPalette` |
+| Shareable QR card colours | `src/constants/theme/wallet.ts` → `WalletPalette.shareCard` |
 | Wallet surfaces, action colours, type sizes | `src/constants/theme.ts` → `WalletPalette` |
 | Settings cards, profile cover, forms and type sizes | `src/constants/theme.ts` → `SettingsPalette` |
 | Splash water highlights and troughs | `src/constants/theme.ts` → `SplashWaterPalette` |
@@ -566,8 +567,9 @@ explains intended permissions without asserting that the vault is already live.
   The bundled Cormorant Garamond semibold supplies its editorial type, including
   the 43px total, action labels, tabs and asset values. Inter supplies supporting
   labels and the Manage tokens row. A fine pale-blue compass sits inside the
-  24px balance card with its white rim. Four 92px white action tiles—Deposit,
-  Send, Receive and Swap—open their funding or action views. The selected
+  24px balance card with its white rim. Four 92px action tiles—Deposit,
+  Send, Receive and Swap. Deposit uses the cool grey unavailable surface and
+  does not open. Send, Receive and Swap stay white and open their action views. The selected
   Assets tab uses a pale-blue pill; tabs and utility controls have 44px targets.
   The 58px token rows use white surfaces with fine blue borders and 18px corners.
   Compact screens reduce icon and sparkline widths and let network labels wrap.
@@ -578,7 +580,8 @@ explains intended permissions without asserting that the vault is already live.
   buckets, asset values and holding sheets. The shared bottom navigation keeps
   its existing form. `docs/wallet-motion.md` records the superseded motion study.
 
-- Receive funds uses a dedicated pale page with an 18px Inter header, a 42px
+- Receive funds uses the Privy embedded Solana address. Login creates that wallet
+  when the account does not already have one. The page has an 18px Inter header, a 42px
   editorial amount, and a navy QR card with a white scanning surface. Copy and
   Share use 54px controls and preserve the payment reference in the link.
   Payment checking runs automatically; mint, fees and expiry guidance live in
