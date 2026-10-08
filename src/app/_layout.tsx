@@ -47,6 +47,7 @@ function AuthNavigator() {
         <Stack.Screen name="(app)" />
         <Stack.Screen name="account/[section]" options={{ animation: reduceMotion ? 'fade' : 'default', gestureEnabled: true, gestureDirection: 'horizontal' }} />
         <Stack.Screen name="captain/[id]" options={{ animation: reduceMotion ? 'fade' : 'default', gestureEnabled: true }} />
+        <Stack.Screen name="vaults" options={{ animation: reduceMotion ? 'fade' : 'default', gestureEnabled: true }} />
         <Stack.Screen name="invest/[id]" options={{ animation: reduceMotion ? 'fade' : 'default', gestureEnabled: true }} />
       </Stack.Protected>
     </Stack>
