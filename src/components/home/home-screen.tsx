@@ -1,3 +1,4 @@
+import { VaultHomePanel } from '@/components/vaults/vault-screens';
 import { authErrorMessage } from '@/auth/auth-errors';
 import { useAuth } from '@/auth/session';
 import { useTestAccess } from '@/auth/test-access';
@@ -40,7 +41,7 @@ function HomeContent({ role }: { role: AccountRole }) {
   const greeting = firstName.charAt(0).toUpperCase() + firstName.slice(1);
   const heroSpace = Math.max(155, Math.min(height * 0.2, 190));
   const isCaptain = role === 'captain';
-  const notifications = sampleHomeNotifications[role];
+  const notifications = previewing ? sampleHomeNotifications[role] : [];
   const unreadCount = notifications.filter(item => item.unread && !readNotificationIds.has(item.id)).length;
 
   function readNotification(id: string) {
@@ -65,7 +66,7 @@ function HomeContent({ role }: { role: AccountRole }) {
     <DashboardShell testID="home-dashboard" variant={isCaptain ? 'captain' : 'crew'}>
       <HomeHeader name={settings.name} avatar={settings.avatar} photoUri={settings.photoUri} greeting={greeting} role={role}
         onProfile={() => setSheet('profile')} onNotifications={setNotificationAnchor} unreadCount={unreadCount} notificationsOpen={notificationAnchor !== null} />
-      {isCaptain ? <CaptainOverview compact={compact} heroSpace={heroSpace} panel={captainPanel} onPanel={setCaptainPanel} />
+      {!previewing ? <VaultHomePanel isCaptain={isCaptain} /> : isCaptain ? <CaptainOverview compact={compact} heroSpace={heroSpace} panel={captainPanel} onPanel={setCaptainPanel} />
         : <CrewHome compact={compact} heroSpace={heroSpace} onOverview={hidden => { setPortfolioHidden(hidden); setSheet('portfolio'); }} />}
       <HomeSheet sheet={sheet} greeting={greeting} email={email} bio={settings.bio} pending={pending} error={error}
         previewing={previewing} hidden={!settingsReady || settings.hideBalances || portfolioHidden} onClose={() => setSheet(null)} onSignOut={() => { void signOut(); }}

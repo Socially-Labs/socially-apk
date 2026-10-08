@@ -1,3 +1,4 @@
+import { parseVaultSummary } from './generated/vault-contracts.ts';
 import { ApiError, type createApiClient } from './client.ts';
 
 export type Period = '1H' | '24H' | '7D' | '30D';
@@ -82,6 +83,8 @@ export function parseTradingContext(v: unknown): TradingContext {
   return c as TradingContext;
 }
 export function marketsApi(client: ReturnType<typeof createApiClient>) {
+  const roundIds=new Set<string>();
+  const fundPath=(id:string)=>roundIds.has(id)?`/v1/vaults/${id}`:`/v0/funds/${id}`;
   return {
     async prices(signal?: AbortSignal) {
       const r = envelope(await client.request('/v0/market/prices', { signal, authenticated: false }));
@@ -99,8 +102,18 @@ export function marketsApi(client: ReturnType<typeof createApiClient>) {
       const h = parseHistory(await client.request(`/v0/market/tokens/${encodeURIComponent(mint)}/history?range=${range}`, { signal, authenticated: false }));
       if (h.mint !== mint || h.range !== range) fail(); return h;
     },
-    async funds(signal?: AbortSignal) { const r = envelope(await client.request('/v0/me/captain/funds', { signal })); if (!Array.isArray(r.funds)) fail(); return r.funds.map(parseFund); },
-    async context(id: string, signal?: AbortSignal) { const c = parseTradingContext(await client.request(`/v0/funds/${id}/trading-context`, { signal })); if (c.fund.id !== id) fail(); return c; },
+    async funds(signal?: AbortSignal) {
+      const r = envelope(await client.request('/v0/me/captain/funds', { signal })); if (!Array.isArray(r.funds)) fail();
+      const legacy=r.funds.map(parseFund);
+      let response:unknown;
+      try { response=await client.request('/v1/me/captain/vaults',{ signal }); }
+      catch (error) { if (error instanceof ApiError && error.status===404) return legacy; throw error; }
+      if (!record(response) || !Array.isArray(response.vaults)) fail();
+      const rounds=response.vaults.map(parseVaultSummary);
+      roundIds.clear(); for (const round of rounds) roundIds.add(round.id);
+      return [...rounds.filter(v=>v.phase==='ACTIVE').map(v=>({ id:v.id,name:v.name,status:v.riskState==='FROZEN'?'FROZEN':'ACTIVE',trialEnd:v.tradingEndsAt })),...legacy];
+    },
+    async context(id: string, signal?: AbortSignal) { const c = parseTradingContext(await client.request(`${fundPath(id)}/trading-context`, { signal })); if (c.fund.id !== id) fail(); return c; },
     async watchlist(signal?: AbortSignal) { const r = envelope(await client.request('/v0/me/watchlist', { signal })); if (!Array.isArray(r.mints) || !r.mints.every(mint)) fail(); return r.mints as string[]; },
     async savedMarkets(signal?: AbortSignal) {
       const r = envelope(await client.request('/v0/me/watchlist', { signal }));
@@ -114,19 +127,19 @@ export function marketsApi(client: ReturnType<typeof createApiClient>) {
       if (r.mint !== mint || r.saved !== saved) fail();
     },
     async preview(id: string, body: Intent, signal?: AbortSignal): Promise<Preview> {
-      const r = envelope(await client.request(`/v0/funds/${id}/orders/preview`, { method: 'POST', body, signal }));
+      const r = envelope(await client.request(`${fundPath(id)}/orders/preview`, { method: 'POST', body, signal }));
       if (!record(r.estimate) || !['quantity', 'marketPriceUsdc', 'fillPriceUsdc', 'feeUsdc', 'cashChangeUsdc'].every(key => decimal((r.estimate as Record<string, unknown>)[key])) ||
         !record(r.policy) || typeof r.policy.allowed !== 'boolean' || !nullable(r.policy.reason, text) || !uuid(r.observationId) || !date(r.observedAt)) fail(); return r as Preview;
     },
     async submit(id: string, body: Intent, idempotencyKey: string, signal?: AbortSignal) {
-      const r = envelope(await client.request(`/v0/funds/${id}/orders`, { method: 'POST', body, idempotencyKey, signal }));
+      const r = envelope(await client.request(`${fundPath(id)}/orders`, { method: 'POST', body, idempotencyKey, signal }));
       if (!uuid(r.orderId) || r.status !== 'PENDING') fail(); return r.orderId;
     },
     async order(id: string, orderId: string, signal?: AbortSignal): Promise<Order> {
-      const r = envelope(await client.request(`/v0/funds/${id}/orders/${orderId}`, { signal })), o = r.order;
+      const r = envelope(await client.request(`${fundPath(id)}/orders/${orderId}`, { signal })), o = r.order;
       if (!record(o) || o.id !== orderId || !['PENDING', 'FILLED', 'PARTIALLY_FILLED', 'REJECTED', 'CANCELLED'].includes(String(o.status)) ||
         !nullable(o.reject_reason, text) || !['quantity', 'fee_usdc', 'fill_price_usdc'].every(key => nullable(o[key], decimal))) fail(); return o as Order;
     },
-    async cancel(id: string, orderId: string, signal?: AbortSignal) { envelope(await client.request(`/v0/funds/${id}/orders/${orderId}/cancel`, { method: 'POST', signal })); },
+    async cancel(id: string, orderId: string, signal?: AbortSignal) { envelope(await client.request(`${fundPath(id)}/orders/${orderId}/cancel`, { method: 'POST', signal })); },
   };
 }
