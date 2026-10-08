@@ -8,6 +8,7 @@ import { AuthPanel as A } from '@/constants/theme';
 import { AuthIcon } from './auth-icons';
 import { AuthMorphIcon } from './auth-morph-icon';
 import { AuthOtpInput } from './auth-otp-input';
+import { AuthPassDivider } from './auth-pass-divider';
 import { AuthPrimaryAction } from './auth-primary-action';
 import { AuthVerificationFooter } from './auth-verification-controls';
 import type { RefObject } from 'react';
@@ -34,6 +35,7 @@ export function AuthOtpPanel({ auth, input, focused, busy, testIDPrefix, onFocus
       <Text style={styles.copy}>Enter the six-digit code we sent to</Text>
       <Text selectable style={styles.email}>{auth.email.trim()}</Text>
     </View>
+    <AuthPassDivider />
     <AuthOtpInput input={input} code={auth.code} onChange={auth.updateCode} busy={busy} focused={focused} invalid={!!auth.error}
       testIDPrefix={testIDPrefix} onFocus={onFocus} onBlur={onBlur} onSubmit={() => { void auth.submitCode(); }} />
     <View style={styles.statusRow} accessibilityLiveRegion="polite">

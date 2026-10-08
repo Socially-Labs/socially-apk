@@ -13,11 +13,13 @@ import { TestAccessProvider } from '@/auth/test-access';
 import { SettingsProvider } from '@/components/settings/settings-provider';
 import { SignInPanel } from '@/components/auth/sign-in-panel';
 import { AuthSuccessSheet } from '@/components/auth/auth-success-sheet';
+import AuthScreen from '@/components/auth/auth-screen';
+import { IntroCompleteContext } from '@/components/auth/intro-context';
 import { useAppAccess } from '@/hooks/use-app-access';
 import { AppFontMap } from '@/constants/fonts';
 import { useFonts } from 'expo-font';
 
-declare global { interface Window { otpVerifyCalls: number; otpReject: boolean; otpRestored: boolean } }
+declare global { interface Window { otpVerifyCalls: number; otpReject: boolean; otpRestored: boolean; otpFullScreen?: boolean } }
 window.otpVerifyCalls = 0;
 
 function Harness() {
@@ -41,6 +43,10 @@ function Harness() {
 function Preview() {
   const progress = useSharedValue(1);
   const { canEnterApp } = useAppAccess();
+  if (window.otpFullScreen) return <IntroCompleteContext.Provider value={true}>
+    {canEnterApp ? <Text testID="fixture-home">Account opened</Text> : <AuthScreen />}
+    <AuthSuccessSheet />
+  </IntroCompleteContext.Provider>;
   return <View style={{ flex: 1, backgroundColor: '#E4EDF5', justifyContent: 'flex-end', padding: 14 }}>
     {canEnterApp ? <Text testID="fixture-home">Account opened</Text> : <View style={{ backgroundColor: '#fff', borderRadius: 36, paddingTop: 22, width: '100%', maxWidth: 420, alignSelf: 'center' }}>
       <SignInPanel progress={progress} testIDPrefix="auth" />

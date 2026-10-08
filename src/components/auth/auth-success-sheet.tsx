@@ -9,7 +9,7 @@ import { successFeedback } from '@/components/shared/feedback';
 import { BrandFont, InterFont } from '@/constants/fonts';
 import { AuthPanel as A } from '@/constants/theme';
 import { AuthMorphIcon } from './auth-morph-icon';
-import { AuthPrimaryAction } from './auth-primary-action';
+import { AuthPassDivider } from './auth-pass-divider';
 
 const SUCCESS_HOLD_MS = 1800;
 
@@ -35,13 +35,15 @@ function SuccessPresentation({ needsOnboarding, onComplete }: { needsOnboarding:
   }, [close, progress, reduceMotion]);
   const bar = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.get() }] }));
   return <DashboardSheet visible={!closing} title="You’re signed in" onClose={close} onDismiss={onComplete}
-    footer={<AuthPrimaryAction testID="auth-success-continue" label={needsOnboarding ? 'Set up my profile' : 'Enter Socially'} onPress={close} />}>
+    footer={<View style={styles.redirect} testID="auth-success-redirect" accessibilityLiveRegion="polite">
+      <View style={styles.progressTrack} accessible={false}><Animated.View style={[styles.progressBar, bar]} /></View>
+      <Text style={styles.hint}>{needsOnboarding ? 'Continuing to profile setup…' : 'Taking you to Socially…'}</Text>
+    </View>}>
     <View style={styles.content} testID="auth-success-sheet">
       <View style={styles.seal}><AuthMorphIcon state="success" from="lock" size={40} /></View>
       <Text accessibilityRole="header" style={styles.title}>Welcome aboard.</Text>
       <Text style={styles.copy}>{needsOnboarding ? 'Let’s choose your username and your place on Socially.' : 'Your account is ready. Your next voyage starts here.'}</Text>
-      <View style={styles.progressTrack} accessible={false}><Animated.View style={[styles.progressBar, bar]} /></View>
-      <Text accessibilityLiveRegion="polite" style={styles.hint}>{needsOnboarding ? 'Continuing to profile setup…' : 'Taking you to Socially…'}</Text>
+      <AuthPassDivider edgeInset={32} />
     </View>
   </DashboardSheet>;
 }
@@ -51,7 +53,8 @@ const styles = StyleSheet.create({
   seal: { width: 88, height: 88, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: A.successSurface, borderWidth: 1, borderColor: A.glassBorder, marginBottom: 20 },
   title: { fontFamily: BrandFont.editorial, fontSize: 33, lineHeight: 40, color: A.ink, textAlign: 'center' },
   copy: { fontFamily: InterFont.regular, fontSize: 14, lineHeight: 22, color: A.secondary, textAlign: 'center', marginTop: 10, maxWidth: 310 },
-  progressTrack: { width: 64, height: 3, borderRadius: 2, overflow: 'hidden', backgroundColor: A.border, marginTop: 23 },
+  redirect: { alignItems: 'center', paddingBottom: 10 },
+  progressTrack: { width: 64, height: 3, borderRadius: 2, overflow: 'hidden', backgroundColor: A.border },
   progressBar: { width: '100%', height: '100%', backgroundColor: A.primary, borderRadius: 2, transformOrigin: 'left center' },
-  hint: { fontFamily: InterFont.medium, fontSize: 11, lineHeight: 18, color: A.secondary, marginTop: 10 },
+  hint: { fontFamily: InterFont.medium, fontSize: 13, lineHeight: 20, color: A.secondary, marginTop: 12 },
 });

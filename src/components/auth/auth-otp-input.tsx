@@ -52,16 +52,16 @@ function DigitSlot({ digit, active, invalid, index }: { digit: string; active: b
   }));
   const textStyle = useAnimatedStyle(() => ({ opacity: 0.5 + fill.get() * 0.5, transform: [{ scale: reduceMotion ? 1 : 0.9 + fill.get() * 0.1 }] }));
   return <Animated.View style={[styles.slot, style]} testID={`otp-digit-${index}`}>
-    {digit ? <Animated.Text style={[styles.digit, textStyle]}>{digit}</Animated.Text> : <View style={[styles.dash, active && styles.activeDash]} />}
+    {digit ? <Animated.Text style={[styles.digit, textStyle]}>{digit}</Animated.Text> : <View testID={`otp-placeholder-${index}`} style={[styles.dash, active && styles.activeDash]} />}
   </Animated.View>;
 }
 
 const styles = StyleSheet.create({
-  frame: { width: '100%', marginTop: 24, marginBottom: 12 },
+  frame: { width: '100%', marginTop: 14, marginBottom: 12 },
   slots: { flexDirection: 'row', gap: 6 },
   slot: { flex: 1, minWidth: 0, height: 58, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, backgroundColor: A.otpSurface },
   digit: { fontFamily: InterFont.medium, fontSize: 25, lineHeight: 34, color: A.ink, fontVariant: ['tabular-nums'] },
-  dash: { width: 9, height: 2, borderRadius: 1, backgroundColor: A.focusBorder, opacity: 0.45 },
+  dash: { position: 'absolute', bottom: 11, width: 12, height: 2, borderRadius: 1, backgroundColor: A.focusBorder, opacity: 0.45 },
   activeDash: { backgroundColor: A.primary, opacity: 0.8 },
   input: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, color: 'transparent', backgroundColor: 'transparent', fontSize: 25, borderWidth: 0, outlineWidth: 0, opacity: 0.03 },
 });
