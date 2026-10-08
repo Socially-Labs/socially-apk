@@ -11,6 +11,8 @@ import { formatUsdc } from '@/api/wallet';
 import type { useWalletFunding } from '@/hooks/use-wallet-funding';
 import { sharedStyles } from './wallet-section-styles';
 import { filters, upcomingNetworks, type NetworkFilter, type WalletSheet as WalletSheetKind } from './wallet-types';
+import { useAuth } from '@/auth/session';
+import { useAccountSettings } from '@/components/settings/settings-provider';
 
 export function WalletSheet({ funding, assets, selectedDepositId, onSelectDeposit, sheet, network, hiddenTokens, balanceVisible, onClose, onNetwork, onSettings, onActivity, onTokenVisibility, onShowSheet }: {
   funding: ReturnType<typeof useWalletFunding>; assets: WalletAsset[]; selectedDepositId: string | null; onSelectDeposit: (id: string | null) => void;
@@ -18,7 +20,11 @@ export function WalletSheet({ funding, assets, selectedDepositId, onSelectDeposi
   onClose: () => void; onNetwork: (filter: NetworkFilter) => void; onSettings: () => void; onActivity: () => void;
   onTokenVisibility: (symbol: WalletAsset['symbol'], visible: boolean) => void; onShowSheet: (sheet: WalletSheetKind) => void;
 }) {
-  if (sheet === 'deposit' || sheet === 'receive') return <ReceiveFundsScreen onClose={onClose} summary={funding.summary} creating={funding.creating} serviceError={funding.error} selectedId={selectedDepositId} onSelect={onSelectDeposit} onCreate={funding.createDeposit} onRefresh={funding.refresh} />;
+  const auth = useAuth();
+  const { settings } = useAccountSettings();
+  if (sheet === 'deposit' || sheet === 'receive') return <ReceiveFundsScreen onClose={onClose}
+    wallet={sheet === 'receive' ? { address: auth.solanaAddress ?? null, ready: auth.isReady, authenticated: auth.isAuthenticated, ownerName: settings.name } : undefined}
+    summary={funding.summary} creating={funding.creating} serviceError={funding.error} selectedId={selectedDepositId} onSelect={onSelectDeposit} onCreate={funding.createDeposit} onRefresh={funding.refresh} />;
   const title = sheet === null ? '' : typeof sheet === 'object' ? sheet.name : {
     deposit: 'Add funds', send: 'Send crypto', receive: 'Add funds from another wallet', swap: 'Swap assets', networks: 'Networks', options: 'Wallet options', manage: 'Manage tokens', 'custom-token': 'Add a custom token',
   }[sheet];
