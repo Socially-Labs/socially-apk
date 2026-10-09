@@ -1,3 +1,4 @@
+import { PaperPortfolioCard } from './paper-portfolio-card';
 import { VaultArtwork } from './vault-artwork';
 import { RoundTerms } from './vault-round-terms';
 import { useCallback,useState,type ReactNode } from 'react';
@@ -43,7 +44,7 @@ export function VaultListScreen() {
  return <Frame title={mine==='1'?'Your vault rounds':'Discover vaults'}><FlatList data={data.vaults} keyExtractor={v=>v.id}
   contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" renderItem={({ item })=><VaultCard vault={item} hidden={hidden} />}
   refreshing={data.loading} onRefresh={data.refresh} ListHeaderComponent={<View style={s.section}>
-   <Action secondary onPress={()=>router.push('/vaults/live')}>Your wallet-funded vaults</Action>
+   {!data.config?.walletSnapshotEnabled?<Action secondary onPress={()=>router.push('/vaults/live')}>Your wallet-funded vaults</Action>:null}
    <View style={s.row}>{(['all','short','long'] as const).map(group=><Pressable key={group} accessibilityRole="radio" accessibilityState={{ checked:durationGroup===group }} onPress={()=>setDurationGroup(group)} style={[s.chip,durationGroup===group&&s.chosen]}><Text style={durationGroup===group?s.buttonText:s.copy}>{group==='all'?'All durations':group==='short'?'Under 30 days':'30 days or more'}</Text></Pressable>)}</View>
    <Text style={s.copy}>Fixed funding windows. Transparent paper trading. Capital locked until settlement.</Text>
    <View style={s.row}><Action secondary onPress={()=>router.replace({ pathname:'/vaults',params:{ mine:mine==='1'?'0':'1' } })}>{mine==='1'?'Discover':'Your rounds'}</Action>
@@ -56,10 +57,10 @@ export function VaultListScreen() {
 export function VaultHomePanel({ isCaptain }:{ isCaptain:boolean }) {
  const data=useVaults(undefined,true),{ settings,ready }=useAccountSettings();
  return <View style={s.content}><Text style={s.cardTitle}>{isCaptain?'Lead your next round.':'Your vault investments.'}</Text>
-  <Action secondary onPress={()=>router.push('/vaults/live')}>Your wallet-funded vaults</Action>
+  {!data.config?.walletSnapshotEnabled?<Action secondary onPress={()=>router.push('/vaults/live')}>Your wallet-funded vaults</Action>:null}
   <Text style={s.copy}>Your funded paper rounds and final claims.</Text><ErrorText value={data.error} />
   {data.loading&&!data.vaults.length?<ActivityIndicator color={C.ink} />:null}
-  {!data.loading&&!data.vaults.length?<View style={s.card}><Text style={s.copy}>No paper vault investments yet. {isCaptain?'Create a wallet-funded vault using SOL or USDC.':'Explore vaults accepting contributions.'}</Text></View>:null}
+  {!data.loading&&!data.vaults.length?<View style={s.card}><Text style={s.copy}>No paper vault investments yet. {isCaptain?'Create your first paper strategy with virtual funds based on your devnet wallet.':'Explore vaults accepting contributions.'}</Text></View>:null}
   {data.vaults.slice(0,5).map(v=><VaultCard key={v.id} vault={v} hidden={!ready||settings.hideBalances} />)}
   <Action onPress={()=>router.push(isCaptain?'/vaults/create':'/vaults')}>{isCaptain?'Create a vault':'Explore vaults'}</Action>
   <Action secondary onPress={()=>router.push({ pathname:'/vaults',params:{ mine:'1' } })}>All your rounds</Action>
@@ -108,6 +109,7 @@ export function VaultDetailScreen() {
     {position.claimableUsdc!==null&&!position.claimPaid&&position.shares!=='0.000000'?<Action disabled={!canAct} onPress={()=>{ void intent.submit({ kind:'CLAIM',vaultId:id,body:{} }); }}>Claim final payout / refund</Action>:null}
     {funding&&position.shares!=='0.000000'?<Action secondary disabled={!canAct} onPress={()=>{ void intent.submit({ kind:'CANCEL',vaultId:id,body:{} }); }}>{position.isCaptain?'Cancel before any Crew commitment':'Cancel full funding contribution'}</Action>:null}
    </View>:null}
+   {data.config?.walletSnapshotEnabled&&funding&&position&&!position.isCaptain&&position.availableUsdc==='0.000000'?<PaperPortfolioCard onReady={data.refresh}/>:null}
    {saved?<View style={s.card}><Text style={s.cardTitle}>Request awaiting confirmation</Text><Text style={s.copy}>{saved.kind} · Your original request is saved. Retry confirms that same request.</Text><Action disabled={!intent.ready||intent.busy} onPress={()=>{ void intent.submit(saved); }}>{intent.busy?'Confirming…':'Retry saved request'}</Action></View>:funding&&position&&!position.isCaptain?<View style={s.card}>
     <Text style={s.label}>Contribution in paper USDC</Text>
     {Number(vault.remainingCapacityUsdc)<50?<Text style={s.copy}>Remaining capacity is below the 50 USDC minimum. No smaller final contribution is accepted.</Text>:null}<TextInput accessibilityLabel="Contribution in paper USDC" keyboardType="decimal-pad" value={amount} onChangeText={value=>{ setAmount(value); setReview(false); }} style={s.input} editable={!intent.busy} maxLength={30} />

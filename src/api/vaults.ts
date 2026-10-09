@@ -6,12 +6,12 @@ const record=(v:unknown):v is Record<string,unknown>=>!!v && typeof v==='object'
 const amount=(v:unknown)=>typeof v==='string' && /^(0|[1-9]\d{0,23})\.\d{6}$/.test(v);
 const uuid=(v:unknown)=>typeof v==='string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(v);
 function fail():never { throw new ApiError('invalid_response','The vault service returned an unexpected response.'); }
-export interface VaultConfig { enabled:boolean; mode:'PAPER'; fundingWindowHours:number[]; durationDays:number[];
+export interface VaultConfig { walletSnapshotEnabled?:boolean; enabled:boolean; mode:'PAPER'; fundingWindowHours:number[]; durationDays:number[];
  captainSeedUsdc:string; minimumCapitalUsdc:string; maximumCapitalUsdc:string; minimumCrewDepositUsdc:string;
  performanceFeeBps:1000; exitPolicy:'LOCKED_UNTIL_SETTLEMENT'; residuePolicy:'RETAIN_AS_LIABILITY'; serverTime:string }
 export interface VaultPreview extends VaultConfig { input:VaultCreateInput; availableUsdc:string; captainEligible:boolean; seedUsdc:string; networkCostUsdc:string }
 function parseVaultConfig(v:unknown):VaultConfig {
- if (!record(v) || v.mode!=='PAPER' || typeof v.enabled!=='boolean' || v.performanceFeeBps!==1000 || v.exitPolicy!=='LOCKED_UNTIL_SETTLEMENT' ||
+ if (!record(v) || !(v.walletSnapshotEnabled===undefined||typeof v.walletSnapshotEnabled==='boolean') || v.mode!=='PAPER' || typeof v.enabled!=='boolean' || v.performanceFeeBps!==1000 || v.exitPolicy!=='LOCKED_UNTIL_SETTLEMENT' ||
     v.residuePolicy!=='RETAIN_AS_LIABILITY' || typeof v.serverTime!=='string' || !Number.isFinite(Date.parse(v.serverTime)) ||
     !['captainSeedUsdc','minimumCapitalUsdc','maximumCapitalUsdc','minimumCrewDepositUsdc'].every(k=>amount(v[k])) ||
     !Array.isArray(v.fundingWindowHours) || v.fundingWindowHours.some(h=>![12,24,72].includes(h)) ||

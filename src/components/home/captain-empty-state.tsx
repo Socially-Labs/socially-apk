@@ -9,14 +9,14 @@ export function CaptainEmptyState({ onCreate }: { onCreate:()=>void }) {
  return <LinearGradient colors={C.card} start={{x:0,y:0}} end={{x:1,y:1}} style={s.card} testID="captain-empty-state">
   <View style={s.icon}><FundVaultIcon size={32} color={C.icon}/></View>
   <Text style={s.title} accessibilityRole="header">Your first voyage starts here.</Text>
-  <Text style={s.copy}>Name your strategy and fund your first vault from your wallet.</Text>
+  <Text style={s.copy}>Create your strategy and practice with virtual funds based on your devnet wallet.</Text>
   <View style={s.steps}>
    <View style={s.step}><View style={s.smallIcon}><FundVaultIcon size={20} color={C.icon}/></View><View style={s.flex}><Text style={s.stepTitle}>Set your course</Text><Text style={s.copy}>Choose your vault’s name and describe your strategy.</Text></View></View>
-   <View style={s.step}><View style={s.smallIcon}><Users size={20} color={C.icon}/></View><View style={s.flex}><Text style={s.stepTitle}>Fund your vault</Text><Text style={s.copy}>Choose SOL or USDC and review the transaction before signing.</Text></View></View>
-   <View style={s.step}><View style={s.smallIcon}><ChartNoAxesColumnIncreasing size={20} color={C.icon}/></View><View style={s.flex}><Text style={s.stepTitle}>Track your progress</Text><Text style={s.copy}>View your holdings and shares on your vault page. Crew deposits and trading are coming later.</Text></View></View>
+   <View style={s.step}><View style={s.smallIcon}><Users size={20} color={C.icon}/></View><View style={s.flex}><Text style={s.stepTitle}>Seed your paper vault</Text><Text style={s.copy}>Initialize paper funds from your SOL and USDC, then review your vault.</Text></View></View>
+   <View style={s.step}><View style={s.smallIcon}><ChartNoAxesColumnIncreasing size={20} color={C.icon}/></View><View style={s.flex}><Text style={s.stepTitle}>Track your progress</Text><Text style={s.copy}>Track simulated investments, Crew, and trading performance.</Text></View></View>
   </View>
   <AuthButton testID="captain-first-vault" accessibilityRole="button" onPress={onCreate} style={s.button}><Plus size={20} color={C.createInk}/><Text style={s.buttonText}>Create your first vault</Text></AuthButton>
-  <Text style={s.note}>SOL or USDC funding · $100 minimum seed · Keep SOL for network fees</Text>
+  <Text style={s.note}>Paper trading · 100 paper USDC seed · Your tokens stay in your wallet</Text>
  </LinearGradient>;
 }
 const s=StyleSheet.create({

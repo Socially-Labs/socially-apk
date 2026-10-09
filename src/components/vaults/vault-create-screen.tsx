@@ -1,3 +1,4 @@
+import { PaperPortfolioCard } from './paper-portfolio-card';
 import { useEffect,useRef,useState,type ReactNode } from 'react';
 import { ActivityIndicator,Image,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { router } from 'expo-router';
@@ -25,6 +26,7 @@ function Choice({label,value,options,onChange,disabled,icon}:{label:string;value
 export function VaultCreateScreen(){const data=useVaults();return <CreateForm key={data.subject??'signed-out'} data={data}/>;}
 function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
  const insets=useSafeAreaInsets();
+ const [portfolioReady,setPortfolioReady]=useState(false);
  const [name,setName]=useState(''),[description,setDescription]=useState(''),[hours,setHours]=useState(24),[days,setDays]=useState(14),[review,setReview]=useState(false);
  const [art,setArt]=useState<Record<Artwork,string|null>>({avatar:null,banner:null});
  const [picking,setPicking]=useState(false),[mediaError,setMediaError]=useState<string|null>(null),[createdId,setCreatedId]=useState<string|null>(null),[uploading,setUploading]=useState(false),[uploadRevision,setUploadRevision]=useState(0);
@@ -58,7 +60,7 @@ function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
   catch(error){if(mounted.current)setMediaError(error instanceof Error?error.message:'Could not select artwork.');}
   finally{pickLock.current=false;if(mounted.current)setPicking(false);}
  }
- const valid=!!config?.enabled&&!data.error&&!!data.subject&&intent.ready&&!locked&&body.name.length>=3&&config.fundingWindowHours.includes(hours)&&config.durationDays.includes(days);
+ const valid=(!config?.walletSnapshotEnabled||portfolioReady)&&!!config?.enabled&&!data.error&&!!data.subject&&intent.ready&&!locked&&body.name.length>=3&&config.fundingWindowHours.includes(hours)&&config.durationDays.includes(days);
  const reviewing=review||!!saved;
  useEffect(()=>{scroll.current?.scrollTo({y:0,animated:false});},[reviewing,createdId]);
  return <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={s.root}>
@@ -70,7 +72,7 @@ function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
    <View style={s.badge}><Text style={s.badgeText}>Paper vault</Text></View>
    {data.loading&&!config?<ActivityIndicator accessibilityLabel="Loading vault configuration" color={C.ink}/>:null}
    {(data.error||intent.error||mediaError)?<Glass><Text accessibilityRole="alert" style={s.error}>{mediaError??intent.error??data.error}</Text>{data.error&&!createdId?<Button secondary onPress={data.refresh}>Retry loading</Button>:null}</Glass>:null}
-   {!data.loading&&config&&!config.enabled&&!createdId?<Glass><Text style={s.copy}>Vault creation is disabled on this backend. This flow currently uses paper trading funds; funding a vault from your wallet is not enabled yet.</Text></Glass>:null}
+   {!data.loading&&config&&!config.enabled&&!createdId?<Glass><Text style={s.copy}>Paper vault creation is currently disabled. Your details are kept; retry when the service is available.</Text></Glass>:null}
    {!data.subject?<Text style={s.copy}>Sign in as a Captain to create your vault.</Text>:null}
    {createdId?<Glass><Text style={s.cardTitle}>{body.name}</Text><Text style={s.copy}>{uploading?'Saving your vault artwork…':'Your vault is confirmed. Artwork can also be updated from the vault page.'}</Text>{uploading?<ActivityIndicator color={C.ink}/>:<><Button onPress={()=>{setUploading(true);setMediaError(null);setUploadRevision(v=>v+1);}}>Retry artwork</Button><Button secondary onPress={()=>openVault(createdId)}>Open vault</Button></>}</Glass>:<>
     <View>
@@ -83,6 +85,7 @@ function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
       {reviewing?<View style={{flex:1,gap:6,paddingTop:22}}><Text style={s.cardTitle}>{body.name}</Text><Text style={s.caption}>{body.description||'No strategy description'}</Text></View>:<><View style={{flex:1,gap:6,paddingTop:24}}><Text style={s.label}>Vault image</Text><Pressable accessibilityRole="button" accessibilityLabel={art.avatar?'Replace vault image':'Choose vault image'} disabled={locked} onPress={()=>{void choose('avatar');}} style={s.smallButton}><ImagePlus size={16} color={C.ink}/><Text style={s.smallText}>{art.avatar?'Change image':'Add image'}</Text></Pressable></View><Text style={[s.caption,{flex:0.9,paddingTop:24}]}>Optional artwork uploads after creation.</Text></>}
      </View>
     </View>
+    {config?.walletSnapshotEnabled&&!reviewing?<PaperPortfolioCard onReady={()=>{setPortfolioReady(true);}}/>:null}
     {!reviewing?<>
      <Glass><Text style={s.label}>Vault name</Text><TextInput accessibilityLabel="Vault name" placeholder="e.g. Horizon Growth" placeholderTextColor="#8194AC" value={name} onChangeText={setName} maxLength={80} editable={!locked} style={s.input}/><Text style={s.label}>Strategy description</Text><TextInput accessibilityLabel="Strategy description" placeholder="Describe your approach to the markets" placeholderTextColor="#8194AC" value={description} onChangeText={setDescription} maxLength={1000} multiline editable={!locked} style={[s.input,s.multiline]}/></Glass>
      <View style={s.settings}><Choice label="Funding window" value={hours} options={config?.fundingWindowHours??[]} onChange={setHours} disabled={locked||!config} icon={<Clock3 size={24} color="#456487"/>}/><Choice label="Trading duration" value={days} options={config?.durationDays??[]} onChange={setDays} disabled={locked||!config} icon={<CalendarDays size={24} color="#456487"/>}/></View>
