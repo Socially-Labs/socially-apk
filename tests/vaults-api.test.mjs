@@ -72,3 +72,13 @@ test('vault artwork uses owned routes and sends no bearer to object storage',asy
  assert.equal(paths.length,2);
  assert.throws(()=>parseVaultSummary({ ...vault,bannerUrl:'http://untrusted.example/image' }));
 });
+test('creation review validates authenticated backend terms and the exact saved input',async()=>{
+ const input={name:'Horizon Growth',description:'Patient strategy',fundingWindowHours:24,durationDays:14,termsVersion:1};
+ const preview={enabled:true,mode:'PAPER',fundingWindowHours:[12,24,72],durationDays:[7,14,30],captainSeedUsdc:'100.000000',minimumCapitalUsdc:'1000.000000',maximumCapitalUsdc:'30000.000000',minimumCrewDepositUsdc:'50.000000',performanceFeeBps:1000,exitPolicy:'LOCKED_UNTIL_SETTLEMENT',residuePolicy:'RETAIN_AS_LIABILITY',serverTime:at,input,availableUsdc:'500.000000',captainEligible:true,seedUsdc:'100.000000',networkCostUsdc:'0.000000'};
+ let changes={};const api=vaultsApi(createApiClient({origin:'http://localhost:3000',getAccessToken:async()=> 'private-session',fetchImpl:async(url,options)=>{
+  assert.equal(new URL(url).pathname,'/v1/vaults/preview');assert.equal(options.method,'POST');assert.equal(options.headers.Authorization,'Bearer private-session');assert.deepEqual(JSON.parse(options.body),input);return Response.json({...preview,...changes});
+ }}));
+ assert.equal((await api.preview(input)).minimumCapitalUsdc,'1000.000000');
+ for(const patch of [{input:{...input,durationDays:7}},{seedUsdc:'200.000000'},{networkCostUsdc:'1.000000'},{availableUsdc:500},{captainEligible:'true'},{performanceFeeBps:2000}]){changes=patch;await assert.rejects(api.preview(input),/unexpected/);}
+ changes={captainEligible:false,availableUsdc:'50.000000'};assert.equal((await api.preview(input)).captainEligible,false);
+});

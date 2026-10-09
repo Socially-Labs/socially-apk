@@ -9,6 +9,15 @@ function fail():never { throw new ApiError('invalid_response','The vault service
 export interface VaultConfig { enabled:boolean; mode:'PAPER'; fundingWindowHours:number[]; durationDays:number[];
  captainSeedUsdc:string; minimumCapitalUsdc:string; maximumCapitalUsdc:string; minimumCrewDepositUsdc:string;
  performanceFeeBps:1000; exitPolicy:'LOCKED_UNTIL_SETTLEMENT'; residuePolicy:'RETAIN_AS_LIABILITY'; serverTime:string }
+export interface VaultPreview extends VaultConfig { input:VaultCreateInput; availableUsdc:string; captainEligible:boolean; seedUsdc:string; networkCostUsdc:string }
+function parseVaultConfig(v:unknown):VaultConfig {
+ if (!record(v) || v.mode!=='PAPER' || typeof v.enabled!=='boolean' || v.performanceFeeBps!==1000 || v.exitPolicy!=='LOCKED_UNTIL_SETTLEMENT' ||
+    v.residuePolicy!=='RETAIN_AS_LIABILITY' || typeof v.serverTime!=='string' || !Number.isFinite(Date.parse(v.serverTime)) ||
+    !['captainSeedUsdc','minimumCapitalUsdc','maximumCapitalUsdc','minimumCrewDepositUsdc'].every(k=>amount(v[k])) ||
+    !Array.isArray(v.fundingWindowHours) || v.fundingWindowHours.some(h=>![12,24,72].includes(h)) ||
+    !Array.isArray(v.durationDays) || v.durationDays.some(d=>![3,7,14,21,28,30,60,90,180,365].includes(d))) fail();
+   return v as unknown as VaultConfig;
+}
 export function parseVaultOperation(v:unknown):VaultOperation {
  if (!record(v) || !uuid(v.id) || !uuid(v.vaultId) || !uuid(v.eventId) || v.mode!=='PAPER' || v.status!=='SUCCEEDED' ||
   !['CREATE','CONTRIBUTE','CANCEL','CLAIM'].includes(String(v.kind)) || !amount(v.amountUsdc)) fail();
@@ -39,12 +48,7 @@ export function vaultsApi(client:ReturnType<typeof createApiClient>) {
   },
   async config(signal?:AbortSignal):Promise<VaultConfig> {
    const v=await client.request('/v1/vault-config',{ signal,authenticated:false });
-   if (!record(v) || v.mode!=='PAPER' || typeof v.enabled!=='boolean' || v.performanceFeeBps!==1000 || v.exitPolicy!=='LOCKED_UNTIL_SETTLEMENT' ||
-    v.residuePolicy!=='RETAIN_AS_LIABILITY' || typeof v.serverTime!=='string' || !Number.isFinite(Date.parse(v.serverTime)) ||
-    !['captainSeedUsdc','minimumCapitalUsdc','maximumCapitalUsdc','minimumCrewDepositUsdc'].every(k=>amount(v[k])) ||
-    !Array.isArray(v.fundingWindowHours) || v.fundingWindowHours.some(h=>![12,24,72].includes(h)) ||
-    !Array.isArray(v.durationDays) || v.durationDays.some(d=>![3,7,14,21,28,30,60,90,180,365].includes(d))) fail();
-   return v as unknown as VaultConfig;
+   return parseVaultConfig(v);
   },
   async list(mine=false,after?:string,signal?:AbortSignal,durationGroup:'all'|'short'|'long'='all') {
    const query=new URLSearchParams(); if (after) query.set('after',after); if (durationGroup!=='all') query.set('durationGroup',durationGroup);
@@ -54,7 +58,15 @@ export function vaultsApi(client:ReturnType<typeof createApiClient>) {
   },
   async detail(id:string,signal?:AbortSignal) { const v=parseVaultSummary(await client.request(`/v1/vaults/${encodeURIComponent(id)}`,{ signal,authenticated:false })); if (v.id!==id) fail(); return v; },
   async position(id:string,signal?:AbortSignal) { const v=parseVaultPosition(await client.request(`/v1/vaults/${encodeURIComponent(id)}/position`,{ signal })); if (v.vaultId!==id) fail(); return v; },
-  async preview(body:VaultCreateInput,signal?:AbortSignal) { return client.request('/v1/vaults/preview',{ method:'POST',body,signal }); },
+  async preview(body:VaultCreateInput,signal?:AbortSignal):Promise<VaultPreview> {
+   const v=await client.request('/v1/vaults/preview',{ method:'POST',body,signal });
+   parseVaultConfig(v);
+   if (!record(v) || !record(v.input) || !amount(v.availableUsdc) || typeof v.captainEligible!=='boolean' ||
+    v.seedUsdc!==v.captainSeedUsdc || !amount(v.seedUsdc) || v.networkCostUsdc!=='0.000000' ||
+    v.input.name!==body.name || v.input.description!==body.description || v.input.fundingWindowHours!==body.fundingWindowHours ||
+    v.input.durationDays!==body.durationDays || v.input.termsVersion!==body.termsVersion) fail();
+   return v as unknown as VaultPreview;
+  },
   async quote(id:string,body:{ amountUsdc:string; termsHash:string },signal?:AbortSignal) {
    const v=await client.request(`/v1/vaults/${encodeURIComponent(id)}/contribution-quotes`,{ method:'POST',body,signal });
    if (!record(v) || v.vaultId!==id || !amount(v.amountUsdc) || !amount(v.shares) || typeof v.allowed!=='boolean' || !(v.reason===null || typeof v.reason==='string') || v.reserved!==false) fail();
