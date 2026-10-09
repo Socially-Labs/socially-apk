@@ -28,7 +28,6 @@ export function CaptainOverview({ compact, heroSpace, panel, onPanel }: {
  useFocusEffect(useCallback(()=>{refresh();},[refresh]));
  const [locallyHidden,setLocallyHidden]=useState(false),[error,setError]=useState<string|null>(null);
  const hidden=!ready||settings.hideBalances||locallyHidden;
- const creationMessage=d?.creation.reason==='open_round_exists'?'Finish your open round first':d?.creation.reason==='insufficient_seed'?`You need ${formatUsdc(d.creation.seedUsdc)} USDC to seed a vault`:d?.creation.reason==='funding_unavailable'?'Vault creation is currently unavailable':null;
  const money=(v:string|null|undefined)=>v==null?'—':`$${formatUsdc(v)}`;
  function openVault(id:string){onPanel(null);router.push({pathname:'/vaults/[id]',params:{id}});}
  function showPanel(next:CaptainPanel){selectionFeedback();if(next.kind==='create'){onPanel(null);router.push('/vaults/create');}else if(next.kind==='manage'){onPanel(next);}else if('id' in next)openVault(next.id);else onPanel(next);}
@@ -39,7 +38,7 @@ export function CaptainOverview({ compact, heroSpace, panel, onPanel }: {
  const points=p?.points??[],validHistory=points.length>=2&&points.every(point=>point.aumUsdc!==null);
  return <View testID="captain-home">
   <View style={[styles.hero,{minHeight:heroSpace}]}><Text accessibilityRole="header" style={[styles.title,compact&&styles.compactTitle]}>Lead the{'\n'}voyage.</Text><Text style={styles.copy}>Trade. Grow. Build your Crew.</Text></View>
-  {!d?<View testID="captain-dashboard-status"><Text style={styles.copy} accessibilityRole={data.error?'alert':undefined}>{data.error??'Loading your Captain dashboard…'}</Text>{data.error?<AuthButton accessibilityRole="button" onPress={data.refresh} style={{minHeight:44,justifyContent:'center'}}><Text style={styles.copy}>Retry</Text></AuthButton>:null}</View>:d.state==='NEW'?<CaptainEmptyState allowed={d.creation.allowed} reason={creationMessage} seedUsdc={d.creation.seedUsdc} onCreate={()=>showPanel({kind:'create'})}/>:<>
+  {!d?<View testID="captain-dashboard-status"><Text style={styles.copy} accessibilityRole={data.error?'alert':undefined}>{data.error??'Loading your Captain dashboard…'}</Text>{data.error?<AuthButton accessibilityRole="button" onPress={data.refresh} style={{minHeight:44,justifyContent:'center'}}><Text style={styles.copy}>Retry</Text></AuthButton>:null}</View>:d.state==='NEW'?<CaptainEmptyState onCreate={()=>showPanel({kind:'create'})}/>:<>
    <HomePerformanceCard variant="frosted" badge="Paper" label="Assets under management" balance={money(d.aumUsdc)}
     change={p?.changeUsdc==null?'Change unavailable':`${Number(p.changeUsdc)>=0?'+':'−'}${money(p.changeUsdc.replace('-',''))}${p.changePercent===null?'':` (${Number(p.changePercent)>=0?'+':''}${Number(p.changePercent).toFixed(2)}%)`}`}
     positive={Number(p?.changeUsdc??0)>=0} changeCaption={`AUM change · ${period==='ALL'?'all time':period}`}
@@ -51,7 +50,7 @@ export function CaptainOverview({ compact, heroSpace, panel, onPanel }: {
     testIDPrefix="captain" summaryTestID="captain-aum-card" balanceTestID="captain-aum-value" changeTestID="captain-aum-change" overviewTestID="captain-overview"/>
    {p?.coverage==='PARTIAL'&&points.length>0?<Text style={[styles.copy,{fontSize:11,marginTop:8}]}>Recorded history from {new Date(points[0].at).toLocaleDateString()} · AUM includes capital flows.</Text>:null}
    {data.error?<AuthButton accessibilityRole="button" onPress={data.refresh} style={{minHeight:44,justifyContent:'center'}}><Text style={styles.copy}>Retry dashboard</Text></AuthButton>:null}
-   <CaptainActions dashboard={d} hidden={hidden} compact={compact} onPanel={showPanel} creationMessage={creationMessage}/>
+   <CaptainActions dashboard={d} hidden={hidden} compact={compact} onPanel={showPanel}/>
   </>}
   {d&&d.state==='NEW'&&data.error?<Text accessibilityRole="alert" style={styles.copy}>{data.error}</Text>:null}
   <CaptainLiveDetails panel={panel} data={data} hidden={hidden} onClose={()=>onPanel(null)} onVault={openVault}/>
