@@ -1,1 +1,1 @@
-export { VaultCreateScreen as default } from '@/components/vaults/vault-screens';
+export { LiveVaultCreateScreen as default } from '@/components/vaults/live-vault-screen';

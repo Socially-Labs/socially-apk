@@ -1,4 +1,5 @@
 import { VaultArtwork } from './vault-artwork';
+import { RoundTerms } from './vault-round-terms';
 import { useCallback,useState,type ReactNode } from 'react';
 import { Image,ActivityIndicator,FlatList,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { router,useFocusEffect,useLocalSearchParams } from 'expo-router';
@@ -42,6 +43,7 @@ export function VaultListScreen() {
  return <Frame title={mine==='1'?'Your vault rounds':'Discover vaults'}><FlatList data={data.vaults} keyExtractor={v=>v.id}
   contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" renderItem={({ item })=><VaultCard vault={item} hidden={hidden} />}
   refreshing={data.loading} onRefresh={data.refresh} ListHeaderComponent={<View style={s.section}>
+   <Action secondary onPress={()=>router.push('/vaults/live')}>Your wallet-funded vaults</Action>
    <View style={s.row}>{(['all','short','long'] as const).map(group=><Pressable key={group} accessibilityRole="radio" accessibilityState={{ checked:durationGroup===group }} onPress={()=>setDurationGroup(group)} style={[s.chip,durationGroup===group&&s.chosen]}><Text style={durationGroup===group?s.buttonText:s.copy}>{group==='all'?'All durations':group==='short'?'Under 30 days':'30 days or more'}</Text></Pressable>)}</View>
    <Text style={s.copy}>Fixed funding windows. Transparent paper trading. Capital locked until settlement.</Text>
    <View style={s.row}><Action secondary onPress={()=>router.replace({ pathname:'/vaults',params:{ mine:mine==='1'?'0':'1' } })}>{mine==='1'?'Discover':'Your rounds'}</Action>
@@ -54,50 +56,16 @@ export function VaultListScreen() {
 export function VaultHomePanel({ isCaptain }:{ isCaptain:boolean }) {
  const data=useVaults(undefined,true),{ settings,ready }=useAccountSettings();
  return <View style={s.content}><Text style={s.cardTitle}>{isCaptain?'Lead your next round.':'Your vault investments.'}</Text>
+  <Action secondary onPress={()=>router.push('/vaults/live')}>Your wallet-funded vaults</Action>
   <Text style={s.copy}>Your funded paper rounds and final claims.</Text><ErrorText value={data.error} />
   {data.loading&&!data.vaults.length?<ActivityIndicator color={C.ink} />:null}
-  {!data.loading&&!data.vaults.length?<View style={s.card}><Text style={s.copy}>No vault investments yet. {isCaptain?'Create a round with 100 paper USDC.':'Explore vaults accepting contributions.'}</Text></View>:null}
+  {!data.loading&&!data.vaults.length?<View style={s.card}><Text style={s.copy}>No paper vault investments yet. {isCaptain?'Create a wallet-funded vault using SOL or USDC.':'Explore vaults accepting contributions.'}</Text></View>:null}
   {data.vaults.slice(0,5).map(v=><VaultCard key={v.id} vault={v} hidden={!ready||settings.hideBalances} />)}
   <Action onPress={()=>router.push(isCaptain?'/vaults/create':'/vaults')}>{isCaptain?'Create a vault':'Explore vaults'}</Action>
   <Action secondary onPress={()=>router.push({ pathname:'/vaults',params:{ mine:'1' } })}>All your rounds</Action>
  </View>;
 }
-export function VaultCreateScreen() {
- const data=useVaults(),[name,setName]=useState(''),[description,setDescription]=useState('');
- const [hours,setHours]=useState(24),[days,setDays]=useState(14),[review,setReview]=useState(false);
- const intent=useVaultIntent(data.api,data.subject,'create',id=>router.replace({ pathname:'/vaults/[id]',params:{ id } }));
- const saved=intent.attempt?.intent.kind==='CREATE'?intent.attempt.intent.body:null;
- const body=saved ?? { name:name.trim(),description:description.trim(),fundingWindowHours:hours,durationDays:days,termsVersion:1 as const };
- const config=data.config,locked=!!saved||intent.busy;
- return <Frame title={review||saved?'Review your vault':'Create a paper vault'}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-  <Text style={s.eyebrow}>PAPER ROUND · NO LIVE CUSTODY</Text><ErrorText value={data.error} /><ErrorText value={intent.error} />
-  {!config?.enabled?<Text style={s.copy}>New paper rounds are currently disabled on this backend.</Text>:null}
-  {!review&&!saved?<View style={s.section}>
-   <Text style={s.label}>Vault name</Text><TextInput accessibilityLabel="Vault name" value={name} onChangeText={setName} maxLength={80} editable={!locked} style={s.input} />
-   <Text style={s.label}>Strategy description</Text><TextInput accessibilityLabel="Strategy description" value={description} onChangeText={setDescription} maxLength={1000} multiline editable={!locked} style={[s.input,s.multiline]} />
-   <Text style={s.caption}>You can add a vault image and banner after creation is confirmed.</Text>
-   <Text style={s.label}>Funding window</Text><View style={s.row}>{(config?.fundingWindowHours ?? []).map(value=><Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked:hours===value }} onPress={()=>setHours(value)} style={[s.chip,hours===value&&s.chosen]}><Text style={hours===value?s.buttonText:s.copy}>{value===72?'3 days':`${value} hours`}</Text></Pressable>)}</View>
-   {[false,true].map(long=><View key={String(long)} style={s.section}><Text style={s.label}>{long?'Long · 30 days or more':'Short · under 30 days'}</Text><View style={s.row}>{(config?.durationDays ?? []).filter(value=>(value>=30)===long).map(value=><Pressable key={value} accessibilityRole="radio" accessibilityState={{ checked:days===value }} onPress={()=>setDays(value)} style={[s.chip,days===value&&s.chosen]}><Text style={days===value?s.buttonText:s.copy}>{value} days</Text></Pressable>)}</View></View>)}
-   <Action disabled={!config?.enabled||name.trim().length<3||!intent.ready} onPress={()=>setReview(true)}>Review terms</Action>
-  </View>:<View style={s.card}>
-   <Text style={s.cardTitle}>{body.name}</Text><Text style={s.copy}>{body.description}</Text>
-   <Line label="Your invested capital" value={`${config?.captainSeedUsdc ?? '100.000000'} paper USDC`} />
-   <Line label="Funding window" value={`${body.fundingWindowHours} hours`} /><Line label="Trading duration" value={`${body.durationDays} days`} />
-   <RoundTerms />
-   <Action disabled={intent.busy||!intent.ready||!config?.enabled} onPress={()=>{ void intent.submit({ kind:'CREATE',body }); }}>{intent.busy?'Confirming…':saved?'Retry saved creation':'Invest 100 paper USDC & create'}</Action>
-   {!saved?<Action secondary disabled={intent.busy} onPress={()=>setReview(false)}>Edit vault</Action>:null}
-  </View>}
- </ScrollView></Frame>;
-}
-function RoundTerms() {
- return <View style={s.section}>
-  <Text style={s.copy}>Minimum total funding: 1,000 USDC, including the Captain’s 100. Maximum accepted capital: 30,000 USDC. Crew minimum: 50 USDC.</Text>
-  <Text style={s.copy}>Trading starts after the funding deadline if the minimum is met. Capital stays locked during trading. Failed funding returns principal through a claim.</Text>
-  <Text style={s.copy}>Crew may cancel their full contribution before funding closes. Captain cancellation closes after the first Crew commitment. No top-ups or emergency exits.</Text>
-  <Text style={s.copy}>At final settlement, the Captain earns 10% of positive total net round profit. A 1,000 → 1,200 USDC round pays a 20 USDC fee; the Captain’s 100 investment pays 118 plus that fee. Losses are proportional.</Text>
-  <Text style={s.caption}>No creation fee. Paper network cost: 0. Rounding residue remains a recorded liability. These are simulated balances; returns are not guaranteed.</Text>
- </View>;
-}
+export { VaultCreateScreen } from './vault-create-screen';
 export function VaultDetailScreen() {
  const params=useLocalSearchParams<{ id:string }>(),id=typeof params.id==='string'?params.id:'';
  const data=useVaults(id),vault=data.vault,position=data.position;
