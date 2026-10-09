@@ -45,8 +45,8 @@ export function createApiClient({ origin, getAccessToken, fetchImpl = fetch, tim
   origin: string | undefined; getAccessToken: () => Promise<string | null>;
   fetchImpl?: typeof fetch; timeoutMs?: number;
 }) {
-  async function request(path: string, { method = 'GET', body, signal, idempotencyKey, authenticated = true }: {
-    method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'; body?: unknown; signal?: AbortSignal; idempotencyKey?: string; authenticated?: boolean;
+  async function request(path: string, { method = 'GET', body, signal, idempotencyKey, authenticated = true, retryConnection = false }: {
+    method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'; body?: unknown; signal?: AbortSignal; idempotencyKey?: string; authenticated?: boolean; retryConnection?: boolean;
   } = {}): Promise<unknown> {
     const base = apiOrigin(origin);
     const controller = new AbortController();
@@ -65,12 +65,26 @@ export function createApiClient({ origin, getAccessToken, fetchImpl = fetch, tim
         }) : null;
         if (controller.signal.aborted) throw new ApiError('request_cancelled', 'Account request cancelled.');
         if (authenticated && !token) throw new ApiError('session_required', 'Please sign in again to connect your account.');
-        const response = await fetchImpl(`${base}${path}`, {
+        const send = () => fetchImpl(`${base}${path}`, {
           method, signal: controller.signal,
           headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
             ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}) },
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
+        let response: Response;
+        try { response = await send(); }
+        catch (cause) {
+          if (!retryConnection || controller.signal.aborted) throw cause;
+          // Only account reads and repeatable bootstrap opt in. Never replay a
+          // trade/send merely because the response was lost during a restart.
+          await new Promise<void>((resolve, reject) => {
+            const cancelled = () => { clearTimeout(timer); reject(new ApiError('request_cancelled', 'Account request cancelled.')); };
+            const timer = setTimeout(() => { controller.signal.removeEventListener('abort', cancelled); resolve(); }, 2_000);
+            controller.signal.addEventListener('abort', cancelled, { once: true });
+            if (controller.signal.aborted) cancelled();
+          });
+          response = await send();
+        }
         // Account bootstrap/profile writes are repeatable. Financial requests must use their own replay policy.
         if (response.status === 401 && attempt === 0) continue;
         let result: unknown;
@@ -98,13 +112,13 @@ export function createApiClient({ origin, getAccessToken, fetchImpl = fetch, tim
   return {
     request,
     async bootstrap(subject: string, signal?: AbortSignal) {
-      const result = await request('/v0/auth/privy', { method: 'POST', body: {}, signal });
+      const result = await request('/v0/auth/privy', { method: 'POST', body: {}, signal, retryConnection: true });
       if (!record(result) || result.privyUserId !== subject || result.provider !== 'privy' || result.mode !== 'PAPER') {
         throw new ApiError('identity_mismatch', 'The account service returned a different account. Please sign in again.');
       }
       return parseAccount(result.user);
     },
-    async me(signal?: AbortSignal) { return parseAccount(await request('/v0/me', { signal })); },
+    async me(signal?: AbortSignal) { return parseAccount(await request('/v0/me', { signal, retryConnection: true })); },
     async onboarding(body: { username: string; role: AccountRole; displayName?: string }, signal?: AbortSignal) {
       return parseAccount(await request('/v0/me/onboarding', { method: 'POST', body, signal }));
     },

@@ -10,6 +10,31 @@ const deferred = () => { let resolve, reject; const promise = new Promise((yes,n
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const client = (fetchImpl, options = {}) => createApiClient({ origin:'http://localhost:3000', getAccessToken:async()=> 'current-token', fetchImpl, ...options });
 
+test('account bootstrap recovers a transient API restart without replaying financial writes', async () => {
+  let calls = 0;
+  const api = client(async () => {
+    if (++calls === 1) throw new TypeError('network disconnected');
+    return Response.json(bootstrap('did:privy:alice'));
+  });
+  await api.bootstrap('did:privy:alice');
+  assert.equal(calls, 2);
+  calls = 0;
+  await assert.rejects(client(async () => { calls++; throw new TypeError('lost response'); })
+    .request('/v1/orders', { method: 'POST', body: {} }), error => error.code === 'network_error');
+  assert.equal(calls, 1);
+});
+
+test('account retry backoff respects logout cancellation', async () => {
+  let calls = 0;
+  const abort = new AbortController();
+  const api = client(async () => { calls++; throw new TypeError('disconnected'); });
+  const pending = api.me(abort.signal);
+  await flush();
+  abort.abort();
+  await assert.rejects(pending, error => error.code === 'request_cancelled');
+  assert.equal(calls, 1);
+});
+
 test('origin configuration rejects paths, credentials and missing values', () => {
   assert.equal(apiOrigin('http://localhost:3000/'),'http://localhost:3000');
   for(const value of [undefined,'invalid','https://example.com/v0','https://user:secret@example.com','https://example.com?key=1']) {
