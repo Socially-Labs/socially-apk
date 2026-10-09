@@ -16,27 +16,31 @@ export function useWalletFunding() {
     { subject: null, summary: null, error: null, creating: false });
   const [generation] = useState(() => ({ value: 0 }));
   const controllers = useRef(new Set<AbortController>());
-  const refreshing = useRef(false);
+  const refreshing = useRef<Promise<void> | null>(null);
   const creating = useRef(false);
   const retry = useRef<{ subject: string; amount: string; key: string } | null>(null);
   const refresh = useCallback(async () => {
-    if (!subject || refreshing.current || creating.current) return;
+    if (!subject || creating.current) return;
+    if (refreshing.current) return refreshing.current;
     const epoch = generation.value;
-    refreshing.current = true;
     const controller = new AbortController(); controllers.current.add(controller);
-    try {
-      const summary = await api.summary(controller.signal);
-      if (epoch === generation.value) setState({ subject, summary, error: null, creating: false });
-    } catch (error) {
-      if (epoch === generation.value && !controller.signal.aborted) setState(current => ({ ...current, subject,
-        error: error instanceof Error ? error.message : 'Couldn’t refresh your wallet.' }));
-    } finally {
-      controllers.current.delete(controller);
-      if (epoch === generation.value) refreshing.current = false;
-    }
+    const pending = (async () => {
+      try {
+        const summary = await api.summary(controller.signal);
+        if (epoch === generation.value) setState({ subject, summary, error: null, creating: false });
+      } catch (error) {
+        if (epoch === generation.value && !controller.signal.aborted) setState(current => ({ ...current, subject,
+          error: error instanceof Error ? error.message : 'Couldn’t refresh your wallet.' }));
+      } finally {
+        controllers.current.delete(controller);
+        if (epoch === generation.value) refreshing.current = null;
+      }
+    })();
+    refreshing.current = pending;
+    return pending;
   }, [api, subject, generation]);
   useEffect(() => {
-    generation.value++; refreshing.current = false; creating.current = false; retry.current = null;
+    generation.value++; refreshing.current = null; creating.current = false; retry.current = null;
     setState({ subject, summary: null, error: null, creating: false });
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
@@ -56,7 +60,7 @@ export function useWalletFunding() {
     if (!subject || creating.current) throw new ApiError('request_pending', 'Please wait for the current request.');
     creating.current = true;
     // Cancel stale reads so a pre-deposit snapshot cannot replace the newly created request.
-    generation.value++; refreshing.current = false;
+    generation.value++; refreshing.current = null;
     for (const controller of controllers.current) controller.abort(); controllers.current.clear();
     const epoch = generation.value;
     const controller = new AbortController(); controllers.current.add(controller);

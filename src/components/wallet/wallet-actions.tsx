@@ -6,18 +6,21 @@ import { WalletPalette as W } from '@/constants/theme';
 
 export type WalletAction = 'deposit' | 'send' | 'receive' | 'swap';
 const actions = [
-  { id: 'deposit', label: 'Deposit', caption: 'Test USDC', icon: Plus, unavailable: true },
+  { id: 'deposit', label: 'Deposit', caption: 'Trading funds', icon: Plus, unavailable: false },
   { id: 'send', label: 'Send', caption: 'Coming soon', icon: ArrowUpRight, unavailable: false },
   { id: 'receive', label: 'Receive', caption: 'From any wallet', icon: ArrowDown, unavailable: false },
-  { id: 'swap', label: 'Swap', caption: 'Coming soon', icon: ArrowRightLeft, unavailable: false },
+  { id: 'swap', label: 'Swap', caption: 'SOL ↔ USDC', icon: ArrowRightLeft, unavailable: false },
 ] as const;
-export function WalletActions({ onAction, compact }: { onAction: (action: WalletAction) => void; compact: boolean }) {
+export function WalletActions({ onAction, compact, depositEnabled }: { onAction: (action: WalletAction) => void; compact: boolean; depositEnabled: boolean }) {
   return <View style={styles.actions} testID="wallet-actions">
-    {actions.map(({ id, label, caption, icon: Icon, unavailable }) => <AuthButton key={id} accessibilityRole="button" accessibilityState={{ disabled: unavailable }} accessibilityLabel={`${label}, ${caption.toLowerCase()}`} disabled={unavailable} onPress={() => onAction(id)} testID={`wallet-${id}`} style={[styles.action, compact && styles.compactAction, unavailable && styles.unavailable]}>
+    {actions.map(({ id, label, caption, icon: Icon, unavailable: comingSoon }) => {
+      const unavailable = comingSoon || (id === 'deposit' && !depositEnabled);
+      return <AuthButton key={id} accessibilityRole="button" accessibilityState={{ disabled: unavailable }} accessibilityLabel={`${label}, ${caption.toLowerCase()}`} disabled={unavailable} onPress={() => onAction(id)} testID={`wallet-${id}`} style={[styles.action, compact && styles.compactAction, unavailable && styles.unavailable]}>
       <View style={[styles.icon, compact && styles.compactIcon, unavailable && styles.unavailableIcon]}>
         <Icon size={compact ? 22 : 25} color={unavailable ? W.unavailableInk : W.ink} strokeWidth={1.5} />
       </View><Text style={[styles.label, unavailable && styles.unavailableLabel]}>{label}</Text><Text style={[styles.caption, compact && styles.compactCaption, unavailable && styles.unavailableCaption]} numberOfLines={1}>{caption}</Text>
-    </AuthButton>)}
+    </AuthButton>;
+    })}
   </View>;
 }
 const styles = StyleSheet.create({

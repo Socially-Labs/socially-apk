@@ -8,6 +8,13 @@ export type WalletAsset = {
   chart: string;
 };
 
+/** Live holdings keep native amounts separate from any USD valuation. */
+export type WalletHolding = Pick<WalletAsset, 'symbol' | 'name' | 'network'> & {
+  amount: string | null;
+  quantity: string;
+  caption: string;
+};
+
 // Preview holdings from the design reference, separate from staked allocations.
 export const walletAssets: readonly WalletAsset[] = [
   { symbol: 'USDC', name: 'USD Coin', network: 'Solana', value: 4230.50, quantity: '4,230.50 USDC', positive: true,
