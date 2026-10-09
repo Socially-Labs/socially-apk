@@ -64,3 +64,35 @@ test('market reads work without a session, watchlist uses PUT, uncertain submiss
   const submissions = calls.filter(c=>c.url.endsWith('/orders')); assert.equal(submissions.length,2);
   assert.ok(submissions.every(c=>c.headers['Idempotency-Key']===key && c.body===JSON.stringify(intent)));
 });
+
+const round = { schemaVersion:1,roundModelVersion:2,mode:'PAPER',id,captainId:'22222222-2222-4222-8222-222222222222',name:'Harbor',description:'Spot',phase:'FUNDRAISING',riskState:'NORMAL',termsVersion:1,termsHash:'a'.repeat(64),durationDays:14,fundingWindowHours:24,acceptedCapitalUsdc:'100.000000',remainingCapacityUsdc:'29900.000000',economicShares:'100.000000',participants:1,fundingClosesAt:at,tradingStartsAt:at,tradingEndsAt:at,actualActivatedAt:null,navUsdc:'100.000000',valuationStatus:'CURRENT',valuedAt:at,eventSequence:'1',serverTime:at,settlement:null,blockedReason:null };
+
+test('current vaults include fundraising and route every trade operation to v1 without legacy reads', async () => {
+  const calls=[];let vaults=[round];
+  const api=marketsApi(createApiClient({origin:'http://localhost:3000',getAccessToken:async()=> 'session',fetchImpl:async(url,options)=>{
+    const path=new URL(url).pathname;calls.push({path,...options});
+    if(path==='/v1/me/captain/vaults')return Response.json({vaults});
+    if(path.endsWith('/trading-context'))return Response.json(context);
+    if(path.endsWith('/orders/preview'))return Response.json({mode:'PAPER',estimate:{quantity:'1',marketPriceUsdc:'100',fillPriceUsdc:'100',feeUsdc:'0.1',cashChangeUsdc:'-100',modelVersion:1},policy:{allowed:true,reason:null},observationId:id,observedAt:at});
+    if(path.endsWith('/cancel'))return Response.json({mode:'PAPER'});
+    if(path.endsWith('/orders'))return Response.json({mode:'PAPER',orderId:id,status:'PENDING'});
+    return Response.json({mode:'PAPER',order:{id,status:'FILLED',reject_reason:null,quantity:'1',fee_usdc:'0.1',fill_price_usdc:'100'}});
+  }}));
+  assert.equal((await api.funds())[0].phase,'FUNDRAISING');
+  await api.context(id);await api.preview(id,{side:'BUY',instrumentId:'SOL',notionalUsdc:'100'});
+  await api.submit(id,{side:'SELL',instrumentId:'SOL',quantity:'1'},'recovery-key');
+  // A subsequent list that omits a round must not lose its pending-order route.
+  vaults=[];await api.funds();await api.order(id,id);await api.cancel(id,id);
+  assert.ok(calls.every(call=>call.path.startsWith('/v1/')));
+  assert.ok(calls.every(call=>call.headers.Authorization==='Bearer session'));
+  assert.equal(calls.find(call=>call.path.endsWith('/orders')&&call.method==='POST').headers['Idempotency-Key'],'recovery-key');
+});
+
+test('vault-list outages never silently switch trading to legacy trials', async()=>{
+  for(const status of [401,403,500]){
+    const calls=[];const api=marketsApi(createApiClient({origin:'http://localhost:3000',getAccessToken:async()=> 'session',fetchImpl:async url=>{
+      calls.push(url);return Response.json({error:{code:'unavailable',message:'Unavailable'}},{status});
+    }}));
+    await assert.rejects(api.funds());assert.ok(calls.length>=1);assert.ok(calls.every(url=>url.endsWith('/v1/me/captain/vaults')));
+  }
+});

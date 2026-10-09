@@ -1,4 +1,4 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Bookmark, ChevronDown, SlidersHorizontal } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Keyboard, Platform, Text, View, useWindowDimensions } from 'react-native';
@@ -32,7 +32,8 @@ export default function CaptainMarketsScreen() {
   const [privacyError, setPrivacyError] = useState<string | null>(null);
   const [debouncedQuery, setDebouncedQuery] = useState(''), [focused, setFocused] = useState(false);
   useEffect(() => { const timer = setTimeout(() => setDebouncedQuery(query.trim()), 400); return () => clearTimeout(timer); }, [query]);
-  const data = useMarkets(debouncedQuery), context = data.context;
+  const params = useLocalSearchParams<{ vaultId?: string }>();
+  const data = useMarkets(debouncedQuery, typeof params.vaultId === 'string' ? params.vaultId : null), context = data.context;
   const markets = useMemo(() => filterTokens(data.tokens, context, filters, tab === 'invested', savedOnly, data.saved, period), [data.tokens, context, filters, tab, savedOnly, data.saved, period]);
   const liveTradeToken = tradeToken ? data.tokens.find(token => token.mint === tradeToken.mint) ?? tradeToken : null;
   const filterCount = Number(filters.category !== 'All') + Number(filters.liquidity !== 0) + Number(filters.sort !== 'Volume');

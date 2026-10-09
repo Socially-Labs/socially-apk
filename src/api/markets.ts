@@ -1,4 +1,4 @@
-import { parseVaultSummary } from './generated/vault-contracts.ts';
+import { parseVaultSummary, type VaultPhase } from './generated/vault-contracts.ts';
 import { ApiError, type createApiClient } from './client.ts';
 
 export type Period = '1H' | '24H' | '7D' | '30D';
@@ -11,7 +11,7 @@ export type Token = { mint: string; instrumentId: string | null; name: string; s
 export type History = { mint: string; instrumentId: string; range: Period; denomination: 'USD'; intervalSeconds: number;
   from: string; to: string; changePercent: string | null; points: { at: string; price: string }[];
   coverage: { start: string | null; end: string | null; status: 'COMPLETE' | 'PARTIAL' | 'UNAVAILABLE'; hasGaps: boolean } };
-export type Fund = { id: string; name: string; status: string; trialEnd: string };
+export type Fund = { id: string; name: string; status: string; trialEnd: string; phase?: VaultPhase };
 export type TradingContext = { fund: Fund; cashUsdc: string; navUsdc: string | null;
   holdings: { instrumentId: string; mint: string | null; symbol: string; quantity: string; costBasisUsdc: string; valueUsdc: string | null }[];
   policy: { maxOrderBps: number; maxPositionBps: number; allowedInstruments: string[] };
@@ -103,15 +103,23 @@ export function marketsApi(client: ReturnType<typeof createApiClient>) {
       if (h.mint !== mint || h.range !== range) fail(); return h;
     },
     async funds(signal?: AbortSignal) {
-      const r = envelope(await client.request('/v0/me/captain/funds', { signal })); if (!Array.isArray(r.funds)) fail();
-      const legacy=r.funds.map(parseFund);
-      let response:unknown;
-      try { response=await client.request('/v1/me/captain/vaults',{ signal }); }
-      catch (error) { if (error instanceof ApiError && error.status===404) return legacy; throw error; }
+      // Current paper vaults are the source of truth. Older trial routes are only
+      // used for compatibility with servers that do not expose vault rounds.
+      let response: unknown;
+      try { response = await client.request('/v1/me/captain/vaults', { signal }); }
+      catch (error) {
+        if (!(error instanceof ApiError) || error.status !== 404) throw error;
+        const legacy = envelope(await client.request('/v0/me/captain/funds', { signal }));
+        if (!Array.isArray(legacy.funds)) fail();
+        return legacy.funds.map(parseFund);
+      }
       if (!record(response) || !Array.isArray(response.vaults)) fail();
-      const rounds=response.vaults.map(parseVaultSummary);
-      roundIds.clear(); for (const round of rounds) roundIds.add(round.id);
-      return [...rounds.filter(v=>v.phase==='ACTIVE').map(v=>({ id:v.id,name:v.name,status:v.riskState==='FROZEN'?'FROZEN':'ACTIVE',trialEnd:v.tradingEndsAt })),...legacy];
+      const rounds = response.vaults.map(parseVaultSummary);
+      // Keep known route identities for pending-order recovery across refreshes.
+      for (const round of rounds) roundIds.add(round.id);
+      return rounds.map(v => ({ id: v.id, name: v.name, phase: v.phase,
+        status: v.riskState === 'FROZEN' ? 'FROZEN' : v.phase === 'ACTIVE' ? 'ACTIVE' : 'COMPLETED',
+        trialEnd: v.tradingEndsAt }));
     },
     async context(id: string, signal?: AbortSignal) { const c = parseTradingContext(await client.request(`${fundPath(id)}/trading-context`, { signal })); if (c.fund.id !== id) fail(); return c; },
     async watchlist(signal?: AbortSignal) { const r = envelope(await client.request('/v0/me/watchlist', { signal })); if (!Array.isArray(r.mints) || !r.mints.every(mint)) fail(); return r.mints as string[]; },

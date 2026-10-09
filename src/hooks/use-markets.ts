@@ -6,14 +6,15 @@ import { marketsApi, parsePrice, priceFreshness, type Fund, type Price, type Tok
 import { useAuth } from '@/auth/session';
 
 const message = (e: unknown) => e instanceof Error ? e.message : 'Could not refresh markets.';
-export function useMarkets(query: string) {
+export function useMarkets(query: string, requestedVaultId: string | null = null) {
   const { accountId, isAuthenticated, getAccessToken } = useAuth();
   const subject = isAuthenticated ? accountId : null;
   const getter = useRef(getAccessToken); useEffect(() => { getter.current = getAccessToken; }, [getAccessToken]);
   const api = useMemo(() => marketsApi(createApiClient({ origin: process.env.EXPO_PUBLIC_API_URL, getAccessToken: () => getter.current() })), []);
-  const [fundId, setFundId] = useState<string | null>(null);
-  const [state, setState] = useState<{ subject: string | null; query: string; tokens: Token[]; savedTokens: Token[]; funds: Fund[]; saved: string[]; context: TradingContext | null; error: string | null; privateError: string | null; loading: boolean }>(
-    { subject, query, tokens: [], savedTokens: [], funds: [], saved: [], context: null, error: null, privateError: null, loading: true });
+  const [selection, setSelection] = useState<{ subject: string | null; requestedVaultId: string | null; id: string } | null>(null);
+  const fundId = selection?.subject === subject && selection.requestedVaultId === requestedVaultId ? selection.id : requestedVaultId;
+  const [state, setState] = useState<{ subject: string | null; query: string; requestedId: string | null; tokens: Token[]; savedTokens: Token[]; funds: Fund[]; saved: string[]; context: TradingContext | null; error: string | null; privateError: string | null; loading: boolean }>(
+    { subject, query, requestedId: fundId, tokens: [], savedTokens: [], funds: [], saved: [], context: null, error: null, privateError: null, loading: true });
   const [marks, setMarks] = useState<Record<string, Price>>({});
   const [now, setNow] = useState(() => Date.now());
   const [refreshVersion, setRefreshVersion] = useState(0);
@@ -25,7 +26,7 @@ export function useMarkets(query: string) {
     let stopped = false, busy = false, socket: WebSocket | undefined, retry: ReturnType<typeof setTimeout> | undefined;
     let cursor: string | undefined, nextCatalog = 0;
     const valid = () => !stopped && activeEpoch.current === epoch && !controller.signal.aborted;
-    setState(current => ({ ...current, subject, query, tokens: current.query === query ? current.tokens : [],
+    setState(current => ({ ...current, subject, query, requestedId: fundId, context: current.subject === subject && current.requestedId === fundId ? current.context : null, tokens: current.query === query ? current.tokens : [],
       ...(current.subject !== subject ? { funds: [], saved: [], savedTokens: [], context: null } : {}), loading: true }));
     const poll = async () => {
       if (!valid() || busy || AppState.currentState && AppState.currentState !== 'active') return;
@@ -52,10 +53,10 @@ export function useMarkets(query: string) {
         if (subject) {
           const savedVersion = watchlistVersion.current;
           const [funds, saved] = await Promise.all([api.funds(controller.signal), api.savedMarkets(controller.signal)]);
-          const selected = funds.find(fund => fund.id === fundId) ?? funds.find(fund => fund.status !== 'COMPLETED') ?? funds[0];
+          const selected = fundId ? funds.find(fund => fund.id === fundId) : funds.find(fund => fund.status === 'ACTIVE' && (!fund.phase || fund.phase === 'ACTIVE')) ?? funds.find(fund => fund.phase === 'FUNDRAISING') ?? funds[0];
           const context = selected ? await api.context(selected.id, controller.signal) : null;
           if (valid()) setState(current => ({ ...current, funds,
-            ...(saving.current || savedVersion !== watchlistVersion.current ? {} : { saved: saved.mints, savedTokens: saved.tokens }), context, privateError: null }));
+            ...(saving.current || savedVersion !== watchlistVersion.current ? {} : { saved: saved.mints, savedTokens: saved.tokens }), context: context && selected ? { ...context, fund: { ...context.fund, phase: selected.phase } } : null, privateError: fundId && !selected ? 'This vault is unavailable or belongs to another Captain. Select one of your vaults.' : null }));
         }
       } catch (e) { if (valid()) setState(current => ({ ...current, context: null, privateError: message(e) })); }
       finally { busy = false; }
@@ -98,7 +99,7 @@ export function useMarkets(query: string) {
     });
     return () => { stopped = true; activeEpoch.current++; controller.abort(); clearInterval(tick); clearInterval(timer); clearTimeout(retry); listener.remove(); socket?.close(); };
   }, [api, subject, query, fundId, refreshVersion]));
-  const current = state.subject === subject && state.query === query ? state : { ...state, subject, query, tokens: [], savedTokens: [], funds: [], saved: [], context: null, loading: true };
+  const current = state.subject === subject && state.query === query && state.requestedId === fundId ? state : { ...state, subject, query, tokens: [], savedTokens: [], funds: [], saved: [], context: null, loading: true };
   const tokens = useMemo(() => [...current.tokens, ...(!query ? current.savedTokens.filter(saved => !current.tokens.some(token => token.mint === saved.mint)) : [])].map(token => {
     const live = marks[token.mint], snapshot = token.price;
     const newest = live && (!snapshot?.sourceAt || !!live.sourceAt && Date.parse(live.sourceAt) >= Date.parse(snapshot.sourceAt)) ? live : snapshot;
@@ -114,5 +115,5 @@ export function useMarkets(query: string) {
     } catch (e) { if (epoch === activeEpoch.current) setState(prior => ({ ...prior, privateError: message(e) })); }
     finally { watchlistVersion.current++; saving.current = false; }
   };
-  return { ...current, tokens, api, subject, selectFund: setFundId, refresh, toggleSaved };
+  return { ...current, tokens, api, subject, selectFund: (id: string) => setSelection({ subject, requestedVaultId, id }), refresh, toggleSaved };
 }
