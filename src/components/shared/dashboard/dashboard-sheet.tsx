@@ -14,7 +14,7 @@ import { Motion } from '@/constants/motion';
 import { Dashboard, DashboardSheetTheme as S } from '@/constants/theme';
 import { SheetSurface, sheetMaterialStyle } from './sheet-surface';
 
-type SheetProps = { visible: boolean; title: string; onClose: () => void; onDismiss?: () => void; children: ReactNode; footer?: ReactNode };
+type SheetProps = { visible: boolean; title: string; header?: ReactNode; onClose: () => void; onDismiss?: () => void; children: ReactNode; footer?: ReactNode };
 const SETTLE = { duration: S.openDuration, dampingRatio: 0.94 };
 const EXIT = Easing.bezier(0.4, 0, 1, 1);
 
@@ -38,7 +38,7 @@ export function DashboardSheet(props: SheetProps) {
   );
 }
 
-function SheetPanel({ visible, title, children, footer, onClose, onExited }: SheetProps & { onExited: () => void }) {
+function SheetPanel({ visible, title, header, children, footer, onClose, onExited }: SheetProps & { onExited: () => void }) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
@@ -49,11 +49,11 @@ function SheetPanel({ visible, title, children, footer, onClose, onExited }: She
   const dragStart = useSharedValue(0);
   const crossedThreshold = useSharedValue(false);
   const sheetHeight = useSharedValue(maxHeight);
-  const [content, setContent] = useState({ title, children, footer });
+  const [content, setContent] = useState({ title, header, children, footer });
 
   // Callers clear their selected item on close. Retain the last visible content
   // so its title and body travel out together rather than emptying mid-animation.
-  if (visible && (content.title !== title || content.children !== children || content.footer !== footer)) setContent({ title, children, footer });
+  if (visible && (content.title !== title || content.header !== header || content.children !== children || content.footer !== footer)) setContent({ title, header, children, footer });
 
   useEffect(() => {
     if (visible) {
@@ -128,7 +128,7 @@ function SheetPanel({ visible, title, children, footer, onClose, onExited }: She
             <View style={styles.handle} />
           </View>
         <View style={styles.heading}>
-          <Text accessibilityRole="header" style={styles.title}>{content.title}</Text>
+          {content.header ?? <Text accessibilityRole="header" style={styles.title}>{content.title}</Text>}
         </View>
           </View>
         </GestureDetector>
