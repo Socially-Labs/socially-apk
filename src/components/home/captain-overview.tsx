@@ -1,65 +1,61 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Users } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
-
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAccountSettings } from '@/components/settings/settings-provider';
 import { selectionFeedback } from '@/components/shared/feedback';
 import { FundVaultIcon } from '@/components/shared/icons/product-icons';
-import { captainAumPerformance, captainChange, captainMoney, captainPercent, captainTotals, sampleCaptainVaults, type CaptainPeriod, type CaptainVault } from '@/constants/captain-dashboard';
+import { AuthButton } from '@/components/shared/motion';
+import { useCaptainDashboard } from '@/hooks/use-captain-dashboard';
+import type { CaptainRange } from '@/api/captain-dashboard';
+import { formatUsdc } from '@/api/wallet';
 import { BrandFont, InterFont } from '@/constants/fonts';
 import { CaptainHomePalette as C, DiscoverPalette as D } from '@/constants/theme';
 import { HomePerformanceCard } from './home-performance-card';
 import { CaptainActions } from './captain-home-sections';
-import { CaptainDashboardSheet } from './captain-dashboard-sheet';
+import { CaptainEmptyState } from './captain-empty-state';
+import { CaptainLiveDetails } from './captain-live-details';
 import type { CaptainPanel } from './captain-home-types';
 
 export function CaptainOverview({ compact, heroSpace, panel, onPanel }: {
-  compact: boolean; heroSpace: number; panel: CaptainPanel | null; onPanel: (panel: CaptainPanel | null) => void;
+ compact:boolean;heroSpace:number;panel:CaptainPanel|null;onPanel:(panel:CaptainPanel|null)=>void;
 }) {
-  const { settings, ready, saving, updateSettings } = useAccountSettings();
-  const [vaults, setVaults] = useState<CaptainVault[]>(() => [...sampleCaptainVaults]);
-  const [period, setPeriod] = useState<CaptainPeriod>('30D');
-  const [locallyHidden, setLocallyHidden] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const hidden = !ready || settings.hideBalances || locallyHidden;
-  const total = captainTotals(vaults);
-  const performance = captainAumPerformance(period, total.aumCents);
-  function showPanel(next: CaptainPanel | null) { selectionFeedback(); onPanel(next); }
-  async function toggleBalances() {
-    const next = !hidden;
-    if (next) setLocallyHidden(true);
-    setError(null);
-    try { await updateSettings({ hideBalances: next }); setLocallyHidden(false); }
-    catch { setError(next ? 'Hidden here. Your preference couldn’t be saved.' : 'Couldn’t show balances. Try again.'); }
-  }
-  function createDraft(name: string, strategy: CaptainVault['strategy']) {
-    const id = `draft-${vaults.filter(vault => vault.status === 'Draft').length + 1}`;
-    setVaults(current => [...current, { id, name, strategy, status: 'Draft', aumCents: 0, crew: 0, exits: 0, earnedCents: 0,
-      returns: { '7D': 0, '30D': 0, '90D': 0, ALL: 0 }, holdings: [] }]);
-    showPanel({ kind: 'vault', id });
-  }
-  function toggleDeposits(id: string) {
-    selectionFeedback();
-    setVaults(current => current.map(vault => vault.id === id && vault.status !== 'Draft'
-      ? { ...vault, status: vault.status === 'Active' ? 'Deposits paused' : 'Active' } : vault));
-  }
-  return <View testID="captain-home">
-    <View style={[styles.hero, { minHeight: heroSpace }]}>
-      <Text accessibilityRole="header" style={[styles.title, compact && styles.compactTitle]}>Lead the{'\n'}voyage.</Text>
-      <Text style={styles.copy}>Trade. Grow. Build your Crew.</Text>
-    </View>
-    <HomePerformanceCard variant="frosted" label="Assets under management" balance={captainMoney(total.aumCents)}
-      change={`${captainChange(performance.changeCents)} (${captainPercent(performance.percent)})`} positive={performance.changeCents >= 0}
-      changeCaption={`AUM change · ${period === 'ALL' ? 'all time' : period}`}
-      values={performance.values} chartDescription={`Sample assets under management from ${captainMoney(performance.values[0])} to ${captainMoney(total.aumCents)}. Includes allocations and value changes.`}
-      metrics={[{ label: 'Active vaults', value: String(total.active), testID: 'captain-active-vaults', icon: <FundVaultIcon size={18} color={C.icon} strokeWidth={1.7} /> },
-        { label: 'Crew members', value: String(total.crew), icon: <Users size={19} color={C.icon} strokeWidth={1.7} /> }]}
-      hidden={hidden} canToggle={ready && !saving} onToggle={() => { void toggleBalances(); }} onOverview={() => showPanel({ kind: 'overview' })} overviewLabel="View assets under management breakdown"
-      period={period} onPeriod={value => { selectionFeedback(); setPeriod(value); }} compact={compact} error={error}
-      testIDPrefix="captain" summaryTestID="captain-aum-card" balanceTestID="captain-aum-value" changeTestID="captain-aum-change" overviewTestID="captain-overview" />
-    <CaptainActions vaults={vaults} hidden={hidden} compact={compact} onPanel={showPanel} />
-    <CaptainDashboardSheet panel={panel} vaults={vaults} hidden={hidden} onClose={() => showPanel(null)} onPanel={showPanel} onCreate={createDraft} onToggleDeposits={toggleDeposits} />
-  </View>;
+ const router=useRouter();
+ const { settings,ready,saving,updateSettings }=useAccountSettings();
+ const [period,setPeriod]=useState<CaptainRange>('30D');
+ const data=useCaptainDashboard(period,panel?.kind??null),d=data.dashboard,p=data.performance;
+ const refresh=data.refresh;
+ useFocusEffect(useCallback(()=>{refresh();},[refresh]));
+ const [locallyHidden,setLocallyHidden]=useState(false),[error,setError]=useState<string|null>(null);
+ const hidden=!ready||settings.hideBalances||locallyHidden;
+ const creationMessage=d?.creation.reason==='open_round_exists'?'Finish your open round first':d?.creation.reason==='insufficient_seed'?`You need ${formatUsdc(d.creation.seedUsdc)} USDC to seed a vault`:d?.creation.reason==='funding_unavailable'?'Vault creation is currently unavailable':null;
+ const money=(v:string|null|undefined)=>v==null?'—':`$${formatUsdc(v)}`;
+ function openVault(id:string){onPanel(null);router.push({pathname:'/vaults/[id]',params:{id}});}
+ function showPanel(next:CaptainPanel){selectionFeedback();if(next.kind==='create'){onPanel(null);router.push('/vaults/create');}else if(next.kind==='manage'){onPanel(next);}else if('id' in next)openVault(next.id);else onPanel(next);}
+ async function toggleBalances(){
+  if(!ready||saving)return;const next=!hidden;if(next)setLocallyHidden(true);setError(null);
+  try{await updateSettings({hideBalances:next});setLocallyHidden(false);}catch{setError(next?'Hidden here. Your preference couldn’t be saved.':'Couldn’t show balances. Try again.');}
+ }
+ const points=p?.points??[],validHistory=points.length>=2&&points.every(point=>point.aumUsdc!==null);
+ return <View testID="captain-home">
+  <View style={[styles.hero,{minHeight:heroSpace}]}><Text accessibilityRole="header" style={[styles.title,compact&&styles.compactTitle]}>Lead the{'\n'}voyage.</Text><Text style={styles.copy}>Trade. Grow. Build your Crew.</Text></View>
+  {!d?<View testID="captain-dashboard-status"><Text style={styles.copy} accessibilityRole={data.error?'alert':undefined}>{data.error??'Loading your Captain dashboard…'}</Text>{data.error?<AuthButton accessibilityRole="button" onPress={data.refresh} style={{minHeight:44,justifyContent:'center'}}><Text style={styles.copy}>Retry</Text></AuthButton>:null}</View>:d.state==='NEW'?<CaptainEmptyState allowed={d.creation.allowed} reason={creationMessage} seedUsdc={d.creation.seedUsdc} onCreate={()=>showPanel({kind:'create'})}/>:<>
+   <HomePerformanceCard variant="frosted" badge="Paper" label="Assets under management" balance={money(d.aumUsdc)}
+    change={p?.changeUsdc==null?'Change unavailable':`${Number(p.changeUsdc)>=0?'+':'−'}${money(p.changeUsdc.replace('-',''))}${p.changePercent===null?'':` (${Number(p.changePercent)>=0?'+':''}${Number(p.changePercent).toFixed(2)}%)`}`}
+    positive={Number(p?.changeUsdc??0)>=0} changeCaption={`AUM change · ${period==='ALL'?'all time':period}`}
+    values={validHistory?points.map(point=>Number(point.aumUsdc)):[]} timestamps={validHistory?points.map(point=>point.at):undefined} chartDescription="Recorded assets under management across your open vaults. Includes capital flows."
+    chartMessage={!validHistory?data.loading?'Loading AUM history…':points.some(point=>point.aumUsdc===null)?'Some valuations are unavailable. Refresh to try again.':'Your AUM chart will appear as vault history builds.':undefined}
+    metrics={[{label:'Active vaults',value:String(d.activeVaults),testID:'captain-active-vaults',icon:<FundVaultIcon size={18} color={C.icon}/>},{label:'Crew members',value:String(d.crewMembers),icon:<Users size={19} color={C.icon}/>} ]}
+    hidden={hidden} canToggle={ready&&!saving} onToggle={()=>{void toggleBalances();}} onOverview={()=>showPanel({kind:'overview'})} overviewLabel="View assets under management breakdown"
+    period={period} onPeriod={value=>{selectionFeedback();setPeriod(value);}} compact={compact} error={error??data.error??(d.valuationStatus==='UNAVAILABLE'?'Current AUM is unavailable.':null)}
+    testIDPrefix="captain" summaryTestID="captain-aum-card" balanceTestID="captain-aum-value" changeTestID="captain-aum-change" overviewTestID="captain-overview"/>
+   {p?.coverage==='PARTIAL'&&points.length>0?<Text style={[styles.copy,{fontSize:11,marginTop:8}]}>Recorded history from {new Date(points[0].at).toLocaleDateString()} · AUM includes capital flows.</Text>:null}
+   {data.error?<AuthButton accessibilityRole="button" onPress={data.refresh} style={{minHeight:44,justifyContent:'center'}}><Text style={styles.copy}>Retry dashboard</Text></AuthButton>:null}
+   <CaptainActions dashboard={d} hidden={hidden} compact={compact} onPanel={showPanel} creationMessage={creationMessage}/>
+  </>}
+  {d&&d.state==='NEW'&&data.error?<Text accessibilityRole="alert" style={styles.copy}>{data.error}</Text>:null}
+  <CaptainLiveDetails panel={panel} data={data} hidden={hidden} onClose={()=>onPanel(null)} onVault={openVault}/>
+ </View>;
 }
 
 const styles = StyleSheet.create({

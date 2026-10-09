@@ -66,8 +66,8 @@ function HomeContent({ role }: { role: AccountRole }) {
     <DashboardShell testID="home-dashboard" variant={isCaptain ? 'captain' : 'crew'}>
       <HomeHeader name={settings.name} avatar={settings.avatar} photoUri={settings.photoUri} greeting={greeting} role={role}
         onProfile={() => setSheet('profile')} onNotifications={setNotificationAnchor} unreadCount={unreadCount} notificationsOpen={notificationAnchor !== null} />
-      {!previewing ? <VaultHomePanel isCaptain={isCaptain} /> : isCaptain ? <CaptainOverview compact={compact} heroSpace={heroSpace} panel={captainPanel} onPanel={setCaptainPanel} />
-        : <CrewHome compact={compact} heroSpace={heroSpace} onOverview={hidden => { setPortfolioHidden(hidden); setSheet('portfolio'); }} />}
+      {isCaptain ? <CaptainOverview compact={compact} heroSpace={heroSpace} panel={captainPanel} onPanel={setCaptainPanel} />
+        : !previewing ? <VaultHomePanel isCaptain={false} /> : <CrewHome compact={compact} heroSpace={heroSpace} onOverview={hidden => { setPortfolioHidden(hidden); setSheet('portfolio'); }} />}
       <HomeSheet sheet={sheet} greeting={greeting} email={email} bio={settings.bio} pending={pending} error={error}
         previewing={previewing} hidden={!settingsReady || settings.hideBalances || portfolioHidden} onClose={() => setSheet(null)} onSignOut={() => { void signOut(); }}
         onSettings={() => { setSheet(null); router.push('/settings'); }} />

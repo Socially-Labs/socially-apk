@@ -4,24 +4,25 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { FundVaultIcon } from '@/components/shared/icons/product-icons';
 import { AuthButton } from '@/components/shared/motion';
-import { captainMoney, captainTotals, type CaptainVault } from '@/constants/captain-dashboard';
+import { type CaptainVault } from '@/constants/captain-dashboard';
 import { InterFont } from '@/constants/fonts';
 import { CaptainHomePalette as C, DiscoverPalette as D } from '@/constants/theme';
+import { formatUsdc } from '@/api/wallet';
+import type { CaptainDashboard } from '@/api/captain-dashboard';
 import type { CaptainPanel } from './captain-home-types';
 
-export function CaptainActions({ vaults, hidden, compact, onPanel }: { vaults: readonly CaptainVault[]; hidden: boolean; compact: boolean; onPanel: (panel: CaptainPanel) => void }) {
-  const total = captainTotals(vaults);
+export function CaptainActions({ dashboard, hidden, compact, onPanel, creationMessage }: { dashboard: CaptainDashboard; hidden: boolean; compact: boolean; onPanel: (panel: CaptainPanel) => void; creationMessage: string | null }) {
   const actions = [
-    { kind: 'manage' as const, label: 'Manage vaults', caption: `${total.active} active vaults`, icon: FundVaultIcon },
-    { kind: 'crew' as const, label: 'Your Crew', caption: `${total.crew} members`, icon: Users },
-    { kind: 'earnings' as const, label: 'Earnings', caption: hidden ? 'Balances hidden' : `${captainMoney(total.earnedCents)} earned`, icon: ChartNoAxesColumnIncreasing },
-    { kind: 'create' as const, label: 'Create vault', caption: 'Start a new strategy', icon: Plus },
+    { kind: 'manage' as const, label: 'Manage vaults', caption: `${dashboard.vaultCount} vaults · ${dashboard.activeVaults} active`, icon: FundVaultIcon },
+    { kind: 'crew' as const, label: 'Your Crew', caption: `${dashboard.crewMembers} members`, icon: Users },
+    { kind: 'earnings' as const, label: 'Earnings', caption: hidden ? 'Balances hidden' : `$${formatUsdc(dashboard.earnings.earnedUsdc)} earned`, icon: ChartNoAxesColumnIncreasing },
+    { kind: 'create' as const, label: 'Create vault', caption: creationMessage ?? 'Start a new strategy', icon: Plus },
   ];
   return <View style={styles.actions} testID="captain-actions">{actions.map(({ kind, label, caption, icon: Icon }) => {
     const create = kind === 'create';
     const earnings = kind === 'earnings';
-    return <AuthButton key={kind} testID={`captain-action-${kind}`} accessibilityRole="button" onPress={() => onPanel({ kind })}
-      accessibilityLabel={`${label}. ${caption}. Open preview.`} style={[styles.action, compact && styles.compactAction, earnings && styles.earningsAction, create && styles.createAction]}>
+    return <AuthButton key={kind} testID={`captain-action-${kind}`} accessibilityRole="button" disabled={create && !dashboard.creation.allowed} accessibilityState={{ disabled: create && !dashboard.creation.allowed }} onPress={() => onPanel({ kind })}
+      accessibilityLabel={`${label}. ${caption}.`} style={[styles.action, compact && styles.compactAction, earnings && styles.earningsAction, create && styles.createAction, create && !dashboard.creation.allowed && styles.disabled]}>
       {create ? <LinearGradient colors={C.create} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} pointerEvents="none" /> : null}
       <View style={styles.actionTop}>
         <View style={[styles.actionIcon, earnings && styles.earningsIcon, create && styles.createIcon]}>
@@ -45,6 +46,7 @@ export function CaptainVaultStatus({ vault }: { vault: CaptainVault }) {
 }
 
 const styles = StyleSheet.create({
+  disabled: { opacity: 0.6 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   action: { width: '48%', flexGrow: 1, minHeight: 92, padding: 9, gap: 3, borderRadius: 19, borderCurve: 'continuous', backgroundColor: C.tile, borderWidth: 1, borderColor: C.tileBorder, boxShadow: C.shadow, overflow: 'hidden' },
   compactAction: { minHeight: 96, padding: 10 },

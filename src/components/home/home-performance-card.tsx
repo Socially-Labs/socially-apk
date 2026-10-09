@@ -12,14 +12,15 @@ type HomePeriod = (typeof periods)[number];
 type Metric = { label: string; value: string; testID?: string; icon?: ReactNode };
 
 /** Shared presentation for Captain AUM and Crew personal value. */
-export function HomePerformanceCard({ label, balance, change, changeCaption, positive, values, chartDescription,
+export function HomePerformanceCard({ label, balance, change, changeCaption, positive, values, timestamps, chartDescription,
   metrics, hidden, canToggle, onToggle, onOverview, overviewLabel, period, onPeriod, compact, error,
-  testIDPrefix, summaryTestID, balanceTestID, changeTestID, overviewTestID, variant = 'default' }: {
+  testIDPrefix, summaryTestID, balanceTestID, changeTestID, overviewTestID, badge = 'Sample', chartMessage, variant = 'default' }: {
   label: string; balance: string; change: string; changeCaption: string; positive: boolean;
-  values: number[]; chartDescription: string; metrics: readonly [Metric, Metric];
+  values: number[]; timestamps?: string[]; chartDescription: string; metrics: readonly [Metric, Metric];
   hidden: boolean; canToggle: boolean; onToggle: () => void; onOverview: () => void; overviewLabel: string;
   period: HomePeriod; onPeriod: (period: HomePeriod) => void; compact: boolean; error: string | null;
   testIDPrefix: string; summaryTestID: string; balanceTestID: string; changeTestID: string; overviewTestID: string;
+  badge?: string; chartMessage?: string;
   variant?: 'default' | 'frosted' | 'frosted-pills';
 }) {
   const frosted = variant !== 'default';
@@ -35,7 +36,7 @@ export function HomePerformanceCard({ label, balance, change, changeCaption, pos
   </AuthButton>)}</View>;
   return <LinearGradient colors={frosted ? C.card : D.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.card, frosted && glass.card]} testID={summaryTestID}>
     <View style={[styles.row, frosted && glass.row]}>
-      <Text style={[styles.label, frosted && glass.label]}>{label} <Text style={[styles.preview, frosted && glass.secondary]}>· Sample</Text></Text>
+      <Text style={[styles.label, frosted && glass.label]}>{label} <Text style={[styles.preview, frosted && glass.secondary]}>{badge ? `· ${badge}` : ''}</Text></Text>
       <AuthButton testID={`${testIDPrefix}-balance-visibility`} accessibilityRole="button" accessibilityLabel={hidden ? 'Show portfolio balances' : 'Hide portfolio balances'}
         disabled={!canToggle} accessibilityState={{ disabled: !canToggle }} onPress={onToggle} style={[styles.iconButton, frosted && glass.visibility]}>
         <View style={frosted && glass.eye}>{hidden ? <EyeOff size={19} color={frosted ? C.ink : D.heroSecondary} /> : <Eye size={19} color={frosted ? C.ink : D.heroSecondary} />}</View>
@@ -49,7 +50,7 @@ export function HomePerformanceCard({ label, balance, change, changeCaption, pos
       <Text style={[styles.caption, frosted && glass.secondary]}>{changeCaption}</Text>
     </View>
     {frosted ? periodControls : null}
-    <PortfolioChart values={values} hidden={hidden} color={frosted ? C.chart : color} description={chartDescription} testID={`${testIDPrefix}-performance-chart`} frosted={frosted} />
+    {chartMessage ? <Text style={[styles.chartMessage, frosted && glass.secondary]}>{chartMessage}</Text> : <PortfolioChart values={values} timestamps={timestamps} hidden={hidden} color={frosted ? C.chart : color} description={chartDescription} testID={`${testIDPrefix}-performance-chart`} frosted={frosted} />}
     {frosted ? null : periodControls}
     <View style={[styles.metrics, frosted && glass.metrics]}>
       {metrics.map((metric, index) => <View key={metric.label} style={[styles.metric, index === 0 && styles.investedMetric, frosted && glass.metric, frosted && index === 0 && glass.firstMetric]}>
@@ -67,11 +68,14 @@ export function HomePerformanceCard({ label, balance, change, changeCaption, pos
   </LinearGradient>;
 }
 
-export function PortfolioChart({ values, hidden, color, description, testID, frosted = false, light = false, height = frosted ? 52 : 70 }: {
-  values: number[]; hidden: boolean; color: string; description: string; testID: string; frosted?: boolean; light?: boolean; height?: number;
+export function PortfolioChart({ values, timestamps, hidden, color, description, testID, frosted = false, light = false, height = frosted ? 52 : 70 }: {
+  values: number[]; timestamps?: string[]; hidden: boolean; color: string; description: string; testID: string; frosted?: boolean; light?: boolean; height?: number;
 }) {
+  if (hidden || values.length < 2) return <View testID={testID} style={[styles.chart, { height }]}><Text style={[styles.chartMessage,{color:frosted?C.secondary:light?D.secondary:D.heroSecondary}]}>{hidden ? 'Chart hidden' : 'History will appear as your vault is valued.'}</Text></View>;
   const min = Math.min(...values), max = Math.max(...values), range = Math.max(1, max - min);
-  const points = values.map((value, index) => [4 + index / (values.length - 1) * 312, 75 - (value - min) / range * 58]);
+  const times = timestamps?.length === values.length ? timestamps.map(value => Date.parse(value)) : null;
+  const span = times ? times[times.length - 1] - times[0] : 0;
+  const points = values.map((value, index) => [4 + (times && Number.isFinite(span) && span > 0 ? (times[index] - times[0]) / span : index / (values.length - 1)) * 312, 75 - (value - min) / range * 58]);
   const path = points.map(([x, y], index) => `${index ? 'L' : 'M'}${x.toFixed(2)} ${y.toFixed(2)}`).join(' ');
   const last = points[points.length - 1];
   const gradientId = `${testID}-fill`;
@@ -97,6 +101,7 @@ const styles = StyleSheet.create({
   returnRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 7, rowGap: 3, marginTop: 5 },
   return: { fontFamily: InterFont.medium, fontSize: 12, lineHeight: 18, fontVariant: ['tabular-nums'] },
   caption: { fontFamily: InterFont.regular, fontSize: 11, lineHeight: 16, color: D.heroSecondary },
+  chartMessage: { fontFamily: InterFont.regular, fontSize: 11, lineHeight: 16, color: C.secondary, minHeight: 52, paddingVertical: 12 },
   chart: { height: 70, marginTop: 9, marginBottom: 2 },
   periods: { flexDirection: 'row', justifyContent: 'center', gap: 12 },
   period: { flex: 1, minHeight: 44, maxWidth: 70, justifyContent: 'center', alignItems: 'center', borderRadius: 13 },
