@@ -1,4 +1,4 @@
-import { PaperPortfolioCard } from './paper-portfolio-card';
+import { PaperBalanceSetup } from './paper-balance-setup';
 import { VaultArtwork } from './vault-artwork';
 import { RoundTerms } from './vault-round-terms';
 import { useCallback,useState,type ReactNode } from 'react';
@@ -109,7 +109,7 @@ export function VaultDetailScreen() {
     {position.claimableUsdc!==null&&!position.claimPaid&&position.shares!=='0.000000'?<Action disabled={!canAct} onPress={()=>{ void intent.submit({ kind:'CLAIM',vaultId:id,body:{} }); }}>Claim final payout / refund</Action>:null}
     {funding&&position.shares!=='0.000000'?<Action secondary disabled={!canAct} onPress={()=>{ void intent.submit({ kind:'CANCEL',vaultId:id,body:{} }); }}>{position.isCaptain?'Cancel before any Crew commitment':'Cancel full funding contribution'}</Action>:null}
    </View>:null}
-   {data.config?.walletSnapshotEnabled&&funding&&position&&!position.isCaptain&&position.availableUsdc==='0.000000'?<PaperPortfolioCard onReady={data.refresh}/>:null}
+   {data.config?.walletSnapshotEnabled&&funding&&position&&!position.isCaptain&&position.availableUsdc==='0.000000'?<PaperBalanceSetup onReady={data.refresh}/>:null}
    {saved?<View style={s.card}><Text style={s.cardTitle}>Request awaiting confirmation</Text><Text style={s.copy}>{saved.kind} · Your original request is saved. Retry confirms that same request.</Text><Action disabled={!intent.ready||intent.busy} onPress={()=>{ void intent.submit(saved); }}>{intent.busy?'Confirming…':'Retry saved request'}</Action></View>:funding&&position&&!position.isCaptain?<View style={s.card}>
     <Text style={s.label}>Contribution in paper USDC</Text>
     {Number(vault.remainingCapacityUsdc)<50?<Text style={s.copy}>Remaining capacity is below the 50 USDC minimum. No smaller final contribution is accepted.</Text>:null}<TextInput accessibilityLabel="Contribution in paper USDC" keyboardType="decimal-pad" value={amount} onChangeText={value=>{ setAmount(value); setReview(false); }} style={s.input} editable={!intent.busy} maxLength={30} />

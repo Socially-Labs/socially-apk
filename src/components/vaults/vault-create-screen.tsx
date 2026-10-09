@@ -1,4 +1,4 @@
-import { PaperPortfolioCard } from './paper-portfolio-card';
+import { PaperBalanceSetup } from './paper-balance-setup';
 import { useEffect,useRef,useState,type ReactNode } from 'react';
 import { ActivityIndicator,Image,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { router } from 'expo-router';
@@ -85,7 +85,7 @@ function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
       {reviewing?<View style={{flex:1,gap:6,paddingTop:22}}><Text style={s.cardTitle}>{body.name}</Text><Text style={s.caption}>{body.description||'No strategy description'}</Text></View>:<><View style={{flex:1,gap:6,paddingTop:24}}><Text style={s.label}>Vault image</Text><Pressable accessibilityRole="button" accessibilityLabel={art.avatar?'Replace vault image':'Choose vault image'} disabled={locked} onPress={()=>{void choose('avatar');}} style={s.smallButton}><ImagePlus size={16} color={C.ink}/><Text style={s.smallText}>{art.avatar?'Change image':'Add image'}</Text></Pressable></View><Text style={[s.caption,{flex:0.9,paddingTop:24}]}>Optional artwork uploads after creation.</Text></>}
      </View>
     </View>
-    {config?.walletSnapshotEnabled&&!reviewing?<PaperPortfolioCard onReady={()=>{setPortfolioReady(true);}}/>:null}
+    {config?.walletSnapshotEnabled&&!reviewing?<PaperBalanceSetup onReady={()=>{setPortfolioReady(true);}}/>:null}
     {!reviewing?<>
      <Glass><Text style={s.label}>Vault name</Text><TextInput accessibilityLabel="Vault name" placeholder="e.g. Horizon Growth" placeholderTextColor="#8194AC" value={name} onChangeText={setName} maxLength={80} editable={!locked} style={s.input}/><Text style={s.label}>Strategy description</Text><TextInput accessibilityLabel="Strategy description" placeholder="Describe your approach to the markets" placeholderTextColor="#8194AC" value={description} onChangeText={setDescription} maxLength={1000} multiline editable={!locked} style={[s.input,s.multiline]}/></Glass>
      <View style={s.settings}><Choice label="Funding window" value={hours} options={config?.fundingWindowHours??[]} onChange={setHours} disabled={locked||!config} icon={<Clock3 size={24} color="#456487"/>}/><Choice label="Trading duration" value={days} options={config?.durationDays??[]} onChange={setDays} disabled={locked||!config} icon={<CalendarDays size={24} color="#456487"/>}/></View>
