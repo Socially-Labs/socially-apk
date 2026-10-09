@@ -84,6 +84,20 @@ Updated October 6, 2026. Captured from the running web preview at a 390 × 844 p
 
 ## Get started
 
+### Devnet wallet and swaps
+
+Settings → Network shows **Solana Devnet** as the default. Mainnet is coming soon. Wallet balances and the final pre-signing simulation use `https://api.devnet.solana.com`; set `EXPO_PUBLIC_SOLANA_DEVNET_RPC_URL` in `.env` to use another devnet provider. Quotes, transaction construction, broadcasting and confirmation use the authenticated backend at `EXPO_PUBLIC_API_URL`. Configure the venue with backend `SWAP_*` settings and the server devnet RPC with `SOLANA_RPC_URL`. Execution verifies the full devnet genesis hash before requesting a wallet signature.
+
+The Assets list shows native devnet SOL and Circle faucet USDC (`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`). The balance card tracks backend trading funds separately; swapping into wallet USDC does not credit that ledger automatically. Test tokens have no monetary value.
+
+Wallet → Swap supports SOL ↔ USDC with backend Raydium devnet quotes, server validation and simulation, a prepared review with network fees and account rent, Privy signing, a final client simulation, backend submission and confirmation, and balance refresh. Quotes expire after 30 seconds, slippage is 1%, and price impact above 5% is blocked. Keep 0.01 devnet SOL for fees and account rent. Routes requiring multiple setup transactions are rejected. Public pool liquidity can change or disappear.
+
+Request IDs are saved before preparation; intent IDs and signed transaction bytes are saved before backend submission and recovered when returning to the wallet. The backend persists signed bytes before broadcasting and retries the same transaction after crashes or lost responses. Quote expiry does not expire a prepared or landed transaction; blockhash validity and finalized chain state determine its outcome. Use **Check confirmation** or the devnet explorer link before trying another swap. No private keys are stored by the swap flow.
+
+Run `node --test tests/solana-balance.test.mjs tests/solana-swap.test.mjs tests/swaps-api.test.mjs tests/wallet-funding.test.mjs` for the wallet checks. Native Privy signing still requires a signed-in device for end-to-end validation.
+
+### Run locally
+
 1. Install dependencies
 
    ```bash
