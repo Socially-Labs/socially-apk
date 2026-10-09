@@ -17,6 +17,7 @@ Implementation and configuration details: [Privy integration documentation](docs
 - [x] Ethereum, Base, Polygon, and Arbitrum shown as coming soon.
 - [x] Provision local test token/treasury and verify a real 12.345678 test-USDC deposit on devnet.
 - [ ] Validate QR scanning and payment from an external wallet on a physical Android device using the updated development build.
+- [ ] Build and install a native development build with `react-native-share` (`RNShare`), then verify that Share on the Receive screen sends the Glacier QR image and “Hello, here is my Solana wallet address:” followed by the full address together to WhatsApp and other apps. Expo Go currently shares the image and copies the text for manually pasting as the caption; reloading Expo Go cannot add the missing native module.
 - [ ] Implement outgoing wallet transfers and swaps; both are currently marked coming soon.
 
 ## Crew UI

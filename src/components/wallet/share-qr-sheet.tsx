@@ -12,6 +12,7 @@ import { ShareQrCard, type ShareQrDetails } from './share-qr-card';
 import { saveQrImage, shareQrImage } from './share-qr-image';
 import { GlacierQrCard, GLACIER_WIDTH } from './glacier-qr-card';
 import { qrShareMessage } from './qr-share-message';
+import { QrSharingUnavailableError } from './qr-share-error';
 
 export function ShareQrSheet({ details, onClose, canShare = () => true }: {
   details: ShareQrDetails; onClose: () => void; canShare?: () => boolean;
@@ -56,10 +57,10 @@ export function ShareQrSheet({ details, onClose, canShare = () => true }: {
       if (action === 'save') {
         await saveQrImage(exportCard, exportHeight, available, exportWidth);
         setMessage(Platform.OS === 'web' ? 'Image downloaded' : 'Image saved to Photos');
-      } else await shareQrImage(exportCard, exportHeight, available, exportWidth, qrShareMessage(details));
+      } else await shareQrImage(exportCard, exportHeight, available, exportWidth, qrShareMessage(details), setMessage);
     } catch (cause) {
       const text = cause instanceof Error ? cause.message : '';
-      setError(text.includes('request has ended') || text.includes('Allow photo') ? text : `Couldn’t ${action} the image. Try again, or copy the wallet address.`);
+      setError(cause instanceof QrSharingUnavailableError || text.includes('request has ended') || text.includes('Allow photo') ? text : `Couldn’t ${action} the image. Try again, or copy the wallet address.`);
     } finally { locked.current = false; setBusy(null); }
   }
   const disabled = !!busy || !height || !logoReady || (glacier && !glacierHeight);

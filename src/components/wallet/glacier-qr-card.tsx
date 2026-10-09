@@ -22,14 +22,14 @@ export const GlacierQrCard = forwardRef<View, { details: ShareQrDetails; onLayou
     <View style={s.paper}>
       <View style={s.avatar}><Text allowFontScaling={false} style={s.initial}>{Array.from(name)[0]?.toLocaleUpperCase()}</Text></View>
       <Text allowFontScaling={false} style={s.name}>{name}</Text>
-      <Text allowFontScaling={false} style={s.subtitle}>Solana wallet</Text>
+      <Text allowFontScaling={false} style={s.subtitle}>{details.network.includes('DEVNET') ? 'Solana Devnet wallet' : 'Solana wallet'}</Text>
       <Text allowFontScaling={false} style={s.scan}>Scan to send to my wallet</Text>
       <View style={s.qr}><QRCode value={details.value} size={244} quietZone={16} color={W.receiveQrInk} backgroundColor={W.white} ecl="H"
         logoSVG={qrEmblemSvg} logoSize={32} logoMargin={4} logoBackgroundColor={W.white} logoBorderRadius={20} /></View>
       <Text allowFontScaling={false} style={s.label}>Wallet Address:</Text>
       <Text allowFontScaling={false} style={s.address} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{details.address}</Text>
     </View>
-    <Text allowFontScaling={false} style={s.footer}>This address is for Solana assets only.</Text>
+    <Text allowFontScaling={false} style={s.footer}>{details.network.includes('DEVNET') ? 'This address is for Solana Devnet assets only.' : 'This address is for Solana assets only.'}</Text>
   </View>;
 });
 

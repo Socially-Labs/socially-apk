@@ -13,7 +13,7 @@ function download(file: File) {
   link.href = url; link.download = file.name; document.body.appendChild(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
-export async function shareQrImage(ref: RefObject<View | null>, height: number, canShare: () => boolean, width = 320, message = '') {
+export async function shareQrImage(ref: RefObject<View | null>, height: number, canShare: () => boolean, width = 320, message = '', _onFallback?: (notice: string) => void) {
   const file = await captureCard(ref, height, canShare, width);
   if (!canShare()) throw new Error('This request has ended. Create a new QR to share.');
   if (navigator.canShare?.({ files: [file] })) {
