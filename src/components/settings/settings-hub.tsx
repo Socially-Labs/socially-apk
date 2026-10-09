@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowRight, Eye, FileText, Info, LifeBuoy, ShieldCheck, UserRound, UserRoundPlus, type LucideIcon } from 'lucide-react-native';
+import { ArrowRight, Eye, FileText, Globe2, Info, LifeBuoy, ShieldCheck, UserRound, UserRoundPlus, type LucideIcon } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 import { AuthButton } from '@/components/shared/motion';
 import { SettingsHubPalette as H } from '@/constants/theme/settings';
@@ -17,6 +17,7 @@ const destinations: readonly Destination[] = [
   { section: 'support', title: 'Help & support', copy: 'Get help or contact our team.', compactCopy: 'Get a little help', icon: LifeBuoy, community: true },
 ];
 const info: readonly { section: string; title: string; icon: LucideIcon }[] = [
+  { section: 'network', title: 'Network · Solana Devnet', icon: Globe2 },
   { section: 'about', title: 'About Socially', icon: Info },
   { section: 'terms', title: 'Terms of service', icon: FileText },
   { section: 'privacy', title: 'Privacy policy', icon: ShieldCheck },

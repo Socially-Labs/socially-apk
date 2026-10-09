@@ -17,6 +17,7 @@ import { Action, Card } from './settings-detail-ui';
 import { SettingsLoading } from './settings-loading';
 import { useAccountSettings } from './settings-provider';
 import { Support } from './support-section';
+import { NetworkPreferences } from './network-preferences';
 
 export default function SettingsDetailScreen() {
   const { section: param } = useLocalSearchParams<{ section: string }>();
@@ -27,7 +28,7 @@ export default function SettingsDetailScreen() {
     <SettingsSurface testID={`settings-detail-${section}`} keyboardAvoided>
       <View style={styles.header}><AuthButton accessibilityRole="button" accessibilityLabel="Back to Settings" onPress={goBack} style={styles.back}><ArrowLeft size={22} color={S.ink} /></AuthButton><Text accessibilityRole="header" style={styles.title}>{titles[section] ?? 'Settings'}</Text></View>
       {!ready && (section === 'profile' || section === 'display' || section === 'account') ? <SettingsLoading profile={section === 'profile'} /> :
-        section === 'profile' ? <ProfileEditor /> : section === 'account' ? <AccountSection /> : section === 'display' ? <DisplayPreferences /> : section === 'referral' ? <Referral /> : section === 'support' ? <Support /> : section === 'terms' || section === 'privacy' ? <Policy kind={section} /> : section === 'about' ? <About /> : <Card><Text style={styles.copy}>This settings page isn’t available.</Text><Action label="Back to Settings" onPress={goBack} /></Card>}
+        section === 'network' ? <NetworkPreferences /> : section === 'profile' ? <ProfileEditor /> : section === 'account' ? <AccountSection /> : section === 'display' ? <DisplayPreferences /> : section === 'referral' ? <Referral /> : section === 'support' ? <Support /> : section === 'terms' || section === 'privacy' ? <Policy kind={section} /> : section === 'about' ? <About /> : <Card><Text style={styles.copy}>This settings page isn’t available.</Text><Action label="Back to Settings" onPress={goBack} /></Card>}
     </SettingsSurface>
   </KeyboardAvoidingView>;
 }

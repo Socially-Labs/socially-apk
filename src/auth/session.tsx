@@ -9,6 +9,7 @@ export type AuthSession = {
   email: string | null;
   accountId: string | null;
   solanaAddress?: string | null;
+  signSolanaTransaction?: (transaction: Uint8Array, expectedAddress: string) => Promise<Uint8Array>;
   sendCode: (email: string) => Promise<void>;
   verifyCode: (email: string, code: string) => Promise<void>;
   loginWithSocial: (provider: SocialProvider) => Promise<void>;

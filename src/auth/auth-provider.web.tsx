@@ -1,5 +1,5 @@
 import { PrivyProvider, useLoginWithEmail, useLoginWithOAuth, usePrivy } from '@privy-io/react-auth';
-import { useCreateWallet } from '@privy-io/react-auth/solana';
+import { useCreateWallet, useSignTransaction, useWallets } from '@privy-io/react-auth/solana';
 import { useEffect, useRef, useSyncExternalStore, type PropsWithChildren } from 'react';
 
 import { privyConfig } from './config';
@@ -13,6 +13,8 @@ const serverSnapshot = () => false;
 function SessionBridge({ children }: PropsWithChildren) {
   const { ready, authenticated, user, logout, getAccessToken } = usePrivy();
   const { createWallet } = useCreateWallet();
+  const { wallets } = useWallets();
+  const { signTransaction } = useSignTransaction();
   const { sendCode, loginWithCode } = useLoginWithEmail();
   const { initOAuth, state: oauthState } = useLoginWithOAuth();
   const linkedAddress = ready && authenticated ? linkedSolanaAddress(user?.linkedAccounts) : null;
@@ -35,6 +37,13 @@ function SessionBridge({ children }: PropsWithChildren) {
       isAuthenticated: ready && authenticated,
       accountId: user?.id ?? null,
       solanaAddress: linkedAddress,
+      signSolanaTransaction: async (transaction, expectedAddress) => {
+        if (!ready || !authenticated || linkedAddress !== expectedAddress) throw new Error('Your wallet changed. Please review the swap again.');
+        const wallet = wallets.find(item => item.address === expectedAddress);
+        if (!wallet) throw new Error('Your Solana wallet is still connecting. Please try again.');
+        const { signedTransaction } = await signTransaction({ transaction, wallet, chain: 'solana:devnet' });
+        return signedTransaction;
+      },
       email: user?.email?.address ?? null,
       sendCode: async (email) => { await sendCode({ email }); },
       verifyCode: async (_email, code) => { await loginWithCode({ code }); },
