@@ -1,13 +1,14 @@
+import { parseTradingReturns,type TradingReturns } from './generated/paper-trading-contracts.ts';
 import { ApiError, type createApiClient } from './client.ts';
 import { parseVaultSummary } from './vaults.ts';
 export type CaptainRange = '7D'|'30D'|'90D'|'ALL';
 export type CaptainDashboard = {
- schemaVersion:1; mode:'PAPER'; state:'NEW'|'EXISTING'; vaultCount:number; activeVaults:number; openVaults:number; crewMembers:number;
+ dashboardRevision?:string; schemaVersion:1; mode:'PAPER'; state:'NEW'|'EXISTING'; vaultCount:number; activeVaults:number; openVaults:number; crewMembers:number;
  aumUsdc:string|null; valuationStatus:'CURRENT'|'UNAVAILABLE'; serverTime:string;
  earnings:{ earnedUsdc:string; claimedUsdc:string; claimableUsdc:string };
  creation:{ allowed:boolean; reason:'funding_unavailable'|'open_round_exists'|'insufficient_seed'|null; seedUsdc:string; availableUsdc:string };
 };
-export type CaptainPerformance={ mode:'PAPER';range:CaptainRange;intervalSeconds:number;points:{ at:string;aumUsdc:string|null }[];
+export type CaptainPerformance={ tradingReturn?:TradingReturns; mode:'PAPER';range:CaptainRange;intervalSeconds:number;points:{ at:string;aumUsdc:string|null }[];
  coverage:'PARTIAL'|'UNAVAILABLE';changeUsdc:string|null;changePercent:string|null;methodology:string };
 export type CaptainMember={ id:string;displayName:string;username:string|null;avatarUrl:string|null;vaultCount:number;allocatedUsdc:string;joinedAt:string };
 export type CaptainEarning={ vaultId:string;name:string;earnedUsdc:string;claimedUsdc:string;claimableUsdc:string;finalizedAt:string;claimedAt:string|null };
@@ -34,6 +35,7 @@ export function parseCaptainPerformance(v:unknown,range:CaptainRange):CaptainPer
  !['PARTIAL','UNAVAILABLE'].includes(String(v.coverage))||!(v.changeUsdc===null||signed(v.changeUsdc))||!(v.changePercent===null||signed(v.changePercent))||typeof v.methodology!=='string')fail();
  let last=-Infinity;
  for(const point of v.points){if(!record(point)||!date(point.at)||!(point.aumUsdc===null||amount(point.aumUsdc))||Date.parse(String(point.at))<=last)fail();last=Date.parse(String(point.at));}
+ if(v.tradingReturn!==undefined){const returns=parseTradingReturns(v.tradingReturn);if(returns.range!==range)fail();}
  return v as CaptainPerformance;
 }
 function page<T>(v:unknown,key:string,valid:(item:Record<string,unknown>)=>boolean):Page<T>{

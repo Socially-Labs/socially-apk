@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { Users } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useAccountSettings } from '@/components/settings/settings-provider';
 import { selectionFeedback } from '@/components/shared/feedback';
 import { FundVaultIcon } from '@/components/shared/icons/product-icons';
@@ -24,8 +24,6 @@ export function CaptainOverview({ compact, heroSpace, panel, onPanel }: {
  const { settings,ready,saving,updateSettings }=useAccountSettings();
  const [period,setPeriod]=useState<CaptainRange>('30D');
  const data=useCaptainDashboard(period,panel?.kind??null),d=data.dashboard,p=data.performance;
- const refresh=data.refresh;
- useFocusEffect(useCallback(()=>{refresh();},[refresh]));
  const [locallyHidden,setLocallyHidden]=useState(false),[error,setError]=useState<string|null>(null);
  const hidden=!ready||settings.hideBalances||locallyHidden;
  const money=(v:string|null|undefined)=>v==null?'—':`$${formatUsdc(v)}`;
@@ -48,6 +46,7 @@ export function CaptainOverview({ compact, heroSpace, panel, onPanel }: {
     hidden={hidden} canToggle={ready&&!saving} onToggle={()=>{void toggleBalances();}} onOverview={()=>showPanel({kind:'overview'})} overviewLabel="View assets under management breakdown"
     period={period} onPeriod={value=>{selectionFeedback();setPeriod(value);}} compact={compact} error={error??data.error??(d.valuationStatus==='UNAVAILABLE'?'Current AUM is unavailable.':null)}
     testIDPrefix="captain" summaryTestID="captain-aum-card" balanceTestID="captain-aum-value" changeTestID="captain-aum-change" overviewTestID="captain-overview"/>
+   {p?.tradingReturn?<Text testID="captain-trading-return" style={styles.copy}>Net trading return · {hidden?'••••':p.tradingReturn.netReturnPercent===null?'Unavailable':`${Number(p.tradingReturn.netReturnPercent)>=0?'+':''}${Number(p.tradingReturn.netReturnPercent).toFixed(2)}%`} · excludes deposits, includes costs</Text>:null}
    {p?.coverage==='PARTIAL'&&points.length>0?<Text style={[styles.copy,{fontSize:11,marginTop:8}]}>Recorded history from {new Date(points[0].at).toLocaleDateString()} · AUM includes capital flows.</Text>:null}
    {data.error?<AuthButton accessibilityRole="button" onPress={data.refresh} style={{minHeight:44,justifyContent:'center'}}><Text style={styles.copy}>Retry dashboard</Text></AuthButton>:null}
    <CaptainActions dashboard={d} hidden={hidden} compact={compact} onPanel={showPanel}/>
