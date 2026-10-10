@@ -110,6 +110,7 @@ export function createApiClient({ origin, getAccessToken, fetchImpl = fetch, tim
     }
   }
   return {
+    publicOrigin: () => apiOrigin(origin),
     request,
     async bootstrap(subject: string, signal?: AbortSignal) {
       const result = await request('/v0/auth/privy', { method: 'POST', body: {}, signal, retryConnection: true });

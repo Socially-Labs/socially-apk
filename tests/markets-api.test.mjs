@@ -96,3 +96,14 @@ test('vault-list outages never silently switch trading to legacy trials', async(
     await assert.rejects(api.funds());assert.ok(calls.length>=1);assert.ok(calls.every(url=>url.endsWith('/v1/me/captain/vaults')));
   }
 });
+
+test('dynamic tracking authenticates, selects the registered instrument and shares demand until the final consumer closes',async()=>{
+  const dynamic=`solana:${mint}`,calls=[];
+  const api=marketsApi(createApiClient({origin:'http://localhost:3000',getAccessToken:async()=> 'session',fetchImpl:async(url,options)=>{
+    calls.push({url,...options});
+    return Response.json(url.endsWith('/tracking')?{mode:'PAPER',instrumentId:dynamic,mint,state:'WARMING',reason:'price_pending',retryAfterMs:1500,leaseExpiresAt:at}:context);
+  }}));
+  assert.equal((await api.track(mint)).state,'WARMING');assert.equal(calls[0].method,'POST');assert.equal(calls[0].headers.Authorization,'Bearer session');
+  const releaseA=api.watchInstrument(dynamic),releaseB=api.watchInstrument(dynamic);releaseA();assert.ok(api.priceInstruments().includes(dynamic));releaseB();assert.ok(!api.priceInstruments().includes(dynamic));
+  await api.context(id,undefined,dynamic);assert.equal(new URL(calls[1].url).searchParams.get('instrumentId'),dynamic);
+});

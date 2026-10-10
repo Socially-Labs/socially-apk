@@ -80,7 +80,7 @@
     "test:otp": "node --test tests/otp-flow.test.mjs",
     "test:discover": "node --test tests/discover-data.test.mjs",
     "test:markets": "node --test tests/captain-markets.test.mjs",
-    "test:market-api": "node --test tests/markets-api.test.mjs",
+    "test:market-api": "node --test tests/markets-api.test.mjs tests/market-discovery.test.mjs tests/active-market.test.mjs tests/trade-quote.test.mjs",
     "test:account": "node --test tests/backend-account.test.mjs",
     "test:integration": "node --test tests/backend-http-integration.test.mjs",
     "test:wallet": "node --test tests/wallet-funding.test.mjs"
