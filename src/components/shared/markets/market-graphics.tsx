@@ -7,7 +7,7 @@ import { Dashboard, WalletPalette } from '@/constants/theme';
 
 const decorative = Platform.OS === 'web' ? { 'aria-hidden': true as const } : { accessible: false };
 
-export function TokenIcon({ symbol, size = 40 }: { symbol: MarketSymbol | 'USDC'; size?: number }) {
+export function TokenIcon({ symbol, size = 40, solanaBackground = '#071324' }: { symbol: MarketSymbol | 'USDC'; size?: number; solanaBackground?: string }) {
   const gradient = `token-${useId().replace(/:/g, '')}`;
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48" {...decorative}>
@@ -18,7 +18,7 @@ export function TokenIcon({ symbol, size = 40 }: { symbol: MarketSymbol | 'USDC'
         <Defs><LinearGradient id={gradient} x1="0" y1="1" x2="1" y2="0">
           <Stop offset="0" stopColor="#A844FF" /><Stop offset="1" stopColor="#00F0BA" />
         </LinearGradient></Defs>
-        <Circle cx="24" cy="24" r="24" fill="#071324" />
+        <Circle cx="24" cy="24" r="24" fill={solanaBackground} />
         <Path d="m15 12-4 5h23l4-5H15Zm-4 9 4 5h23l-4-5H11Zm4 9-4 5h23l4-5H15Z" fill={`url(#${gradient})`} />
       </> : symbol === 'BTC' ? <>
         <Circle cx="24" cy="24" r="24" fill="#FF991D" />

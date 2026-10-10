@@ -1,17 +1,19 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, ChevronDown, Eye, EyeOff, Search, X } from 'lucide-react-native';
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { Text, TextInput, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { AuthButton } from '@/components/shared/motion';
-import type { Token, TradingContext, Period, marketsApi } from '@/api/markets';
+import { TokenIcon } from '@/components/shared/markets/market-graphics';
+import type { Token, TradingContext, Period, History, marketsApi } from '@/api/markets';
 import { formatUsdc } from '@/api/wallet';
-import { useMarketHistory } from '@/hooks/use-market-history';
 import { periodChange } from './market-data';
-import { compactMarketMoney, marketChange, marketPrice } from '@/constants/captain-markets';
+import { marketChange, marketPrice } from '@/constants/captain-markets';
 import { DiscoverPalette as D } from '@/constants/theme';
 import { CaptainMarketsPalette as M } from '@/constants/theme/captain-markets';
-import { MarketChart, MarketTokenIcon } from './market-graphics';
+import { MarketTokenIcon } from './market-graphics';
+import { HarbourMarketCard, MarketHarbourBoat } from './market-harbour-card';
 import { marketStyles as s } from './market-styles';
 
 export function MarketHero({ top, query, onQuery }: { top: number; query: string; onQuery: (value: string) => void }) {
@@ -37,17 +39,30 @@ export function MarketVaultCard({ context, hidden, canToggle, onToggle, onSelect
     <AuthButton accessibilityRole="button" accessibilityLabel="View invested markets" onPress={onInvested} style={s.cardFooter} testID="market-vault-invested"><Text style={s.statusLabel}>{context ? `${context.fund.phase ?? context.fund.status} · ${context.holdings.length} positions` : 'No trading vault selected'}</Text><View style={s.vaultArrow}><ArrowRight size={20} color={M.ink} /></View></AuthButton>
   </LinearGradient>;
 }
-export const MarketRow = memo(function MarketRow({ token, context, invested, hidden, period, compact, first, last, onSelect, api, active }: { token: Token; context: TradingContext | null; invested: boolean; hidden: boolean; period: Period; compact: boolean; first: boolean; last: boolean; onSelect: (token: Token) => void; api: ReturnType<typeof marketsApi>; active: boolean }) {
-  const { history } = useMarketHistory(api, token.mint, token.tracked, period, token.price, active);
+export const MarketRow = memo(function MarketRow({ token, context, invested, hidden, period, compact, onSelect, api, active, history }: { token: Token; context: TradingContext | null; invested: boolean; hidden: boolean; period: Period; compact: boolean; onSelect: (token: Token) => void; api: ReturnType<typeof marketsApi>; active: boolean; history: History | null }) {
+  useEffect(() => { if (active && token.instrumentId) return api.watchInstrument(token.instrumentId); }, [api, active, token.instrumentId]);
   const change = periodChange(token, period, history), held = context?.holdings.find(h => h.mint === token.mint);
   const price = token.price?.priceUsd ? marketPrice(Number(token.price.priceUsd)) : '—';
   const changeText = change === null ? '—' : marketChange(Number(change));
-  return <AuthButton accessibilityRole="button" accessibilityLabel={`${token.symbol}, ${token.name}, ${price}, ${token.price?.status ?? 'unavailable'}. Open market.`} onPress={() => onSelect(token)} style={[s.row, compact && s.compactRow, first && s.firstRow, last && s.lastRow]} testID={`market-row-${token.symbol}`}>
-    <View style={s.rowTop}><MarketTokenIcon symbol={token.symbol} tracked={token.tracked} size={compact ? 32 : 36} /><View style={s.tokenName}><Text style={s.symbol}>{token.symbol}</Text><Text style={s.tokenSubtitle} numberOfLines={1}>{token.name}</Text></View>
-      {!compact ? <MarketChart token={token} period={period} history={history} small /> : null}
-      <View style={s.priceColumn}><Text style={s.price} testID={`market-price-${token.symbol}`}>{price}</Text><Text style={[s.change, { color: change === null ? D.muted : Number(change) < 0 ? D.negative : D.positive }]}>{changeText}</Text></View></View>
-    <View style={s.rowMeta}>{invested ? <><Text style={s.metaText}>Position {hidden ? '••••' : held?.valueUsdc ? `${formatUsdc(held.valueUsdc)} USDC` : 'Unavailable'}</Text><Text style={s.metaText}>{hidden ? '••••' : held?.quantity ?? '—'} {token.symbol}</Text></> : <><Text style={s.metaText}>24h vol {token.metrics.volume24h === null ? '—' : compactMarketMoney(Number(token.metrics.volume24h))}</Text><Text style={s.metaText}>Liquidity {token.metrics.liquidity === null ? '—' : compactMarketMoney(Number(token.metrics.liquidity))}</Text></>}</View>
-    {token.price?.status !== 'CURRENT' ? <Text style={[s.metaText, { marginTop: 4 }]}>{token.tracked ? 'Price updating · last known value' : 'Search result · live tracking unavailable'}</Text> : null}
-    {!last ? <View style={s.rowSeparator} pointerEvents="none" /> : null}
-  </AuthButton>;
+  const notices = [
+    !token.tradable ? token.instrumentId === 'USDC' ? 'Vault reserve' : token.tradeReason === 'registration_required' ? 'Open to trade' : 'Browse only' : null,
+    token.price?.source === 'JUPITER_TOKENS_V2' ? 'Jupiter metadata price' : null,
+    token.discovery?.metrics.status === 'STALE' ? 'Cached metrics · updating' : null,
+    token.price?.status !== 'CURRENT' ? !token.tracked ? 'Live tracking unavailable' : token.price?.priceUsd ? 'Price updating · last known value' : 'Price unavailable' : null,
+  ].filter(Boolean).join(' · ');
+  return <HarbourMarketCard active={active} compact={compact} label={`${token.symbol}, ${token.name}, ${price}, ${changeText} over ${period}, ${token.price?.status ?? 'unavailable'}${notices ? `, ${notices}` : ''}. Open market.`} onPress={() => onSelect(token)} testID={`market-row-${token.symbol}`}>
+    {(progress, tileStyle) => <>
+    <View style={[s.rowTop, compact && s.compactRowTop]}>
+      <Animated.View style={[s.tokenTile, tileStyle]}><LinearGradient colors={M.tokenGlass} style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} /><View style={s.tokenMark}>{token.instrumentId === 'SOL' ? <TokenIcon symbol="SOL" size={34} solanaBackground="transparent" /> : <MarketTokenIcon symbol={token.symbol} icon={token.icon} tracked={token.tracked} size={30} />}</View></Animated.View>
+      <View style={s.tokenName}><Text style={s.symbol} numberOfLines={1}>{token.symbol}</Text><Text style={s.tokenSubtitle} numberOfLines={1}>{token.name}</Text></View>
+      <MarketHarbourBoat progress={progress} compact={compact} />
+      <View style={s.priceColumn}>
+        <Text style={[s.price, compact && s.compactPrice]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} testID={`market-price-${token.symbol}`}>{price}</Text>
+        <View style={s.changeRow}><Text style={[s.change, { color: change === null ? D.muted : Number(change) < 0 ? D.negative : D.positive }]}>{changeText}</Text><Text style={s.changePeriod}>{period.toLowerCase()}</Text></View>
+      </View>
+    </View>
+    {invested ? <View style={s.rowMeta}><Text style={s.metaText}>Position {hidden ? '••••' : held?.valueUsdc ? `${formatUsdc(held.valueUsdc)} USDC` : 'Unavailable'}</Text><Text style={s.metaText}>{hidden ? '••••' : held?.quantity ?? '—'} {token.symbol}</Text></View> : null}
+    {notices ? <Text style={s.rowNotice}>{notices}</Text> : null}
+    </>}
+  </HarbourMarketCard>;
 });
