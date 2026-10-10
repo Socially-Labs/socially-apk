@@ -29,6 +29,7 @@ export function MarketTradeSheet({ visible, token: initialToken, context: initia
   const [input, setInput] = useState(''), [review, setReview] = useState<Preview | null>(null), [reviewing, setReviewing] = useState(false), [error, setError] = useState<string | null>(null);
   const previewAbort = useRef<AbortController | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [activating, setActivating] = useState(false);
   const { allowed, reason, limit } = marketTradeAccess(token, context, subject, side, trackingError);
   const pending = context?.pending.find(item => item.instrumentId === token.instrumentId);
   const [restoredPendingId] = useState(pending?.id);
@@ -93,6 +94,10 @@ export function MarketTradeSheet({ visible, token: initialToken, context: initia
       {review ? <View style={s.notice}><Text style={s.noticeText}>Paper trade only. The final fill uses a later market price and may differ.</Text></View> : null}
     </>}
     {reason ? <Text style={s.error}>{reason}</Text> : null}
+    {context?.testActivationAllowed && context.fund.phase === 'FUNDRAISING' ? <AuthButton accessibilityRole="button" disabled={activating} testID="market-start-test-trading" style={s.secondary} onPress={() => {
+      setActivating(true);setError(null);
+      void api.startTestTrading(context.fund.id).then(onTerminal).catch(e=>setError(e instanceof Error?e.message:'Could not start test trading.')).finally(()=>setActivating(false));
+    }}><Text style={s.secondaryText}>{activating ? 'Starting test trading…' : 'Start test trading'}</Text></AuthButton> : null}
     {reason && subject && !locked && (!context || context.fund.status === 'COMPLETED' || context.fund.phase && context.fund.phase !== 'ACTIVE' || limit?.reason === 'asset_not_allowed') ?
       <AuthButton accessibilityRole="button" onPress={() => { Keyboard.dismiss(); previewAbort.current?.abort(); onChooseVault(); }} testID="market-trade-choose-vault" style={s.secondary}><Text style={s.secondaryText}>Choose trading vault</Text></AuthButton> : null}
     {error || execution.error || (!review && draft.error) ? <Text accessibilityRole="alert" style={s.error}>{error ?? execution.error ?? draft.error}</Text> : null}

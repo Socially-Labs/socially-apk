@@ -86,3 +86,15 @@ test('token data remains available when private context fails; disposed sessions
   await assert.rejects(session.refresh(context,new AbortController().signal),/context unavailable/);
   assert.equal(seen[0].mint,mint);session.dispose();assert.equal(watched,false);
 });
+
+test('test activation uses the authenticated server route and does not bypass the UI phase gate',async()=>{
+  const calls=[];
+  const api=marketsApi(createApiClient({origin:'http://localhost:3000',getAccessToken:async()=> 'session',fetchImpl:async(url,options)=>{
+    calls.push({url,options});return Response.json({mode:'PAPER',vaultId:id,phase:'ACTIVE',testOnly:true});
+  }}));
+  await api.startTestTrading(id);
+  assert.equal(calls[0].url,`http://localhost:3000/v1/vaults/${id}/test-activation`);
+  assert.equal(calls[0].options.method,'POST');assert.equal(calls[0].options.headers.Authorization,'Bearer session');
+  assert.equal(marketTradeAccess(token,{...context,testActivationAllowed:true,fund:{...fund,phase:'FUNDRAISING'}},'captain','BUY',null).allowed,false);
+  assert.equal(marketTradeAccess(token,context,'captain','BUY',null).allowed,true);
+});

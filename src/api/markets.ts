@@ -14,7 +14,7 @@ export type History = { livePoint?: { at: string; price: string }; source?:'JUPI
   from: string; to: string; changePercent: string | null; points: { at: string; price: string }[];
   coverage: { start: string | null; end: string | null; status: 'COMPLETE' | 'PARTIAL' | 'UNAVAILABLE'; hasGaps: boolean } };
 export type Fund = { id: string; name: string; status: string; trialEnd: string; phase?: VaultPhase };
-export type TradingContext = { fund: Fund; cashUsdc: string; navUsdc: string | null;
+export type TradingContext = { fund: Fund; cashUsdc: string; navUsdc: string | null; testActivationAllowed?: boolean;
   holdings: { instrumentId: string; mint: string | null; symbol: string; quantity: string; costBasisUsdc: string; valueUsdc: string | null }[];
   policy: { maxOrderBps: number; maxPositionBps: number; allowedInstruments: string[] };
   limits: { instrumentId: string; canBuy: boolean; canSell: boolean; reason: string | null; maxBuyNotionalUsdc: string; maxSellNotionalUsdc: string; maxSellQuantity?: string }[];
@@ -81,6 +81,7 @@ function parseFund(v: unknown): Fund {
 }
 export function parseTradingContext(v: unknown): TradingContext {
   const c = envelope(v); parseFund(c.fund);
+  if(c.testActivationAllowed!==undefined && typeof c.testActivationAllowed!=='boolean')fail();
   if(c.accountingRevision!==undefined && (!text(c.accountingRevision)|| !/^(0|[1-9]\d*)$/.test(c.accountingRevision)))fail();
   if (!decimal(c.cashUsdc) || !nullable(c.navUsdc, decimal) || !Array.isArray(c.holdings) || !Array.isArray(c.limits) || !Array.isArray(c.pending) ||
     !record(c.policy) || !Number.isInteger(c.policy.maxOrderBps) || !Number.isInteger(c.policy.maxPositionBps) ||
@@ -235,6 +236,10 @@ export function marketsApi(client: ReturnType<typeof createApiClient>) {
         trialEnd: v.tradingEndsAt }));
     },
     async context(id: string, signal?: AbortSignal, instrumentId?: string) { const c = parseTradingContext(await client.request(`${fundPath(id)}/trading-context${instrumentId ? `?instrumentId=${encodeURIComponent(instrumentId)}` : ""}`, { signal })); if (c.fund.id !== id) fail(); return c; },
+    async startTestTrading(id: string, signal?: AbortSignal) {
+      const result=envelope(await client.request(`/v1/vaults/${id}/test-activation`,{method:'POST',signal}));
+      if(result.vaultId!==id||result.phase!=='ACTIVE'||result.testOnly!==true)fail();
+    },
     async watchlist(signal?: AbortSignal) { const r = envelope(await client.request('/v0/me/watchlist', { signal })); if (!Array.isArray(r.mints) || !r.mints.every(mint)) fail(); return r.mints as string[]; },
     async savedMarkets(signal?: AbortSignal) {
       const r = envelope(await client.request('/v0/me/watchlist', { signal }));
