@@ -148,3 +148,35 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+Captain market discovery is gated by `EXPO_PUBLIC_MARKET_DISCOVERY_V1_ENABLED`. See [the API contract](../backend/docs/market-discovery-api.md) and [rollout evidence](../backend/docs/paper-trading-discovery-implementation.md) before enabling it.
+
+When enabled, Captain Discover opens Jupiter **Top traded · 24H**. Supported, Trending, Invested and Saved remain available in the feed picker. The API's parameterless default remains Supported for compatibility. Restart/reload Expo after changing the public flag.
+
+Discover uses cursor-based infinite scrolling in batches of ten. The first batch
+shows token names and prices as soon as metadata arrives; cached charts load
+independently and chart failures never hide the catalog. Scrolling to the bottom
+loads the next batch with an inline spinner;
+there are no page controls. Already displayed rows remain visible during loading
+or a failed append. Retries do not duplicate rows, and background catalog refreshes
+do not replace an expanded snapshot with page one. Refresh markets explicitly
+starts a new snapshot.
+
+Public catalog pages are coalesced and cached for 15–60 seconds per API instance;
+chart batches for 30 seconds with a bounded 16-batch cache. Visible rows subscribe
+to the existing price stream without individual tracking/token/history HTTP polls.
+Tracking and Birdeye backfill begin when the trade sheet opens. Market charts show
+the past 24 hours only; unavailable history produces an explicit empty state and
+does not hold the loader open. Token icons keep their existing memory/disk cache
+and fallback while remote images load. See
+[24-hour chart configuration and limits](../backend/docs/market-charts.md).
+
+The existing Discover trade sheet registers the selected mint on opening, retains
+its instrument identity between 15-second tracking lease renewals, and refreshes
+its executable price and selected-instrument vault limits every five seconds while
+visible. Buy and Sell use the selected vault's authenticated preview, submission
+and order-status routes; current vault rounds use `/v1/vaults/:id/...`. Discovery
+metadata prices cannot enable submission. Cancelled/completed vaults, fundraising
+locks and legacy token allowlists remain enforced, with a vault-selector action
+when a different trading vault is needed. `pnpm test:market-api` covers this wiring,
+warming recovery, native abort signals and eligibility explanations.
