@@ -117,7 +117,7 @@ export function VaultDetailScreen() {
    </View>:null}
    {position?.isCaptain?<View style={s.card}><VaultArtwork key={`${data.subject}:${id}`} api={data.api} id={id} onSaved={data.refresh} /></View>:null}
    {vault.phase==='ACTIVE'&&position?.isCaptain?<Action onPress={()=>router.push({pathname:'/explore',params:{vaultId:id}})}>Open trading markets</Action>:null}
-   <View style={s.card}><Text style={s.cardTitle}>Round terms</Text><RoundTerms /><Text selectable style={s.caption}>Terms v{vault.termsVersion} · {vault.termsHash}</Text></View>
+   <View style={s.card}><Text style={s.cardTitle}>Round terms</Text><RoundTerms universeMode={vault.universeMode} /><Text selectable style={s.caption}>Terms v{vault.termsVersion} · {vault.termsHash}</Text></View>
   </>:!data.loading?<Text style={s.copy}>This vault is unavailable. Check the link or return to Discover.</Text>:null}
  </ScrollView></Frame>;
 }

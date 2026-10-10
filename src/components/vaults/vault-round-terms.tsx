@@ -1,8 +1,9 @@
 import { StyleSheet,Text,View } from 'react-native';
 import { InterFont } from '@/constants/fonts';
 import { DashboardSheetTheme as C } from '@/constants/theme/dashboard';
-export function RoundTerms() {
+export function RoundTerms({universeMode}:{universeMode?:'LEGACY_ALLOWLIST'|'DYNAMIC_SPOT'}={}) {
  return <View style={s.section}>
+  <Text style={s.copy}>{universeMode==='DYNAMIC_SPOT'?'The Captain may trade eligible Solana spot assets under this vault’s risk limits. Availability depends on current prices and market eligibility.':'Trading follows this vault’s approved asset policy and risk limits.'}</Text>
   <Text style={s.copy}>Minimum total funding: 1,000 USDC, including the Captain’s 100. Maximum accepted capital: 30,000 USDC. Crew minimum: 50 USDC.</Text>
   <Text style={s.copy}>Trading starts after the funding deadline if the minimum is met. Capital stays locked during trading. Failed funding returns principal through a claim.</Text>
   <Text style={s.copy}>Crew may cancel their full contribution before funding closes. Captain cancellation closes after the first Crew commitment. No top-ups or emergency exits.</Text>
