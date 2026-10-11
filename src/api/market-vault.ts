@@ -6,3 +6,9 @@ export function withVaultIdentity(context: TradingContext, selected: Fund): Trad
   return { ...context, fund: { ...context.fund, phase: context.fund.phase ?? selected.phase,
     avatarUrl: selected.avatarUrl, bannerUrl: selected.bannerUrl } };
 }
+
+/** Cash is buying power only while buys are open; token limits still apply. */
+export function vaultBuyingPower(context: TradingContext | null, now = Date.now()): string | null {
+  if (!context || context.fund.status !== 'ACTIVE' || context.fund.phase && context.fund.phase !== 'ACTIVE' || Date.parse(context.fund.trialEnd) <= now) return null;
+  return context.cashUsdc;
+}

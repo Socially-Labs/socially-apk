@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowRight, ChevronDown, Eye, EyeOff, Search, X } from 'lucide-react-native';
+import { Search, X } from 'lucide-react-native';
 import { memo, useEffect } from 'react';
 import { Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -30,15 +30,8 @@ export function MarketHero({ top, query, onQuery }: { top: number; query: string
   </View>;
 }
 
-export function MarketVaultCard({ context, hidden, canToggle, onToggle, onSelect, onInvested }: { context: TradingContext | null; hidden: boolean; canToggle: boolean; onToggle: () => void; onSelect: () => void; onInvested: () => void }) {
-  return <LinearGradient colors={M.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.vaultCard} testID="market-vault-card">
-    <View style={s.vaultHeader}><AuthButton accessibilityRole="button" accessibilityLabel="Select trading vault" testID="market-vault-select" onPress={onSelect} style={s.vaultSelector}><Text numberOfLines={1} style={s.vaultName}>{context?.fund.name ?? 'Select your vault'}</Text><ChevronDown size={16} color={M.ink} /></AuthButton>
-      <AuthButton accessibilityRole="button" accessibilityLabel={hidden ? 'Show vault balances' : 'Hide vault balances'} testID="market-balance-visibility" disabled={!canToggle} onPress={onToggle} style={s.vaultVisibility}>{hidden ? <EyeOff size={19} color={M.ink} /> : <Eye size={19} color={M.ink} />}</AuthButton></View>
-    <Text style={s.heroLabel}>Vault reserve</Text><Text testID="market-available-balance" style={s.balance} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{hidden ? '••••••' : context ? `${formatUsdc(context.cashUsdc)} USDC` : '—'}</Text>
-    <Text style={s.heroCaption}>{context ? `Paper trading${context.pending.length ? ` · ${context.pending.length} pending orders` : ''}` : 'Create or select a vault to trade'}</Text>
-    <AuthButton accessibilityRole="button" accessibilityLabel="View invested markets" onPress={onInvested} style={s.cardFooter} testID="market-vault-invested"><Text style={s.statusLabel}>{context ? `${context.fund.phase ?? context.fund.status} · ${context.holdings.length} positions` : 'No trading vault selected'}</Text><View style={s.vaultArrow}><ArrowRight size={20} color={M.ink} /></View></AuthButton>
-  </LinearGradient>;
-}
+export { MarketVaultCard } from './market-vault-card';
+
 export const MarketRow = memo(function MarketRow({ token, context, invested, hidden, period, compact, onSelect, api, active, history }: { token: Token; context: TradingContext | null; invested: boolean; hidden: boolean; period: Period; compact: boolean; onSelect: (token: Token) => void; api: ReturnType<typeof marketsApi>; active: boolean; history: History | null }) {
   useEffect(() => { if (active && token.instrumentId) return api.watchInstrument(token.instrumentId); }, [api, active, token.instrumentId]);
   const change = periodChange(token, period, history), held = context?.holdings.find(h => h.mint === token.mint);
