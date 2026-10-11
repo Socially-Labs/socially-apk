@@ -28,7 +28,10 @@ const shapes: Record<CrewPeriod, number[]> = {
 export function crewPerformance(period: CrewPeriod) {
   const gainCents = periodGain[period];
   const startCents = crewTotalCents - gainCents;
+  const end = Date.parse('2026-10-11T12:00:00.000Z'); // Fixed preview history, never presented as live valuations.
+  const days = period === '7D' ? 7 : period === '30D' ? 30 : period === '90D' ? 90 : 120;
   return {
+    timestamps: shapes[period].map((_, index, points) => new Date(end - (1 - index / (points.length - 1)) * days * 86400000).toISOString()),
     gainCents, percent: gainCents / startCents * 100,
     values: shapes[period].map(point => startCents + point * gainCents),
   };
