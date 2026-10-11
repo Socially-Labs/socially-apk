@@ -1,5 +1,7 @@
+import { KeyboardScrollView } from '@/components/shared/keyboard/keyboard-scroll-view';
+import { useKeyboardVisible } from '@/components/shared/keyboard/use-keyboard-visible';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming,
@@ -19,7 +21,8 @@ const SETTLE = { duration: S.openDuration, dampingRatio: 0.94 };
 const EXIT = Easing.bezier(0.4, 0, 1, 1);
 
 export function DashboardSheet(props: SheetProps) {
-  const { onDismiss } = props;
+  const { onDismiss, onClose } = props;
+  const close = useCallback(() => { Keyboard.dismiss(); onClose(); }, [onClose]);
   const [presented, setPresented] = useState(props.visible);
   const visible = useRef(props.visible);
   useLayoutEffect(() => { visible.current = props.visible; }, [props.visible]);
@@ -32,8 +35,8 @@ export function DashboardSheet(props: SheetProps) {
 
   return (
     <Modal visible={presented} transparent animationType="none" statusBarTranslucent navigationBarTranslucent
-      onRequestClose={props.onClose}>
-      {presented ? <SheetPanel {...props} onExited={finishDismiss} /> : null}
+      onRequestClose={close}>
+      {presented ? <SheetPanel {...props} onClose={close} onExited={finishDismiss} /> : null}
     </Modal>
   );
 }
@@ -42,8 +45,12 @@ function SheetPanel({ visible, title, header, children, footer, onClose, onExite
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
-  const bottom = Math.max(insets.bottom, S.bottomInset);
-  const maxHeight = Math.min(height * 0.8, height - insets.top - bottom - 24);
+  const keyboardVisible = useKeyboardVisible();
+  const [availableHeight, setAvailableHeight] = useState(height);
+  const compact = keyboardVisible || availableHeight < 500;
+  const bottom = compact ? S.bottomInset : Math.max(insets.bottom, S.bottomInset);
+  // The measured child already excludes iOS KAV padding / Android window resize.
+  const maxHeight = Math.max(0, Math.min(compact ? availableHeight : availableHeight * 0.8, availableHeight - insets.top - bottom - (compact ? 8 : 24)));
   const progress = useSharedValue(reduceMotion ? 1 : 0);
   const drag = useSharedValue(0);
   const dragStart = useSharedValue(0);
@@ -109,6 +116,7 @@ function SheetPanel({ visible, title, header, children, footer, onClose, onExite
   return (
     <GestureHandlerRootView style={styles.root} testID="dashboard-sheet-overlay">
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.available} onLayout={event => setAvailableHeight(event.nativeEvent.layout.height)}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} pointerEvents="none"
         testID="dashboard-sheet-backdrop" />
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} disabled={!visible}
@@ -132,17 +140,18 @@ function SheetPanel({ visible, title, header, children, footer, onClose, onExite
         </View>
           </View>
         </GestureDetector>
-        <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} bounces={false}
+        <KeyboardScrollView style={styles.body} contentContainerStyle={styles.bodyContent} bounces={false}
           keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           nestedScrollEnabled
           showsVerticalScrollIndicator={false} testID="dashboard-sheet-content">
           {content.children}
-        </ScrollView>
+        </KeyboardScrollView>
         <View style={styles.footer} testID="dashboard-sheet-footer">
           {content.footer ?? <AuthButton accessibilityRole="button" testID="dashboard-sheet-done" onPress={onClose}
             disabled={!visible} style={styles.done}><Text style={styles.doneText}>Done</Text></AuthButton>}
         </View>
       </Animated.View>
+      </View>
       </KeyboardAvoidingView>
     </GestureHandlerRootView>
   );
@@ -150,6 +159,7 @@ function SheetPanel({ visible, title, header, children, footer, onClose, onExite
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  available: { flex: 1, justifyContent: 'flex-end' },
   overlay: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: S.inset },
   backdrop: { backgroundColor: S.backdrop },
   sheet: { width: '100%', maxWidth: Dashboard.maxWidth, alignSelf: 'center', flexShrink: 1,

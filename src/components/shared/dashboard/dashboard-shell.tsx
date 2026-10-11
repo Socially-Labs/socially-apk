@@ -3,15 +3,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, type ReactNode } from 'react';
-import { Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View, useWindowDimensions, type ScrollViewProps } from 'react-native';
 import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SailingRefresh } from '@/components/shared/refresh/sailing-refresh';
 import { Dashboard, DiscoverPalette, WalletPalette } from '@/constants/theme';
 import { Motion } from '@/constants/motion';
 
-export function DashboardShell({ children, testID, variant = 'default', keyboardAvoided = false }: {
-  children: ReactNode; testID?: string; variant?: 'default' | 'wallet' | 'crew' | 'captain'; keyboardAvoided?: boolean;
+export function DashboardShell({ children, testID, variant = 'default', keyboardAvoided = false, fixed = false, onRefresh, refreshing = false }: {
+  children: ReactNode; testID?: string; variant?: 'default' | 'wallet' | 'crew' | 'captain'; keyboardAvoided?: boolean; fixed?: boolean; onRefresh?: () => void; refreshing?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
@@ -42,11 +43,14 @@ export function DashboardShell({ children, testID, variant = 'default', keyboard
           style={[styles.fade, { top: Math.max(240, height * 0.32), height: height * 0.3 }, scenicHome && { top: sceneryHeight - 150, height: 150 }, variant === 'wallet' && { top: height * 0.24, height: height * 0.28 }]} />
       </View>
   );
-  return (
-    <View style={styles.screen} testID={testID}>
-      <StatusBar style="dark" />
-      {scenicHome ? null : scenery}
-      <ScrollView
+  const content = (scrollProps: ScrollViewProps = {}) => fixed ? <View testID="home-fixed"
+    accessibilityActions={scrollProps.accessibilityActions} onAccessibilityAction={scrollProps.onAccessibilityAction}
+    style={[styles.scroll, {
+        paddingHorizontal: 20, paddingTop: Math.max(insets.top + 8, height < 720 ? 16 : 54),
+        paddingBottom: Math.max(insets.bottom + 84, 114),
+      }]}>
+        <Animated.View style={[styles.measure, styles.scroll, contentStyle]}>{children}</Animated.View>
+      </View> : <ScrollView {...scrollProps}
         testID={scenicHome ? 'home-scroll' : undefined}
         keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         automaticallyAdjustKeyboardInsets={!keyboardAvoided}
@@ -55,9 +59,15 @@ export function DashboardShell({ children, testID, variant = 'default', keyboard
           paddingHorizontal: variant === 'wallet' || scenicHome ? 20 : 15,
           paddingTop: Math.max(insets.top + 8, variant === 'wallet' ? 48 : 54), paddingBottom: Math.max(insets.bottom + 120, 142),
         }]}>
-        {scenicHome ? scenery : null}
         <Animated.View style={[styles.measure, contentStyle]}>{children}</Animated.View>
-      </ScrollView>
+      </ScrollView>;
+  return (
+    <View style={styles.screen} testID={testID}>
+      <StatusBar style="dark" />
+      {scenery}
+      {onRefresh ? <SailingRefresh refreshing={refreshing} onRefresh={onRefresh} topInset={insets.top}>
+        {scrollProps => content(scrollProps)}
+      </SailingRefresh> : content()}
     </View>
   );
 }
