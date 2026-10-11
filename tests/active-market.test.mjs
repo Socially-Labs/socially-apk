@@ -98,3 +98,42 @@ test('test activation uses the authenticated server route and does not bypass th
   assert.equal(marketTradeAccess(token,{...context,testActivationAllowed:true,fund:{...fund,phase:'FUNDRAISING'}},'captain','BUY',null).allowed,false);
   assert.equal(marketTradeAccess(token,context,'captain','BUY',null).allowed,true);
 });
+
+test('existing fundraising test vault activates automatically and reloads authoritative trading limits',async()=>{
+  const calls=[];let active=false;
+  const api=marketsApi(createApiClient({origin:'http://localhost:3000',getAccessToken:async()=> 'session',fetchImpl:async(url,options)=>{
+    calls.push({url,options});
+    if(url.endsWith('/test-activation')){
+      assert.equal(options.method,'POST');assert.equal(options.headers.Authorization,'Bearer session');
+      active=true;return Response.json({mode:'PAPER',vaultId:id,phase:'ACTIVE',testOnly:true});
+    }
+    return Response.json(active?{...context,testActivationAllowed:false}:{...context,testActivationAllowed:true,
+      fund:{...fund,phase:'FUNDRAISING'},limits:[{...limit,canBuy:false,reason:'fund_not_tradable'}]});
+  }}));
+  const result=await api.context(id,undefined,instrumentId);
+  assert.equal(calls.length,3);
+  assert.equal(calls[0].url,calls[2].url);
+  assert.equal(new URL(calls[2].url).searchParams.get('instrumentId'),instrumentId);
+  assert.equal(result.fund.phase,'ACTIVE');
+  assert.equal(marketTradeAccess(token,result,'captain','BUY',null).allowed,true);
+});
+
+test('fundraising remains gated unless the backend explicitly enables test activation',async()=>{
+  for(const enabled of [false,undefined]){
+    let calls=0;
+    const api=marketsApi(createApiClient({origin:'http://localhost:3000',getAccessToken:async()=> 'session',fetchImpl:async()=>{
+      calls++;return Response.json({...context,testActivationAllowed:enabled,fund:{...fund,phase:'FUNDRAISING'}});
+    }}));
+    const result=await api.context(id);
+    assert.equal(calls,1);assert.equal(result.fund.phase,'FUNDRAISING');
+    assert.equal(marketTradeAccess(token,result,'captain','BUY',null).allowed,false);
+  }
+});
+
+test('failed test activation never presents a fundraising vault as tradable',async()=>{
+  const api=marketsApi(createApiClient({origin:'http://localhost:3000',getAccessToken:async()=> 'session',fetchImpl:async(url)=>
+    url.endsWith('/test-activation')?Response.json({error:'fund_not_tradable',message:'This vault is paused'},{status:409}):
+      Response.json({...context,testActivationAllowed:true,fund:{...fund,phase:'FUNDRAISING'}})
+  }));
+  await assert.rejects(api.context(id),/paused/);
+});

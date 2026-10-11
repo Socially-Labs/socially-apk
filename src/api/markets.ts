@@ -260,7 +260,23 @@ export function marketsApi(client: ReturnType<typeof createApiClient>) {
         status: v.riskState === 'FROZEN' ? 'FROZEN' : v.phase === 'ACTIVE' ? 'ACTIVE' : 'COMPLETED',
         trialEnd: v.tradingEndsAt }));
     },
-    async context(id: string, signal?: AbortSignal, instrumentId?: string) { const c = parseTradingContext(await client.request(`${fundPath(id)}/trading-context${instrumentId ? `?instrumentId=${encodeURIComponent(instrumentId)}` : ""}`, { signal })); if (c.fund.id !== id) fail(); return c; },
+    async context(id: string, signal?: AbortSignal, instrumentId?: string) {
+      const path = `${fundPath(id)}/trading-context${instrumentId ? `?instrumentId=${encodeURIComponent(instrumentId)}` : ''}`;
+      const read = async () => {
+        const context = parseTradingContext(await client.request(path, { signal }));
+        if (context.fund.id !== id) fail();
+        return context;
+      };
+      const context = await read();
+      // Only the server can enable the development override. Activate through
+      // its authenticated mutation, then use the real phase and trading limits.
+      if (context.testActivationAllowed === true && context.fund.phase === 'FUNDRAISING') {
+        const result = envelope(await client.request(`/v1/vaults/${id}/test-activation`, { method: 'POST', signal }));
+        if (result.vaultId !== id || result.phase !== 'ACTIVE' || result.testOnly !== true) fail();
+        return read();
+      }
+      return context;
+    },
     async startTestTrading(id: string, signal?: AbortSignal) {
       const result=envelope(await client.request(`/v1/vaults/${id}/test-activation`,{method:'POST',signal}));
       if(result.vaultId!==id||result.phase!=='ACTIVE'||result.testOnly!==true)fail();
