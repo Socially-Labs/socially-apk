@@ -1,3 +1,4 @@
+import { getApiOrigin } from '@/api/runtime-origin';
 import { useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState } from 'react';
 import { AppState } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -17,7 +18,7 @@ export function useLiveVault(scope='create') {
  const latest=useRef(identity),session=useRef(auth);
  useLayoutEffect(()=>{latest.current=identity;session.current=auth;},[identity,auth]);
  const {getAccessToken}=auth;
- const api=useMemo(()=>liveVaultsApi(createApiClient({origin:process.env.EXPO_PUBLIC_API_URL,getAccessToken,timeoutMs:60000})),[getAccessToken]);
+ const api=useMemo(()=>liveVaultsApi(createApiClient({origin:getApiOrigin(),getAccessToken,timeoutMs:60000})),[getAccessToken]);
  const [op,setOp]=useState<LiveOperation|null>(null),[attempt,setAttempt]=useState<Attempt|null>(null),[ready,setReady]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);
  const storage=useRef<string|null>(null),lock=useRef(false),epoch=useRef(0);
  useEffect(()=>{

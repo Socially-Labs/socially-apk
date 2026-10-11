@@ -1,3 +1,4 @@
+import { KeyboardScrollView } from '@/components/shared/keyboard/keyboard-scroll-view';
 import { useAccountSettings } from '@/components/settings/settings-provider';
 import { DashboardSheet } from '@/components/shared/dashboard/dashboard-sheet';
 import { selectionFeedback } from '@/components/shared/feedback';
@@ -11,7 +12,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ArrowRight, ChevronDown, ChevronUp, Info } from 'lucide-react-native';
 import { useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InvestmentCaptainSummary, InvestmentHero } from './captain-investment-header';
 import { CaptainAvatar } from './discover-ui';
@@ -48,7 +49,7 @@ function CaptainInvestment({ captain }: { captain: DiscoverCaptain }) {
 
   return <KeyboardAvoidingView style={S.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="captain-investment-screen">
     <StatusBar style="dark" />
-    <ScrollView style={S.scroll} contentContainerStyle={S.content} keyboardShouldPersistTaps="handled"
+    <KeyboardScrollView style={S.scroll} contentContainerStyle={S.content} keyboardShouldPersistTaps="handled"
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       testID="investment-scroll" showsVerticalScrollIndicator={false}>
       <InvestmentHero captain={captain} topInset={insets.top} onBack={back} />
@@ -96,7 +97,7 @@ function CaptainInvestment({ captain }: { captain: DiscoverCaptain }) {
           <Text style={S.caption}>Investments can lose value. Sample returns do not predict future performance.</Text>
         </View>
       </View>
-    </ScrollView>
+    </KeyboardScrollView>
     <View style={[S.footer, { paddingBottom: Math.max(insets.bottom, 12) }]} testID="investment-footer">
       <View style={S.footerInner}><AuthButton accessibilityRole="button" accessibilityState={{ disabled: Boolean(error) }} aria-disabled={Boolean(error)} disabled={Boolean(error)} onPress={review} style={[S.cta, error && S.disabled]} testID="investment-review">
         <Text style={S.ctaText}>{error ? 'Enter a valid amount' : `Review $${displayAmount} USDC`}</Text><ArrowRight size={18} color={D.heroInk} />

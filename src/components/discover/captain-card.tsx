@@ -17,10 +17,10 @@ export function CaptainCard({ captain, period, saved, onSave, onOpen, style }: {
       accessibilityLabel={`View Captain ${captain.name}. ${periodLabel(period)} ${percent(captain.returns[period])}. Maximum drawdown ${drawdown(captain, period).toFixed(1)} percent.`} style={styles.compactRow}>
       <CaptainAvatar captain={captain} size={compact ? 36 : 42} />
       <View style={styles.identityCopy}><Text style={styles.captainName} numberOfLines={1}>{captain.name}</Text><Text style={styles.fundName} numberOfLines={1}>{captain.fund}</Text></View>
-      <View style={{ width: compact ? 28 : 46 }}><PerformanceChart captain={captain} period={period} height={34} /></View>
       <View style={styles.rowReturn}><Text style={[styles.cardReturn, { color: captain.returns[period] >= 0 ? D.positive : D.negative }]}>{percent(captain.returns[period])}</Text><Text style={styles.metricLabel}>{period === 'ALL' ? 'All time' : period} return</Text><Text style={styles.rowDrawdown}>−{drawdown(captain, period).toFixed(1)}% drawdown</Text></View>
       <ChevronRight size={17} color={D.ink} />
     </AuthButton>
+    <View style={{ marginTop: 4 }}><PerformanceChart captain={captain} period={period} height={48} /></View>
     <View style={styles.rowFooter}>
       <Text style={styles.metaText}>{money(captain.aum)} <Text style={styles.metaLabel}>AUM</Text> · {captain.crew} <Text style={styles.metaLabel}>Crew</Text></Text>
       <RiskLabel captain={captain} />

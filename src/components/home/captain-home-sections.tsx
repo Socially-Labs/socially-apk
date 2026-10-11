@@ -15,7 +15,7 @@ export function CaptainActions({ dashboard, hidden, compact, onPanel }: { dashbo
   const actions = [
     { kind: 'manage' as const, label: 'Manage vaults', caption: `${dashboard.vaultCount} vaults · ${dashboard.activeVaults} active`, icon: FundVaultIcon },
     { kind: 'crew' as const, label: 'Your Crew', caption: `${dashboard.crewMembers} members`, icon: Users },
-    { kind: 'earnings' as const, label: 'Earnings', caption: hidden ? 'Balances hidden' : `$${formatUsdc(dashboard.earnings.earnedUsdc)} earned`, icon: ChartNoAxesColumnIncreasing },
+    { kind: 'earnings' as const, label: 'Earnings', caption: hidden ? 'Balances hidden' : `$${formatUsdc(dashboard.earnings.earnedUsdc)} in fees`, icon: ChartNoAxesColumnIncreasing },
     { kind: 'create' as const, label: 'Create vault', caption: 'Start a paper strategy', icon: Plus },
   ];
   return <View style={styles.actions} testID="captain-actions">{actions.map(({ kind, label, caption, icon: Icon }) => {

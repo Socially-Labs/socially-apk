@@ -1,3 +1,4 @@
+import CrewCaptainScreen from './crew-captain-screen';
 import { selectionFeedback } from '@/components/shared/feedback';
 import { AuthButton } from '@/components/shared/motion';
 import { discoverCaptains, drawdown, hasPeriod, periods, type DiscoverCaptain, type Period } from '@/constants/discover';
@@ -21,6 +22,7 @@ function backToDiscover() { if (router.canGoBack()) router.back(); else router.r
 
 export default function CaptainScreen() {
   const { id, period: requested } = useLocalSearchParams<{ id: string; period?: string }>();
+  if (typeof id === 'string' && /^[a-f0-9]{8}-[a-f0-9-]{27}$/i.test(id)) return <CrewCaptainScreen key={id} id={id} />;
   const captain = discoverCaptains.find(item => item.id === id);
   if (!captain) return <DiscoverSurface><View style={styles.missing}><Text style={S.title}>Captain not found</Text><Text style={S.body}>This Captain isn’t part of the current preview.</Text><AuthButton accessibilityRole="button" onPress={backToDiscover} style={S.button}><Text style={S.buttonText}>Back to Discover</Text></AuthButton></View></DiscoverSurface>;
   return <CaptainProfile key={captain.id} captain={captain} requested={requested} />;
