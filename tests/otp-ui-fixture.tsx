@@ -24,7 +24,8 @@ window.otpVerifyCalls = 0;
 
 function Harness() {
   const [authenticated, setAuthenticated] = useState(window.otpRestored ?? false);
-  useFonts(AppFontMap);
+  const [fontsLoaded] = useFonts(AppFontMap);
+  if (!fontsLoaded) return null;
   return <SafeAreaProvider><GestureHandlerRootView style={{ flex: 1 }}><TestAccessProvider>
     <AuthContext.Provider value={{ isReady: true, isConfigured: true, isAuthenticated: authenticated,
       accountId: authenticated ? 'did:privy:fixture' : null, email: authenticated ? 'crew@example.com' : null,

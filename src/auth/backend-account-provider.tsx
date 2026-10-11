@@ -1,3 +1,4 @@
+import { getApiOrigin } from '@/api/runtime-origin';
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type PropsWithChildren } from 'react';
 import { createApiClient, type AccountRole, type BackendAccount, type ProfilePatch } from '@/api/client';
 import { AccountStore, idleAccount, type AccountState } from '@/api/account-store';
@@ -24,7 +25,7 @@ export function BackendAccountProvider({ children }: PropsWithChildren) {
   const { accountId, isReady, isAuthenticated, getAccessToken } = useAuth();
   const subject = isReady && isAuthenticated ? accountId : null;
   const [session] = useState(() => new TokenSource(getAccessToken));
-  const [store] = useState(() => new AccountStore(createApiClient({ origin: process.env.EXPO_PUBLIC_API_URL,
+  const [store] = useState(() => new AccountStore(createApiClient({ origin: getApiOrigin(),
     getAccessToken: session.read })));
   useEffect(() => { session.update(getAccessToken); }, [session, getAccessToken]);
   useEffect(() => { store.start(subject); return store.stop; }, [store, subject]);

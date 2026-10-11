@@ -11,10 +11,11 @@ export function AuthOtpInput({ input, code, onChange, busy, focused, invalid, te
   const reduceMotion = useReducedMotion();
   const shake = useSharedValue(0);
   useEffect(() => {
+    if (busy) return;
     // Reanimated's web enter transition reparents the field; focus after it settles.
-    const timeout = setTimeout(() => input.current?.focus(), reduceMotion ? 0 : 300);
+    const timeout = setTimeout(() => input.current?.focus(), Platform.OS === 'web' && !reduceMotion ? 300 : 0);
     return () => clearTimeout(timeout);
-  }, [input, reduceMotion]);
+  }, [input, reduceMotion, busy]);
   useEffect(() => {
     if (invalid && !reduceMotion) shake.set(withSequence(withTiming(-4, { duration: 55 }), withTiming(4, { duration: 70 }), withTiming(-2, { duration: 60 }), withTiming(0, { duration: 60 })));
     else shake.set(0);
@@ -27,7 +28,7 @@ export function AuthOtpInput({ input, code, onChange, busy, focused, invalid, te
     </View>
     <TextInput ref={input} testID={`${testIDPrefix}-code`} accessibilityLabel="6-digit verification code"
       accessibilityHint="Enter or paste the six digits from your email. Verification starts automatically."
-      style={styles.input} value={code} onChangeText={onChange} editable={!busy} autoFocus
+      style={styles.input} value={code} onChangeText={onChange} editable={!busy}
       onFocus={onFocus} onBlur={onBlur} keyboardType="number-pad" inputMode="numeric"
       autoComplete={Platform.OS === 'ios' ? undefined : 'one-time-code'} textContentType={Platform.OS === 'ios' ? 'oneTimeCode' : undefined}
       autoCapitalize="none" autoCorrect={false} spellCheck={false} maxLength={12}

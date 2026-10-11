@@ -82,10 +82,6 @@ function CredentialsPanel({ progress, testIDPrefix = 'auth', onFocusChange }: {
   const exit = reduceMotion ? undefined : FadeOut.duration(120);
 
   useEffect(() => {
-    if (verifying) input.current?.focus();
-  }, [verifying]);
-
-  useEffect(() => {
     if (!verifying) return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (!busy) changeEmail();
