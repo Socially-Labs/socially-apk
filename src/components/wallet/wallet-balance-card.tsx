@@ -25,7 +25,7 @@ export function WalletBalanceCard({ visible, canToggle, compact, error, tradingE
     <Text style={styles.balance} testID="wallet-balance" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>{!visible ? '••••••' : totalUsd === null ? '—' : `$${formatUsdc(totalUsd)}`}</Text>
     {visible && totalUsd === null && !error ? <Text style={styles.changeCaption}>{valuationLoading ? 'Fetching wallet valuation…' : 'Fresh market prices unavailable. Pull to refresh.'}</Text> : null}
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-    <Text style={styles.tradingHeading}>Paper trading funds · Separate from wallet</Text>
+    <Text style={styles.tradingHeading}>Trading funds</Text>
     {tradingError ? <Text accessibilityRole="alert" style={styles.error}>{tradingError}</Text> : null}
     <View style={[styles.breakdown, compact && styles.compactBreakdown]}>
       <View style={[styles.bucket, compact && styles.compactBucket]}><View style={[styles.bucketIcon, compact && styles.compactBucketIcon]}><ReserveIcon size={compact ? 15 : 17} color={W.ink} /></View><View style={styles.bucketCopy}><Text style={[styles.bucketValue, compact && styles.compactBucketValue]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{visible ? formatUsdc(available) : '••••'}</Text><Text style={[styles.bucketLabel, compact && styles.compactBucketLabel]}>Trading cash</Text></View></View>
