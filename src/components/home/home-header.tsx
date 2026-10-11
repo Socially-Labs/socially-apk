@@ -8,8 +8,8 @@ import { useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NotificationAnchor } from './notification-popover';
 
-export function HomeHeader({ name, avatar, photoUri, greeting, role = 'crew', onProfile, onNotifications, unreadCount, notificationsOpen }: {
-  name: string; avatar: ProfileAvatarKind; photoUri?: string | null; greeting: string; onProfile: () => void;
+export function HomeHeader({ name, avatar, photoUri, fallbackId, greeting, role = 'crew', onProfile, onNotifications, unreadCount, notificationsOpen }: {
+  name: string; avatar: ProfileAvatarKind; photoUri?: string | null; fallbackId: number; greeting: string; onProfile: () => void;
   onNotifications: (anchor: NotificationAnchor) => void; unreadCount: number; notificationsOpen: boolean;
   role?: 'crew' | 'captain';
 }) {
@@ -24,7 +24,7 @@ export function HomeHeader({ name, avatar, photoUri, greeting, role = 'crew', on
   return (
     <View style={styles.header}>
       <AuthButton accessibilityRole="button" accessibilityLabel="Open your profile" onPress={onProfile} style={styles.avatar}>
-        <ProfileAvatar name={name} avatar={avatar} photoUri={photoUri} size={47} />
+        <ProfileAvatar name={name} avatar={avatar} photoUri={photoUri} fallbackId={fallbackId} size={47} />
       </AuthButton>
       <View style={styles.greeting}>
         <Text style={styles.hello} accessibilityRole="header">Hello, {greeting}</Text>

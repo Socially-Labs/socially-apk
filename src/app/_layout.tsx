@@ -16,6 +16,8 @@ import { SplashOverlay } from '@/components/auth/splash/splash-screen';
 import { BootLoadingScreen } from '@/components/auth/splash/boot-loading-screen';
 import { IntroCompleteContext } from '@/components/auth/intro-context';
 import { AppFontMap } from '@/constants/fonts';
+import { NotificationProvider } from '@/components/notifications/notification-provider';
+import { ShipLoader } from '@/components/shared/refresh/ship-loader';
 import { SettingsProvider } from '@/components/settings/settings-provider';
 import { DiscoverProvider } from '@/components/discover/discover-provider';
 import { useAppAccess } from '@/hooks/use-app-access';
@@ -37,7 +39,8 @@ export default function RootLayout() {
 
 function AuthNavigator() {
   const reduceMotion = useReducedMotion();
-  const { canEnterApp } = useAppAccess();
+  const { canEnterApp, profileLoading } = useAppAccess();
+  if (profileLoading) return <View style={{ flex: 1, justifyContent: 'center' }}><ShipLoader label="Loading your account…" /></View>;
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Protected guard={!canEnterApp}>
@@ -110,7 +113,7 @@ function AppLayout() {
           accessibilityElementsHidden={!splashComplete}
           importantForAccessibility={splashComplete ? 'auto' : 'no-hide-descendants'}>
           <IntroCompleteContext.Provider value={splashComplete}>
-            <DiscoverProvider><AuthNavigator /></DiscoverProvider>
+            <DiscoverProvider><NotificationProvider><AuthNavigator /></NotificationProvider></DiscoverProvider>
           </IntroCompleteContext.Provider>
         </View>
         {introMode === 'sign-in' && !splashComplete && <SplashOverlay onComplete={completeSplash} />}

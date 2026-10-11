@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { ArrowDown, CheckCircle2, ChevronRight, Clock3, Compass, Users, Wallet } from 'lucide-react-native';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
@@ -12,12 +12,13 @@ import { InterFont } from '@/constants/fonts';
 import { Motion } from '@/constants/motion';
 import { NotificationPalette as N } from '@/constants/theme';
 
+type InboxStatus = { loading?: boolean; error?: string | null; hasMore?: boolean; onLoadMore?: () => void; onRetry?: () => void };
 export type NotificationAnchor = { x: number; y: number; width: number; height: number };
 
-export function NotificationPopover({ anchor, notifications, readIds, hidden, onRead, onReadAll, onClose, onExitRequests }: {
+export function NotificationPopover({ anchor, notifications, readIds, hidden, onRead, onReadAll, onClose, onExitRequests, ...status }: {
   anchor: NotificationAnchor | null; notifications: readonly HomeNotification[]; readIds: ReadonlySet<string>; hidden: boolean;
   onRead: (id: string) => void; onReadAll: () => void; onClose: () => void; onExitRequests: (id: string) => void;
-}) {
+} & InboxStatus) {
   const pendingExit = useRef<string | null>(null);
   function openExitRequests(id: string) {
     // iOS must finish dismissing this native modal before presenting the vault
@@ -33,14 +34,15 @@ export function NotificationPopover({ anchor, notifications, readIds, hidden, on
       if (id) onExitRequests(id);
     }}>
     {anchor ? <PopoverPanel anchor={anchor} notifications={notifications} readIds={readIds} hidden={hidden}
-      onRead={onRead} onReadAll={onReadAll} onClose={onClose} onExitRequests={openExitRequests} /> : null}
+      onRead={onRead} onReadAll={onReadAll} onClose={onClose} onExitRequests={openExitRequests} {...status} /> : null}
   </Modal>;
 }
 
-function PopoverPanel({ anchor, notifications, readIds, hidden, onRead, onReadAll, onClose, onExitRequests }: {
+function PopoverPanel({ anchor, notifications, readIds, hidden, onRead, onReadAll, onClose, onExitRequests, ...status }: {
   anchor: NotificationAnchor; notifications: readonly HomeNotification[]; readIds: ReadonlySet<string>; hidden: boolean;
   onRead: (id: string) => void; onReadAll: () => void; onClose: () => void; onExitRequests: (id: string) => void;
-}) {
+} & InboxStatus) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
@@ -73,7 +75,7 @@ function PopoverPanel({ anchor, notifications, readIds, hidden, onRead, onReadAl
         <View style={styles.heading}>
           <View style={styles.headingText}>
             <Text accessibilityRole="header" style={styles.title}>Notifications</Text>
-            <Text style={styles.caption}>Sample updates</Text>
+            <Text style={styles.caption}>Your vault activity</Text>
           </View>
           <View style={styles.badge} testID="notification-unread-count">
             <Text style={styles.badgeText} accessibilityLiveRegion="polite">{unreadCount > 0 ? `${unreadCount} new` : 'All read'}</Text>
@@ -85,6 +87,8 @@ function PopoverPanel({ anchor, notifications, readIds, hidden, onRead, onReadAl
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.list} bounces={false} nestedScrollEnabled
           showsVerticalScrollIndicator keyboardShouldPersistTaps="handled" testID="notification-list">
+          {status.error ? <View><Text accessibilityRole="alert" style={styles.copy}>{status.error}</Text><AuthButton onPress={status.onRetry} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={styles.copy}>Retry notifications</Text></AuthButton></View> : null}
+          {!notifications.length ? <Text style={[styles.copy, { paddingVertical: 20 }]}>{status.loading ? 'Loading notifications…' : 'You’re all caught up. Vault updates will appear here.'}</Text> : null}
           {notifications.map((item, index) => {
             const unread = !!item.unread && !readIds.has(item.id);
             const copy = hidden && item.privateCopy ? item.privateCopy : item.copy;
@@ -93,6 +97,7 @@ function PopoverPanel({ anchor, notifications, readIds, hidden, onRead, onReadAl
               accessibilityHint={item.exitVaultId ? 'Review exit requests' : unread ? 'Mark this notification as read' : undefined}
               onPress={() => {
                 onRead(item.id);
+                setExpandedId(current => current === item.id ? null : item.id);
                 if (item.exitVaultId) onExitRequests(item.exitVaultId);
               }} style={[styles.row, index > 0 && styles.divider]}>
               <View style={[styles.icon, item.icon === 'allocation' && styles.positiveIcon, item.icon === 'exit' && styles.riskIcon]}>
@@ -102,6 +107,7 @@ function PopoverPanel({ anchor, notifications, readIds, hidden, onRead, onReadAl
                 <Text style={[styles.rowTitle, !unread && styles.readTitle]}>{item.title}</Text>
                 <Text style={styles.copy}>{copy}</Text>
                 <Text style={styles.time}>{item.time}</Text>
+                {expandedId === item.id && item.createdAt ? <Text style={styles.time}>{new Date(item.createdAt).toLocaleString()}</Text> : null}
               </View>
               <View style={styles.indicators}>
                 {unread ? <View style={styles.unread} testID={`notification-unread-${item.id}`} /> : null}
@@ -109,6 +115,7 @@ function PopoverPanel({ anchor, notifications, readIds, hidden, onRead, onReadAl
               </View>
             </AuthButton>;
           })}
+          {status.hasMore ? <AuthButton disabled={status.loading} accessibilityRole="button" onPress={status.onLoadMore} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={styles.copy}>{status.loading ? 'Loading…' : 'Load older notifications'}</Text></AuthButton> : null}
         </ScrollView>
       </View>
     </Animated.View>

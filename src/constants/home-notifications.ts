@@ -7,6 +7,8 @@ export type HomeNotification = {
   copy: string;
   privateCopy?: string;
   time: string;
+  createdAt?: string;
+  vaultId?: string;
   unread?: boolean;
   exitVaultId?: string;
 };

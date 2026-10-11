@@ -14,11 +14,12 @@ export function useAppAccess() {
   const backendReady = backend.status === 'ready' && backend.account !== null;
   const preview = hasTestAccess && !isAuthenticated;
   const hasSession = isAuthenticated || hasTestAccess;
-  const needsOnboarding = (preview && (needsTestOnboarding || settings.role === null)) || (isAuthenticated && backendReady && backend.account?.username === null);
+  const needsOnboarding = (preview && (needsTestOnboarding || settings.role === null)) || (isAuthenticated && backendReady && (backend.account?.username === null || backend.account?.role === null));
   return {
     hasSession,
     needsOnboarding,
     canEnterApp: hasSession && ready && !loadError && !needsOnboarding && !loginCompleting && (preview || backendReady),
-    profileSettled: !hasSession || ready,
+    profileSettled: !hasSession || (ready && (preview || backendReady || backend.status === 'error')),
+    profileLoading: hasSession && (!ready || (isAuthenticated && !backendReady && backend.status !== 'error')),
   };
 }
