@@ -181,12 +181,12 @@ export function marketsApi(client: ReturnType<typeof createApiClient>) {
       return consume(entry.value, signal);
     },
     async discoveryPage(options: DiscoveryRequest, query = '', signal?: AbortSignal, cursor?: string,
-      onCatalog?: (page: { list: MarketList; tokens: Token[] }) => void) {
+      onCatalog?: (page: { list: MarketList; tokens: Token[] }) => void, hydrateHistory = true) {
       const result = await this.discovery(options, query, signal, cursor);
       checkCancelled(signal);
       onCatalog?.(result);
       let histories: Record<string, History | null> = {};
-      try { histories = await this.historyBatch(result.tokens.map(token => token.mint), signal); }
+      try { if (hydrateHistory) histories = await this.historyBatch(result.tokens.map(token => token.mint), signal); }
       catch { checkCancelled(signal); /* Chart outages must not hide the catalog. */ }
       return { ...result, histories };
     },

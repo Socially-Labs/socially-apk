@@ -61,15 +61,12 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
               setState(current => valid() ? { ...current, tokens: page.tokens, feed: page.list, loading: false, error: null } : current);
             }
           };
-          const result = options ? await api.discoveryPage(options, query, controller.signal, undefined, publishCatalog) : null;
+          const result = options ? await api.discoveryPage(options, query, controller.signal, undefined, publishCatalog, false) : null;
           const tokens = result?.tokens ?? await api.tokens(query, controller.signal);
           const histories = result?.histories ?? {};
           if (!result) {
             publishCatalog({ tokens, list: null });
-            for (let i = 0; i < tokens.length; i += 10) {
-              try { Object.assign(histories, await api.historyBatch(tokens.slice(i, i + 10).map(token => token.mint), controller.signal)); }
-              catch { if (!valid()) return; }
-            }
+
           }
           if (!valid() || paging.current.expanded || paging.current.busy) return;
           setState(current => valid() ? { ...current, tokens, histories: { ...current.histories, ...histories }, feed: result?.list ?? null, loading: false, error: null } : current);
@@ -178,7 +175,7 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
     paging.current.busy = true; paging.current.controller = controller;
     setLoadingMore(true);
     try {
-      const result = await api.discoveryPage(discovery, query, controller.signal, cursor);
+      const result = await api.discoveryPage(discovery, query, controller.signal, cursor, undefined, false);
       if (epoch === activeEpoch.current && !controller.signal.aborted) {
         paging.current.expanded = true;
         setState(prior => ({ ...prior, feed: result.list, error: null, histories: { ...prior.histories, ...result.histories },

@@ -11,6 +11,17 @@ const token={mint,instrumentId:null,symbol:'SAME',name:'Browse token',decimals:6
   verified:null,suspicious:null,rank:1,price:{usd:'2',source:'JUPITER_TOKENS_V2',sourceAt:at,receivedAt:at,status:'CURRENT',usableForExecution:false},
   metrics:{interval:'1h',volumeUsd:'20',liquidityUsd:null,changePercent:'-2',source:'JUPITER_TOKENS_V2',asOf:at,status:'CURRENT',coverage:'COMPLETE'}};
 const list={schemaVersion:1,mode:'PAPER',feed:'trending',interval:'1h',sort:'rank',scope:'PROVIDER_CANDIDATES',snapshotId:'fixture',asOf:at,fetchedAt:at,refreshAfter:at,status:'CURRENT',rankingStatus:'AVAILABLE',candidateCount:2,unrankedCount:0,nextCursor:null,items:[token]};
+test('chart-free discovery never requests history',async()=>{
+  const paths=[];
+  const api=marketsApi(createApiClient({origin:'http://localhost:3000',getAccessToken:async()=>null,fetchImpl:async url=>{
+    paths.push(String(url));return new Response(JSON.stringify(list),{status:200});
+  }}));
+  const result=await api.discoveryPage({feed:'trending',interval:'1h',sort:'rank'},'',undefined,undefined,undefined,false);
+  assert.equal(result.tokens.length,1);
+  assert.deepEqual(result.histories,{});
+  assert.equal(paths.length,1);
+  assert.ok(!paths[0].includes('/history'));
+});
 // This is the actual AbortController implementation installed by React Native.
 const { AbortController: NativeAbortController } = createRequire(import.meta.url)('abort-controller/dist/abort-controller');
 test('generated market contracts exactly match backend source',async()=>{
