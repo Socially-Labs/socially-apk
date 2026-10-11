@@ -6,9 +6,11 @@ import { useAuth } from '@/auth/session';
 import { settingsStorage } from './settings-storage';
 import { defaultUsername, usernameError, type AccountSettings, type ProfileDraft } from './profile-model';
 import { deleteMedia, persistMedia, restoreMediaUri } from './profile-media';
+import { profileFallback } from './profile-fallbacks';
 
 export type { ProfileAvatarKind, AccountSettings, ProfileDraft } from './profile-model';
 type SettingsContextValue = {
+  fallbackProfile: ReturnType<typeof profileFallback>;
   settings: AccountSettings; ready: boolean; saving: boolean; error: string | null;
   loadError: string | null; reloadSettings: () => void;
   profileDraft: ProfileDraft | null;
@@ -175,7 +177,7 @@ function AccountSettingsProvider({ identity, email, children }: PropsWithChildre
     } finally { if (generation.current === saveGeneration) { writing.current = false; setSaving(false); } }
   }
 
-  return <SettingsContext.Provider value={{ settings: displayedSettings, ready, saving, error, loadError, reloadSettings, profileDraft, updateProfileDraft, updateSettings }}>{children}</SettingsContext.Provider>;
+  return <SettingsContext.Provider value={{ settings: displayedSettings, fallbackProfile: profileFallback(identity), ready, saving, error, loadError, reloadSettings, profileDraft, updateProfileDraft, updateSettings }}>{children}</SettingsContext.Provider>;
 }
 
 export function useAccountSettings() {

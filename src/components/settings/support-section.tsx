@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight, LifeBuoy } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { useBackendAccount } from '@/auth/backend-account-provider';
 import { useAuth } from '@/auth/session';
-import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { contactSupport, openSettingsLink, shareSettingsText } from './settings-actions';
 import { appVersion, supportEmail, supportUrl } from './settings-detail-config';
 import { sharedStyles } from './settings-detail-styles';
@@ -31,6 +31,7 @@ export function Support() {
     if (sending.current) return;
     setError(null); setStatus(null);
     if (message.trim().length < 10) { setError('Add a little more detail so we can understand the issue (at least 10 characters).'); return; }
+    Keyboard.dismiss();
     const report = `${message.trim()}\n\nSocially ${appVersion} · ${Platform.OS}`;
     sending.current = true; setPending(true);
     try {

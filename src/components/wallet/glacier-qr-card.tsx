@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import { ProfileMediaImage } from '@/components/settings/profile-media-image';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -10,7 +11,7 @@ import { SociallyEmblem, qrEmblemSvg } from './socially-emblem';
 export const GLACIER_WIDTH = 360;
 
 /** A fixed-size export canvas: real QR data and full address, without sheet controls. */
-export const GlacierQrCard = forwardRef<View, { details: ShareQrDetails; onLayoutReady: (height: number) => void }>(function GlacierQrCard({ details, onLayoutReady }, ref) {
+export const GlacierQrCard = forwardRef<View, { details: ShareQrDetails; onLayoutReady: (height: number) => void; onAvatarReady: () => void }>(function GlacierQrCard({ details, onLayoutReady, onAvatarReady }, ref) {
   const name = details.ownerName?.trim() || 'My wallet';
   return <View ref={ref} collapsable={false} style={s.canvas} testID="glacier-qr-export" onLayout={event => onLayoutReady(event.nativeEvent.layout.height)}>
     {[false, true].map(right => <View key={String(right)} style={[s.compass, { left: right ? GLACIER_WIDTH - 88 : -12 }]}><Svg width={100} height={100} viewBox="0 0 100 100">
@@ -20,7 +21,7 @@ export const GlacierQrCard = forwardRef<View, { details: ShareQrDetails; onLayou
     </Svg></View>)}
     <View style={s.brand}><SociallyEmblem width={46} height={46} /><Text allowFontScaling={false} style={s.wordmark}>SOCIALLY</Text></View>
     <View style={s.paper}>
-      <View style={s.avatar}><Text allowFontScaling={false} style={s.initial}>{Array.from(name)[0]?.toLocaleUpperCase()}</Text></View>
+      <View style={s.avatar}><ProfileMediaImage uri={details.ownerPhotoUri} fallbackId={details.ownerFallbackId ?? 1} kind="avatar" onDisplay={onAvatarReady} /></View>
       <Text allowFontScaling={false} style={s.name}>{name}</Text>
       <Text allowFontScaling={false} style={s.subtitle}>{details.network.includes('DEVNET') ? 'Solana Devnet wallet' : 'Solana wallet'}</Text>
       <Text allowFontScaling={false} style={s.scan}>Scan to send to my wallet</Text>
@@ -39,8 +40,7 @@ const s = StyleSheet.create({
   brand: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 38 },
   wordmark: { fontFamily: BrandFont.wordmark, fontSize: 28, letterSpacing: 2, color: W.receiveQrInk },
   paper: { alignItems: 'center', borderRadius: 24, backgroundColor: W.white, paddingTop: 39, paddingHorizontal: 10, paddingBottom: 20 },
-  avatar: { position: 'absolute', top: -29, width: 62, height: 62, borderRadius: 31, borderWidth: 4, borderColor: W.white, backgroundColor: W.receiveQrInk, alignItems: 'center', justifyContent: 'center' },
-  initial: { fontFamily: InterFont.medium, fontSize: 30, lineHeight: 38, color: W.heroPositive },
+  avatar: { overflow: 'hidden', position: 'absolute', top: -29, width: 62, height: 62, borderRadius: 31, borderWidth: 4, borderColor: W.white, backgroundColor: W.receiveQrInk, alignItems: 'center', justifyContent: 'center' },
   name: { fontFamily: BrandFont.editorial, fontSize: 30, lineHeight: 36, color: W.receiveQrInk, textAlign: 'center' },
   subtitle: { fontFamily: InterFont.regular, fontSize: 13, lineHeight: 20, color: W.secondary },
   scan: { fontFamily: InterFont.regular, fontSize: 14, lineHeight: 21, color: W.receiveQrInk, marginTop: 16 },

@@ -1,0 +1,43 @@
+{
+  "generator": "Built-in image_gen",
+  "created": "2026-10-11",
+  "style": "Cinematic human pirate portraits with matching shipboard environments; referenced existing brand logo, captain portraits and captain-at-the-helm artwork.",
+  "references": [
+    "assets/images/splash-icon.png",
+    "assets/images/discover/captain-portraits.png",
+    "assets/images/home/captain-helm.webp"
+  ],
+  "delivery": "Bundled locally. AWS publishing deferred at user request.",
+  "pairs": [
+    {
+      "id": 1,
+      "name": "silver-captain",
+      "avatar": "1/avatar.webp",
+      "banner": "1/banner.webp"
+    },
+    {
+      "id": 2,
+      "name": "storm-navigator",
+      "avatar": "2/avatar.webp",
+      "banner": "2/banner.webp"
+    },
+    {
+      "id": 3,
+      "name": "ivory-corsair",
+      "avatar": "3/avatar.webp",
+      "banner": "3/banner.webp"
+    },
+    {
+      "id": 4,
+      "name": "harbor-rogue",
+      "avatar": "4/avatar.webp",
+      "banner": "4/banner.webp"
+    },
+    {
+      "id": 5,
+      "name": "midnight-quartermaster",
+      "avatar": "5/avatar.webp",
+      "banner": "5/banner.webp"
+    }
+  ]
+}

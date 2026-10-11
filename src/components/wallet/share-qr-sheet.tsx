@@ -24,6 +24,8 @@ export function ShareQrSheet({ details, onClose, canShare = () => true }: {
   const card = useRef<View>(null), locked = useRef(false);
   const glacierCard = useRef<View>(null);
   const [glacierHeight, setGlacierHeight] = useState(0);
+  const avatarKey = JSON.stringify([details.address, details.ownerPhotoUri, details.ownerFallbackId]);
+  const [readyAvatarKey, setReadyAvatarKey] = useState<string | null>(null);
   const glacier = !details.amount && !details.mint;
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [logoReady, setLogoReady] = useState(false), [height, setHeight] = useState(0);
@@ -42,7 +44,7 @@ export function ShareQrSheet({ details, onClose, canShare = () => true }: {
     } catch { setError('Couldn’t copy the address. You can select it and copy manually.'); }
   }
   async function exportImage(action: 'share' | 'save') {
-    if (locked.current || !height || !logoReady || (glacier && !glacierHeight)) return;
+    if (locked.current || !height || !logoReady || (glacier && (!glacierHeight || readyAvatarKey !== avatarKey))) return;
     if (!available()) { setError('This request has ended. Create a new QR to share.'); return; }
     locked.current = true; setBusy(action); setError(null); setMessage(null);
     if (copiedTimer.current) clearTimeout(copiedTimer.current);
@@ -63,11 +65,11 @@ export function ShareQrSheet({ details, onClose, canShare = () => true }: {
       setError(cause instanceof QrSharingUnavailableError || text.includes('request has ended') || text.includes('Allow photo') ? text : `Couldn’t ${action} the image. Try again, or copy the wallet address.`);
     } finally { locked.current = false; setBusy(null); }
   }
-  const disabled = !!busy || !height || !logoReady || (glacier && !glacierHeight);
+  const disabled = !!busy || !height || !logoReady || (glacier && (!glacierHeight || readyAvatarKey !== avatarKey));
   return <Modal visible transparent statusBarTranslucent navigationBarTranslucent animationType="fade" onRequestClose={() => { if (!locked.current) onClose(); }}>
     <View style={s.screen} testID="share-qr-preview">
       {glacier ? <View style={s.exportCanvas} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
-        <GlacierQrCard ref={glacierCard} details={details} onLayoutReady={setGlacierHeight} />
+        <GlacierQrCard key={avatarKey} ref={glacierCard} details={details} onAvatarReady={() => setReadyAvatarKey(avatarKey)} onLayoutReady={setGlacierHeight} />
       </View> : null}
       <Pressable style={StyleSheet.absoluteFill} disabled={!!busy} onPress={onClose} accessibilityRole="button" accessibilityLabel="Dismiss QR sharing" />
       <Animated.View entering={reduceMotion ? undefined : FadeInDown.duration(280)} style={[s.frame, sheetMaterialStyle, { maxHeight: viewportHeight - Math.max(insets.top, 24) - 20, paddingBottom: Math.max(insets.bottom, 12) }]} accessibilityViewIsModal testID="share-qr-sheet">

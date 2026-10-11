@@ -16,12 +16,12 @@ import { useAccountSettings } from './settings-provider';
 export function AccountSection() {
   const { email, isAuthenticated } = useAuth();
   const { hasTestAccess } = useTestAccess();
-  const { settings } = useAccountSettings();
+  const { settings, fallbackProfile } = useAccountSettings();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const previewing = hasTestAccess && !isAuthenticated;
   return <>
     <Card>
-      <View style={styles.identity}><ProfileAvatar name={settings.name} avatar={settings.avatar} photoUri={settings.photoUri} size={58} /><View style={styles.flex}><Text style={styles.name}>{settings.name}</Text><Text style={styles.copy}>@{settings.username}</Text><Text testID="account-role" style={styles.note}>{settings.role === 'captain' ? 'Captain · Approval required' : 'Crew'}</Text></View></View>
+      <View style={styles.identity}><ProfileAvatar name={settings.name} avatar={settings.avatar} photoUri={settings.photoUri} fallbackId={fallbackProfile.id} size={58} /><View style={styles.flex}><Text style={styles.name}>{settings.name}</Text><Text style={styles.copy}>@{settings.username}</Text><Text testID="account-role" style={styles.note}>{settings.role === 'captain' ? 'Captain · Approval required' : 'Crew'}</Text></View></View>
       <View style={styles.divider} />
       <AuthButton testID="account-edit-profile" accessibilityRole="button" accessibilityLabel="Edit profile and username" onPress={() => router.push({ pathname: '/account/[section]', params: { section: 'profile' } })} style={styles.row}>
         <View style={styles.icon}><Pencil size={19} color={S.accent} /></View><View style={styles.flex}><Text style={styles.itemTitle}>Edit profile</Text><Text style={styles.note}>Username, photo & banner</Text></View><ChevronRight size={18} color={S.secondary} />

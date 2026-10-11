@@ -10,7 +10,7 @@ import { WalletPalette as W } from '@/constants/theme';
 
 export type ShareQrDetails = {
   value: string; address: string; title: string; network: string;
-  note: string; amount?: string; expiresAt?: string; mint?: string; ownerName?: string;
+  note: string; amount?: string; expiresAt?: string; mint?: string; ownerName?: string; ownerPhotoUri?: string | null; ownerFallbackId?: number;
 };
 
 /** The capture boundary excludes app chrome; copy controls disappear during capture. */

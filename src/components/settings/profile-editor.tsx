@@ -2,7 +2,7 @@ import { errorFeedback, selectionFeedback, successFeedback } from '@/components/
 import { AuthButton } from '@/components/shared/motion';
 import { InterFont } from '@/constants/fonts';
 import { SettingsPalette as S } from '@/constants/theme';
-import { Camera, Check, ImagePlus, X } from 'lucide-react-native';
+import { Camera, ImagePlus, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ProfileAvatar } from './profile-avatar';
@@ -14,7 +14,7 @@ import { Action, Card, ErrorCopy } from './settings-detail-ui';
 import { useAccountSettings, type ProfileDraft } from './settings-provider';
 
 export function ProfileEditor() {
-  const { settings, ready, saving, profileDraft, updateProfileDraft, updateSettings, error: storageError } = useAccountSettings();
+  const { settings, fallbackProfile, ready, saving, profileDraft, updateProfileDraft, updateSettings, error: storageError } = useAccountSettings();
   const draft = profileDraft ?? profileFromSettings(settings);
   const { name, username, bio, avatar, photoUri, bannerUri } = draft;
   const nameInput = useRef<TextInput>(null);
@@ -58,7 +58,7 @@ export function ProfileEditor() {
   return <>
     <Text style={styles.intro}>A familiar face. A name that’s yours.</Text>
     <View style={styles.mediaCard}>
-      <ProfileBanner uri={bannerUri} />
+      <ProfileBanner uri={bannerUri} fallbackId={fallbackProfile.id} />
       <AuthButton testID="profile-change-banner" accessibilityRole="button" accessibilityLabel="Change banner" accessibilityState={{ disabled: locked, busy: picking === 'banner' }} disabled={locked}
         onPress={() => { void chooseMedia('banner'); }} style={styles.bannerButton}>
         {picking === 'banner' ? <ActivityIndicator size="small" color={S.accent} /> : <ImagePlus size={15} color={S.ink} />}
@@ -68,18 +68,14 @@ export function ProfileEditor() {
         <View style={styles.mediaTop}>
           <AuthButton testID="profile-change-photo" accessibilityRole="button" accessibilityLabel="Change profile photo" accessibilityState={{ disabled: locked, busy: picking === 'photo' }} disabled={locked}
             onPress={() => { void chooseMedia('photo'); }} style={styles.avatarRing}>
-            <ProfileAvatar name={name || settings.name} avatar={avatar} photoUri={photoUri} size={80} />
+            <ProfileAvatar name={name || settings.name} avatar={avatar} photoUri={photoUri} fallbackId={fallbackProfile.id} size={80} />
             <View style={styles.cameraBadge}>{picking === 'photo' ? <ActivityIndicator size="small" color={S.accent} /> : <Camera size={14} color={S.accent} />}</View>
           </AuthButton>
           <AuthButton accessibilityRole="button" accessibilityLabel="Choose profile photo" disabled={locked} onPress={() => { void chooseMedia('photo'); }} style={styles.photoButton}><Text style={styles.photoButtonText}>{photoUri ? 'Change photo' : 'Add a photo'}</Text></AuthButton>
         </View>
         <ErrorCopy>{mediaError}</ErrorCopy>
         <View style={styles.mediaNote}><Text style={styles.note}>Wide photos work best for your banner.</Text>{bannerUri ? <AuthButton testID="profile-remove-banner" accessibilityRole="button" accessibilityLabel="Reset banner" disabled={locked} onPress={() => edit({ bannerUri: null })} style={styles.reset}><X size={13} color={S.secondary} /><Text style={styles.resetText}>Reset</Text></AuthButton> : null}</View>
-        {photoUri ? <AuthButton testID="profile-remove-photo" accessibilityRole="button" disabled={locked} onPress={() => edit({ photoUri: null })} style={styles.removePhoto}><Text style={styles.resetText}>Remove photo</Text></AuthButton> : <View style={styles.avatarOptions}>{(['captain', 'initials'] as const).map(kind => <AuthButton key={kind}
-          accessibilityRole="button" accessibilityLabel={kind === 'captain' ? 'Captain avatar' : 'Initials avatar'} accessibilityState={{ selected: avatar === kind, disabled: locked }}
-          disabled={locked} onPress={() => { if (kind !== avatar) selectionFeedback(); edit({ avatar: kind }); }} style={[styles.avatarOption, avatar === kind && styles.selected]}>
-          <ProfileAvatar name={name || settings.name} avatar={kind} size={30} /><Text style={styles.optionText}>{kind === 'captain' ? 'Captain' : 'Initials'}</Text>{avatar === kind ? <Check size={14} color={S.accent} /> : null}
-        </AuthButton>)}</View>}
+        {photoUri ? <AuthButton testID="profile-remove-photo" accessibilityRole="button" disabled={locked} onPress={() => edit({ photoUri: null })} style={styles.removePhoto}><Text style={styles.resetText}>Remove photo</Text></AuthButton> : null}
       </View>
     </View>
     <Card>
@@ -131,9 +127,6 @@ const styles = StyleSheet.create({
   reset: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 'auto' },
   resetText: { fontFamily: InterFont.medium, fontSize: 12, color: S.secondary },
   removePhoto: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
-  avatarOptions: { flexDirection: 'row', gap: 8 },
-  avatarOption: { flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: 8, borderRadius: 14, borderWidth: 1, borderColor: S.line, minHeight: 48 },
-  selected: { backgroundColor: S.badge, borderColor: S.accent },
   formHeading: { fontFamily: InterFont.semiBold, fontSize: 17, lineHeight: 24, color: S.ink },
   optional: { fontFamily: InterFont.regular, color: S.secondary },
   inputFocused: { borderColor: S.accent },

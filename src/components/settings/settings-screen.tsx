@@ -18,7 +18,7 @@ export { appVersion } from './settings-detail-config';
 function openSection(section: string) { router.push({ pathname: '/account/[section]', params: { section } }); }
 
 export default function SettingsScreen() {
-  const { settings, ready, error } = useAccountSettings();
+  const { settings, fallbackProfile, ready, error } = useAccountSettings();
   const { width } = useWindowDimensions();
   const compact = width < 360;
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -35,7 +35,7 @@ export default function SettingsScreen() {
         onPress={() => setDeveloperOpen(true)} style={s.more}><MoreHorizontal size={20} color={H.secondary} /></AuthButton> : null}
     </View>
     <View style={[s.profile, compact && s.compactProfile]}>
-      <ProfileAvatar name={settings.name} avatar={settings.avatar} photoUri={settings.photoUri} size={compact ? 48 : 64} />
+      <ProfileAvatar name={settings.name} avatar={settings.avatar} photoUri={settings.photoUri} fallbackId={fallbackProfile.id} size={compact ? 48 : 64} />
       <View style={s.identity}>
         <Text style={[s.name, compact && s.compactName]} numberOfLines={2}>{settings.name}</Text>
         <Text style={[s.username, compact && s.compactUsername]} numberOfLines={1} testID="settings-username">@{settings.username}</Text>

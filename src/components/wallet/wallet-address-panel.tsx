@@ -1,3 +1,4 @@
+import { ShipLoader } from '@/components/shared/refresh/ship-loader';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { setStringAsync } from 'expo-clipboard';
@@ -15,8 +16,8 @@ import { qrShareMessage } from './qr-share-message';
 import { QrSharingUnavailableError } from './qr-share-error';
 
 /** A plain receiving address. It never creates an amount-specific funding request. */
-export function WalletAddressPanel({ address, ready, authenticated, info, onCloseInfo, ownerName }: {
-  address: string | null; ready: boolean; authenticated: boolean; info: boolean; onCloseInfo: () => void; ownerName?: string;
+export function WalletAddressPanel({ address, ready, authenticated, info, onCloseInfo, ownerName, ownerPhotoUri, ownerFallbackId }: {
+  address: string | null; ready: boolean; authenticated: boolean; info: boolean; onCloseInfo: () => void; ownerName?: string; ownerPhotoUri?: string | null; ownerFallbackId?: number;
 }) {
   const { width } = useWindowDimensions();
   const exportCard = useRef<View>(null);
@@ -31,8 +32,10 @@ export function WalletAddressPanel({ address, ready, authenticated, info, onClos
   useLayoutEffect(() => { currentAddress.current = receivingAddress; }, [receivingAddress]);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const qrSize = Math.min(252, Math.max(120, width - 132));
-  const shareReady = !!receivingAddress && exportLayout?.address === receivingAddress && exportLayout.height > 0;
-  const shareDetails = receivingAddress ? { value: receivingAddress, address: receivingAddress, ownerName, title: 'My Solana wallet', network: 'SOLANA DEVNET', note: 'Solana Devnet only. Test tokens have no monetary value.' } : null;
+  const avatarKey = JSON.stringify([receivingAddress, ownerPhotoUri, ownerFallbackId]);
+  const [readyAvatarKey, setReadyAvatarKey] = useState<string | null>(null);
+  const shareReady = readyAvatarKey === avatarKey && !!receivingAddress && exportLayout?.address === receivingAddress && exportLayout.height > 0;
+  const shareDetails = receivingAddress ? { value: receivingAddress, address: receivingAddress, ownerName, ownerPhotoUri, ownerFallbackId, title: 'My Solana wallet', network: 'SOLANA DEVNET', note: 'Solana Devnet only. Test tokens have no monetary value.' } : null;
 
   async function copy() {
     if (!receivingAddress) return;
@@ -60,7 +63,7 @@ export function WalletAddressPanel({ address, ready, authenticated, info, onClos
 
   return <View style={styles.panel} testID="wallet-address-panel">
     {shareDetails ? <View style={styles.exportCanvas} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
-      <GlacierQrCard key={shareDetails.address} ref={exportCard} details={shareDetails} onLayoutReady={height => setExportLayout({ address: shareDetails.address, height })} />
+      <GlacierQrCard key={avatarKey} ref={exportCard} details={shareDetails} onAvatarReady={() => setReadyAvatarKey(avatarKey)} onLayoutReady={height => setExportLayout({ address: shareDetails.address, height })} />
     </View> : null}
     <View style={[styles.card, sheetMaterialStyle]} testID="receive-frosted-card">
       <SheetSurface />
@@ -74,7 +77,7 @@ export function WalletAddressPanel({ address, ready, authenticated, info, onClos
           <Text style={styles.address} testID="receive-address">{receivingAddress.slice(0, 6)}…{receivingAddress.slice(-6)}</Text>
         </View>
       </> : <View style={styles.empty}>
-        {!ready ? <ActivityIndicator color={W.ink} /> : <Wallet size={40} strokeWidth={1.5} color={W.ink} />}
+        {!ready ? <ShipLoader label="Loading your wallet…" showLabel={false}/> : <Wallet size={40} strokeWidth={1.5} color={W.ink} />}
         <Text style={styles.emptyTitle}>{!ready ? 'Loading your wallet…' : !authenticated ? 'Sign in to receive' : 'No Solana wallet linked'}</Text>
         {ready ? <Text style={styles.helper}>{!authenticated ? 'Sign in to see your Solana receiving address.' : 'Link a Solana wallet to your account to see its QR code here.'}</Text> : null}
       </View>}
