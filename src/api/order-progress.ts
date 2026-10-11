@@ -5,7 +5,6 @@ export function orderProgressMessage(progress?:ExecutionProgress):string{
   case 'WAITING_DELAY':return 'Your order is queued for the simulated execution delay.';
   case 'WAITING_VALUATION':return 'Waiting for fresh prices for your vault holdings before checking trade limits.';
   case 'WAITING_PRICE':return 'Waiting for a fresh market price after the execution delay. The order expires after two minutes.';
-  case 'READY':return 'Checking your vault balance and trade limits.';
   default:return 'Order processed.';
  }
 }

@@ -193,7 +193,7 @@ export function marketsApi(client: ReturnType<typeof createApiClient>) {
     },
     async prices(signal?: AbortSignal, instruments?:string[]) {
       const r = envelope(await client.request(`/v0/market/prices${instruments?.length ? `?instruments=${encodeURIComponent(instruments.join(','))}` : ''}`, { signal, authenticated: false }));
-      if (!Array.isArray(r.prices) || r.prices.length > 50) fail(); return r.prices.map(parsePrice);
+      if (!Array.isArray(r.prices) || (instruments?.length && r.prices.length > 50)) fail(); return r.prices.map(parsePrice);
     },
     async startTrial(name: string, idempotencyKey: string, signal?: AbortSignal) {
       const r = envelope(await client.request('/v0/funds', { method: 'POST', body: { name }, idempotencyKey, signal }));

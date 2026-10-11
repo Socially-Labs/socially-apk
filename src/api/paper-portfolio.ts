@@ -9,5 +9,5 @@ export function parsePaperPortfolio(v:unknown):PaperPortfolio{
 }
 export function paperPortfolioApi(client:ReturnType<typeof createApiClient>){return{
  read:async(signal?:AbortSignal)=>parsePaperPortfolio(await client.request('/v1/me/paper-portfolio',{signal})),
- initialize:async(wallet:string,signal?:AbortSignal)=>parsePaperPortfolio(await client.request('/v1/me/paper-portfolio/initialize',{method:'POST',body:{wallet},signal})),
+ initialize:async(wallet:string,signal?:AbortSignal)=>parsePaperPortfolio(await client.request('/v1/me/paper-portfolio/initialize',{method:'POST',body:{wallet},idempotencyKey:`paper-portfolio:${wallet}`,signal})),
 };}
