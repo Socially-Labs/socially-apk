@@ -1,23 +1,22 @@
+import { SailingRefresh } from '@/components/shared/refresh/sailing-refresh';
 import { useAccountSettings } from '@/components/settings/settings-provider';
 import { errorFeedback, selectionFeedback } from '@/components/shared/feedback';
 import { AuthButton } from '@/components/shared/motion';
 import { BrandFont, InterFont } from '@/constants/fonts';
 import { Dashboard, WalletPalette as W } from '@/constants/theme';
 import { type WalletAsset, type WalletHolding } from '@/constants/wallet';
-import { SOLANA_NETWORK } from '@/constants/solana-network';
 import { useWalletFunding } from '@/hooks/use-wallet-funding';
 import { useSolanaBalance } from '@/hooks/use-solana-balance';
 import { useWalletValuation } from '@/hooks/use-wallet-valuation';
 import { useWalletSwap } from '@/hooks/use-wallet-swap';
 import { formatBalance } from './format-balance';
 import { formatUsdc, walletTotals } from '@/api/wallet';
-import { paymentStatus } from './qr-deposit-panel';
 import { TokenIcon } from '@/components/shared/markets/market-graphics';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ChevronDown, ChevronRight, History, Plus, Settings, Wallet } from 'lucide-react-native';
 import { useRef, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WalletActions } from './wallet-actions';
 
@@ -32,7 +31,6 @@ export default function WalletScreen() {
   const funding = useWalletFunding();
   const sol = useSolanaBalance();
   const valuation = useWalletValuation(sol.amount, sol.usdcAmount);
-  const [selectedDepositId, setSelectedDepositId] = useState<string | null>(null);
   const totals = funding.summary ? walletTotals(funding.summary) : null;
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -77,8 +75,8 @@ export default function WalletScreen() {
     try { await Promise.all([sol.refresh(), funding.refresh(), valuation.refresh()]); } finally { setRefreshing(false); }
   }
   return <View style={styles.screen} testID="wallet-dashboard"><StatusBar style="dark" />
-    <ScrollView testID="wallet-scroll" style={styles.scroll} removeClippedSubviews={false} showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { void refreshBalances(); }} tintColor={W.ink} />}
+    <SailingRefresh refreshing={refreshing} onRefresh={refreshBalances} topInset={insets.top}>
+    {scrollProps => <ScrollView {...scrollProps} testID="wallet-scroll" style={styles.scroll} removeClippedSubviews={false} showsVerticalScrollIndicator={false}
       contentContainerStyle={[styles.content, { paddingTop: Math.max(insets.top + 8, 48), paddingBottom: navigationClearance }]}>
       <View style={styles.header} testID="wallet-header">
         <View style={styles.headerIcon}><Wallet size={23} color={W.selectedInk} strokeWidth={1.8} /></View>
@@ -91,11 +89,10 @@ export default function WalletScreen() {
           <Settings size={22} color={W.selectedInk} strokeWidth={1.9} />
         </AuthButton>
       </View>
-      <WalletBalanceCard visible={balanceVisible} compact={compact} canToggle={ready && !saving} error={visibilityError ?? sol.error} tradingError={funding.error ?? (funding.summary && !funding.summary.enabled ? 'Trading deposits are not configured.' : null)} totalUsd={valuation.totalUsd} valuationLoading={valuation.loading} available={totals?.available ?? null} vault={totals?.vault ?? null}
+      <WalletBalanceCard visible={balanceVisible} compact={compact} canToggle={ready && !saving} error={visibilityError ?? sol.error} tradingError={funding.error} totalUsd={valuation.totalUsd} valuationLoading={valuation.loading} available={totals?.available ?? null} vault={totals?.vault ?? null}
         onToggle={() => { void toggleBalances(); }} onMore={() => showSheet('options')} onVaults={() => changeTab('Vaults')} />
-      <WalletActions onAction={showSheet} compact={compact} depositEnabled={!!funding.summary?.enabled && !funding.error && !funding.creating} />
+      <WalletActions onAction={showSheet} compact={compact} depositEnabled={!!sol.address} />
       {!funding.summary && !funding.error ? <Text style={[styles.caption, { marginBottom: 12 }]}>Loading trading funds…</Text> : null}
-      {funding.summary?.enabled && funding.summary.token?.mint !== SOLANA_NETWORK.usdcMint ? <Text style={[styles.caption, { marginBottom: 12 }]}>Trading deposits use a different test token from your wallet USDC. Check the token mint in payment details.</Text> : null}
       <View style={styles.sectionHeading}>
         <View style={[styles.tabs, compact && styles.compactTabs]} testID="wallet-tabs">
           {tabs.map((item, index) => <AuthButton key={item} accessibilityRole="button" accessibilityState={{ selected: tab === item }} onPress={() => changeTab(item)} testID={`wallet-tab-${item.toLowerCase()}`} style={[styles.tab, compact && styles.compactTab, tab === item && styles.activeTab]}><Text style={[styles.tabText, compact && styles.compactTabText, tab === item && styles.activeTabText]}>{item}</Text>{index === 1 && tab === 'Assets' ? <View style={styles.tabDivider} pointerEvents="none" /> : null}</AuthButton>)}
@@ -117,10 +114,12 @@ export default function WalletScreen() {
         </> : tab === 'Vaults' && funding.summary?.positions.length ? <View style={styles.assetList}>{funding.summary.positions.map(position => <View key={position.fundId} style={styles.liveAsset}><Wallet size={24} color={W.selectedInk} /><View style={styles.headingCopy}><Text style={styles.manageTitle}>{position.name}</Text><Text style={styles.caption}>Captain allocation</Text></View><Text style={styles.manageTitle}>{!balanceVisible ? '••••' : position.valuationStatus === 'CURRENT' ? `${formatUsdc(position.estimatedValueUsdc)} USDC` : 'Value unavailable'}</Text></View>)}</View> : tab === 'Vaults' ? <View style={styles.empty}>
           <Wallet size={28} color={W.selectedInk} /><Text style={styles.emptyTitle}>Your Captain vaults</Text><Text style={styles.detailCopy}>You haven’t allocated to a Captain’s fund yet. Explore their strategy and track record before joining the Crew.</Text>
           <AuthButton accessibilityRole="button" testID="wallet-discover-captains" onPress={() => router.navigate('/explore')} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Discover Captains</Text><ChevronRight size={17} color={W.heroInk} /></AuthButton>
-        </View> : funding.summary?.deposits.length ? <View style={styles.assetList}>{funding.summary.deposits.map(deposit => <AuthButton key={deposit.id} accessibilityRole="button" onPress={() => { setSelectedDepositId(deposit.id); showSheet('deposit'); }} style={styles.liveAsset}><History size={22} color={W.selectedInk} /><View style={styles.headingCopy}><Text style={styles.manageTitle}>{paymentStatus[deposit.status]}</Text><Text style={styles.caption}>{new Date(deposit.createdAt).toLocaleDateString()}</Text></View><Text style={styles.manageTitle}>{balanceVisible ? `${formatUsdc(deposit.status === 'CONFIRMED' ? deposit.creditedAmount : deposit.amount)} USDC` : '••••'}</Text></AuthButton>)}</View> : <View style={styles.empty}><History size={28} color={W.selectedInk} /><Text style={styles.emptyTitle}>{funding.summary ? 'No deposits yet' : 'Activity unavailable'}</Text><Text style={styles.detailCopy}>Your deposit requests and verified payments will appear here.</Text></View>}
+        </View> : <View style={styles.empty}><History size={28} color={W.selectedInk} /><Text style={styles.emptyTitle}>Trading activity</Text><Text style={styles.detailCopy}>View your trades and vault activity below.</Text></View>}
       </View>
-    </ScrollView>
-    <WalletSheet funding={funding} assets={liveAssets} selectedDepositId={selectedDepositId} onSelectDeposit={setSelectedDepositId} sheet={sheet === 'swap' ? null : sheet} network={network} hiddenTokens={hiddenTokens} balanceVisible={balanceVisible}
+      {tab === 'Activity' ? <AuthButton accessibilityRole="button" onPress={()=>router.push('/paper-activity')} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Trades &amp; vault activity</Text><ChevronRight size={17} color={W.heroInk}/></AuthButton> : null}
+    </ScrollView>}
+    </SailingRefresh>
+    <WalletSheet assets={liveAssets} sheet={sheet === 'swap' ? null : sheet} network={network} hiddenTokens={hiddenTokens} balanceVisible={balanceVisible}
       onClose={() => setSheet(null)} onShowSheet={showSheet} onTokenVisibility={setTokenVisibility}
       onNetwork={filter => { if (filter !== network) selectionFeedback(); setNetwork(filter); setSheet(null); }}
       onSettings={() => { setSheet(null); router.navigate('/settings'); }}

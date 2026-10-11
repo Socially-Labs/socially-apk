@@ -7,24 +7,22 @@ import { type WalletAsset, type WalletHolding } from '@/constants/wallet';
 import { Check, ChevronRight, History, Plus, Settings, Wallet } from 'lucide-react-native';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import { ReceiveFundsScreen } from './receive-funds-screen';
-import type { useWalletFunding } from '@/hooks/use-wallet-funding';
 import { sharedStyles } from './wallet-section-styles';
 import { filters, upcomingNetworks, type NetworkFilter, type WalletSheet as WalletSheetKind } from './wallet-types';
 import { useAuth } from '@/auth/session';
 import { useAccountSettings } from '@/components/settings/settings-provider';
 
-export function WalletSheet({ funding, assets, selectedDepositId, onSelectDeposit, sheet, network, hiddenTokens, balanceVisible, onClose, onNetwork, onSettings, onActivity, onTokenVisibility, onShowSheet }: {
-  funding: ReturnType<typeof useWalletFunding>; assets: WalletHolding[]; selectedDepositId: string | null; onSelectDeposit: (id: string | null) => void;
+export function WalletSheet({ assets, sheet, network, hiddenTokens, balanceVisible, onClose, onNetwork, onSettings, onActivity, onTokenVisibility, onShowSheet }: {
+  assets: WalletHolding[];
   sheet: WalletSheetKind | null; network: NetworkFilter; hiddenTokens: WalletAsset['symbol'][]; balanceVisible: boolean;
   onClose: () => void; onNetwork: (filter: NetworkFilter) => void; onSettings: () => void; onActivity: () => void;
   onTokenVisibility: (symbol: WalletAsset['symbol'], visible: boolean) => void; onShowSheet: (sheet: WalletSheetKind) => void;
 }) {
   const auth = useAuth();
-  const { settings } = useAccountSettings();
+  const { settings, fallbackProfile } = useAccountSettings();
   const selectedAsset = sheet && typeof sheet === 'object' ? assets.find(asset => asset.symbol === sheet.symbol) : null;
   if (sheet === 'deposit' || sheet === 'receive') return <ReceiveFundsScreen onClose={onClose}
-    wallet={sheet === 'receive' ? { address: auth.solanaAddress ?? null, ready: auth.isReady, authenticated: auth.isAuthenticated, ownerName: settings.name } : undefined}
-    summary={funding.summary} creating={funding.creating} serviceError={funding.error} selectedId={selectedDepositId} onSelect={onSelectDeposit} onCreate={funding.createDeposit} onRefresh={funding.refresh} />;
+    wallet={{ address: auth.solanaAddress ?? null, ready: auth.isReady, authenticated: auth.isAuthenticated, ownerName: settings.name, ownerPhotoUri: settings.photoUri, ownerFallbackId: fallbackProfile.id }} />;
   const title = sheet === null ? '' : typeof sheet === 'object' ? sheet.name : {
     deposit: 'Add funds', send: 'Send crypto', receive: 'Add funds from another wallet', swap: 'Swap assets', networks: 'Networks', options: 'Wallet options', manage: 'Manage tokens', 'custom-token': 'Add a custom token',
   }[sheet];
@@ -36,7 +34,7 @@ export function WalletSheet({ funding, assets, selectedDepositId, onSelectDeposi
       </AuthButton>)}{upcomingNetworks.map(name => <View key={name} accessible accessibilityLabel={`${name}. Coming soon`} style={styles.networkOption}><Text style={styles.networkLabel}>{name}</Text><Text style={styles.caption}>Coming soon</Text></View>)}</View> : sheet === 'options' ? <View style={styles.options}>
         <AuthButton accessibilityRole="button" onPress={onSettings} testID="wallet-options-settings" style={styles.option}><Settings size={20} color={W.ink} /><Text style={styles.networkLabel}>Settings</Text><ChevronRight size={17} color={W.secondary} /></AuthButton>
         <AuthButton accessibilityRole="button" onPress={onActivity} testID="wallet-history" style={styles.option}><History size={20} color={W.ink} /><Text style={styles.networkLabel}>View activity</Text><ChevronRight size={17} color={W.secondary} /></AuthButton>
-        <Text style={styles.detailCopy}>Verified deposits fund the same USDC balance used for trading and Captain allocations. Solana devnet only.</Text>
+        <Text style={styles.detailCopy}>Receive SOL and Circle USDC directly into your Solana devnet wallet.</Text>
       </View> : sheet === 'manage' ? <View style={styles.options}>
         {assets.map(asset => <View key={asset.symbol} style={styles.tokenOption}>
           <TokenIcon symbol={asset.symbol} size={34} /><View style={styles.manageCopy}><Text style={styles.assetSymbol}>{asset.symbol}</Text><Text style={styles.caption}>{asset.caption}</Text></View>

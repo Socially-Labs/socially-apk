@@ -1,7 +1,7 @@
+import { getApiOrigin } from '@/api/runtime-origin';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import { randomUUID } from 'expo-crypto';
-import { createApiClient, ApiError } from '@/api/client';
+import { createApiClient } from '@/api/client';
 import { walletApi, type WalletSummary } from '@/api/wallet';
 import { useAuth } from '@/auth/session';
 
@@ -10,24 +10,22 @@ export function useWalletFunding() {
   const subject = isAuthenticated ? accountId : null;
   const tokenGetter = useRef(getAccessToken);
   useEffect(() => { tokenGetter.current = getAccessToken; }, [getAccessToken]);
-  const api = useMemo(() => walletApi(createApiClient({ origin: process.env.EXPO_PUBLIC_API_URL,
+  const api = useMemo(() => walletApi(createApiClient({ origin: getApiOrigin(),
     getAccessToken: () => tokenGetter.current() })), []);
-  const [state, setState] = useState<{ subject: string | null; summary: WalletSummary | null; error: string | null; creating: boolean }>(
-    { subject: null, summary: null, error: null, creating: false });
+  const [state, setState] = useState<{ subject: string | null; summary: WalletSummary | null; error: string | null }>(
+    { subject: null, summary: null, error: null });
   const [generation] = useState(() => ({ value: 0 }));
   const controllers = useRef(new Set<AbortController>());
   const refreshing = useRef<Promise<void> | null>(null);
-  const creating = useRef(false);
-  const retry = useRef<{ subject: string; amount: string; key: string } | null>(null);
   const refresh = useCallback(async () => {
-    if (!subject || creating.current) return;
+    if (!subject) return;
     if (refreshing.current) return refreshing.current;
     const epoch = generation.value;
     const controller = new AbortController(); controllers.current.add(controller);
     const pending = (async () => {
       try {
         const summary = await api.summary(controller.signal);
-        if (epoch === generation.value) setState({ subject, summary, error: null, creating: false });
+        if (epoch === generation.value) setState({ subject, summary, error: null });
       } catch (error) {
         if (epoch === generation.value && !controller.signal.aborted) setState(current => ({ ...current, subject,
           error: error instanceof Error ? error.message : 'Couldn’t refresh your wallet.' }));
@@ -40,8 +38,8 @@ export function useWalletFunding() {
     return pending;
   }, [api, subject, generation]);
   useEffect(() => {
-    generation.value++; refreshing.current = null; creating.current = false; retry.current = null;
-    setState({ subject, summary: null, error: null, creating: false });
+    generation.value++; refreshing.current = null;
+    setState({ subject, summary: null, error: null });
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
@@ -56,29 +54,6 @@ export function useWalletFunding() {
       for (const controller of activeControllers) controller.abort(); activeControllers.clear();
     };
   }, [subject, refresh, generation]);
-  const createDeposit = async (amount: string) => {
-    if (!subject || creating.current) throw new ApiError('request_pending', 'Please wait for the current request.');
-    creating.current = true;
-    // Cancel stale reads so a pre-deposit snapshot cannot replace the newly created request.
-    generation.value++; refreshing.current = null;
-    for (const controller of controllers.current) controller.abort(); controllers.current.clear();
-    const epoch = generation.value;
-    const controller = new AbortController(); controllers.current.add(controller);
-    const canonical = amount.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
-    if (retry.current?.subject !== subject || retry.current.amount !== canonical) retry.current = { subject, amount: canonical, key: randomUUID() };
-    setState(current => ({ ...current, creating: true, error: null }));
-    try {
-      const deposit = await api.createDeposit(canonical, retry.current.key, controller.signal);
-      if (epoch !== generation.value) throw new ApiError('request_cancelled', 'The wallet session changed.');
-      retry.current = null;
-      setState(current => ({ ...current, summary: current.summary ? { ...current.summary,
-        deposits: [deposit, ...current.summary.deposits.filter(p => p.id !== deposit.id)] } : null }));
-      return deposit;
-    } finally {
-      controllers.current.delete(controller);
-      if (epoch === generation.value) { creating.current = false; setState(current => ({ ...current, creating: false })); void refresh(); }
-    }
-  };
-  const current = state.subject === subject ? state : { subject, summary: null, error: null, creating: false };
-  return { ...current, error: !subject ? 'Sign in to view your wallet and add funds.' : current.error, refresh, createDeposit };
+  const current = state.subject === subject ? state : { subject, summary: null, error: null };
+  return { ...current, error: !subject ? 'Sign in to view your trading balances.' : current.error, refresh };
 }

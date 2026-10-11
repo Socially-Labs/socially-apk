@@ -14,6 +14,7 @@ test('initialization sends only the authenticated wallet and propagates cancella
  const calls=[];const api=paperPortfolioApi(createApiClient({origin:'http://localhost:3000',getAccessToken:async()=> 'session',fetchImpl:async(url,options)=>{calls.push({url,options});assert.equal(options.headers.Authorization,'Bearer session');return Response.json(options.method==='POST'?ready:initial);}}));
  assert.equal((await api.read()).initialized,false);assert.equal((await api.initialize(wallet)).initialUsdc,'600.000000');assert.deepEqual(JSON.parse(calls[1].options.body),{wallet});assert.ok(calls[1].url.endsWith('/v1/me/paper-portfolio/initialize'));
  const controller=new AbortController();controller.abort();await assert.rejects(api.initialize(wallet,controller.signal));assert.equal(calls.length,2);
+ await api.initialize(wallet);assert.equal(calls[1].options.headers['Idempotency-Key'],`paper-portfolio:${wallet}`);assert.equal(calls[2].options.headers['Idempotency-Key'],calls[1].options.headers['Idempotency-Key']);
 });
 test('active create route uses the original harbor screen',async()=>{
  const route=await readFile(new URL('../src/app/vaults/create.tsx',import.meta.url),'utf8');assert.match(route,/VaultCreateScreen as default/);assert.doesNotMatch(route,/LiveVaultCreateScreen/);
