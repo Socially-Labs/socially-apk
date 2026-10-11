@@ -1,5 +1,6 @@
+import { ShipLoader } from '@/components/shared/refresh/ship-loader';
 import { useState } from 'react';
-import { ActivityIndicator, Linking, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Linking, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ArrowDownUp, Check, ChevronDown, ExternalLink, X } from 'lucide-react-native';
 import { DashboardSheet } from '@/components/shared/dashboard/dashboard-sheet';
 import { AuthButton } from '@/components/shared/motion';
@@ -28,9 +29,9 @@ export function SwapSheet({ visible, swap, balances, balanceVisible, onClose }: 
   const inputBalance = swap.input === 'SOL' ? balances.amount : balances.usdcAmount;
   const outputBalance = swap.output === 'SOL' ? balances.amount : balances.usdcAmount;
   const output = swap.quote ? fromUnits(swap.filledOutputRaw ?? swap.quote.outputAmount, swapDecimals(swap.output)) : '0';
-  const label = swap.phase === 'preparing' ? 'Checking swap…' : swap.phase === 'signing' ? 'Approve in your wallet…' : 'Confirming swap…';
+  const label = swap.phase === 'preparing' ? 'Checking swap…' : swap.phase === 'signing' ? 'Approve in your wallet…' : swap.phase === 'sending' ? 'Sending swap…' : 'Confirming swap…';
   const title = confirmed ? 'Swap complete' : review ? 'Review swap' : 'Swap';
-  function close() { if (!swap.busy) { setPicker(null); setDetailsOpen(false); onClose(); } }
+  function close() { if (!swap.busy) { setPicker(null); setDetailsOpen(false); Keyboard.dismiss(); onClose(); } }
   function choose(token: SwapToken) {
     if ((picker === 'input' ? swap.input : swap.output) !== token) swap.reverse();
     setPicker(null);
@@ -43,18 +44,19 @@ export function SwapSheet({ visible, swap, balances, balanceVisible, onClose }: 
   return <DashboardSheet visible={visible} title={title} onClose={close}
     header={<View style={s.header}><Text accessibilityRole="header" style={s.title}>{title}</Text><AuthButton accessibilityRole="button" accessibilityLabel="Close swap" disabled={swap.busy} onPress={close} style={s.close}><X size={22} color={W.ink} /></AuthButton></View>}
     footer={<View style={s.footer}>
-      {swap.busy ? <View style={s.working} accessibilityRole="progressbar" accessibilityLabel={label}><ActivityIndicator color={W.ink} /><Text style={s.submitText}>{label}</Text></View> : confirmed || pending || needsRefresh ?
+      {swap.busy ? <View style={s.working} accessibilityRole="progressbar" accessibilityLabel={label}>{swap.phase === 'signing' ? <ActivityIndicator color={W.ink} /> : null}<Text style={s.submitText}>{label}</Text></View> : confirmed || pending || needsRefresh ?
         <AuthButton testID="swap-submit" accessibilityRole="button" onPress={() => { if (confirmed) swap.reset(); else if (pending) void swap.submit(); else swap.refreshQuote(); }} style={s.submit}><Text style={s.submitText}>{confirmed ? 'Swap again' : pending ? 'Check confirmation' : 'Try again'}</Text></AuthButton> :
         <SwapSlideControl key={`${swap.phase}:${swap.input}`} label={review ? 'Slide to confirm' : 'Slide to swap'} disabled={disabled} onCommit={swap.submit} onDragChange={swap.pauseQuoteUpdates} />}
       {review ? <AuthButton accessibilityRole="button" onPress={() => swap.edit(swap.amount)} style={s.textButton}><Text style={s.secondary}>Edit amount</Text></AuthButton> : null}
     </View>}>
     <View style={s.content} testID="wallet-swap-screen">
+      {swap.busy && swap.phase !== 'signing' ? <ShipLoader label={label} compact active={visible}/> : null}
       {confirmed ? <View style={s.success} accessibilityRole="alert"><View style={s.successIcon}><Check size={26} color={W.ink} /></View><Text style={s.successTitle}>Your swap is complete</Text><Text style={s.copy}>Your wallet balances are refreshing. The swapped assets are in your wallet.</Text></View> : null}
       {!((pending || confirmed) && !swap.quote) ? <View style={s.panels}>
         <View style={s.panel}>
           <View style={s.row}><Text style={s.caption}>Pay</Text><AuthButton accessibilityRole="button" accessibilityLabel={`Use maximum ${swap.input}`} disabled={swap.locked || review || inputBalance === null} onPress={swap.max} style={s.max}><Text style={s.maxText}>Max</Text></AuthButton></View>
           <View style={s.amountRow}>
-            <TextInput testID="swap-input" accessibilityLabel={`Amount of ${swap.input} to swap`} value={swap.amount} onChangeText={swap.edit} editable={!swap.locked && !review} keyboardType="decimal-pad" inputMode="decimal" placeholder="0" placeholderTextColor={W.secondary} maxLength={30} style={s.amount} />
+            <TextInput testID="swap-input" accessibilityLabel={`Amount of ${swap.input} to swap`} value={swap.amount} onChangeText={swap.edit} editable={!swap.locked && !review} keyboardType="decimal-pad" returnKeyType="done" submitBehavior="blurAndSubmit" onSubmitEditing={Keyboard.dismiss} inputMode="decimal" placeholder="0" placeholderTextColor={W.secondary} maxLength={30} style={s.amount} />
             <AuthButton accessibilityRole="button" accessibilityLabel={`Pay token, ${swap.input}`} disabled={swap.locked || review} onPress={() => setPicker(picker === 'input' ? null : 'input')} style={s.token}><TokenIcon symbol={swap.input} size={25} /><Text style={s.tokenText}>{swap.input}</Text><ChevronDown size={13} color={W.ink} /></AuthButton>
           </View>
           <Text style={s.balance} accessibilityLabel={balanceVisible && inputBalance !== null ? `Balance: ${inputBalance} ${swap.input}` : undefined}>Balance: {!balanceVisible ? '••••' : formatBalance(inputBalance)} {swap.input}</Text>
