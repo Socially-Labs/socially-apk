@@ -47,6 +47,28 @@ test('filters use mints, real holdings and null-last statistics', () => {
   assert.equal(filterTokens([token,other],context,filters,true,false,[],'24H').length,0);
   assert.equal(filterTokens([token],context,{...filters,liquidity:25000000},false,false,[],'24H').length,0);
 });
+
+test('Invested resolves holdings outside Supported in batches of ten and coalesces repeat reads',async()=>{
+  const heldMints=Array.from({length:12},(_,i)=>'123456789ABCDEFGHJKLMNPQRSTUVWXYZ'[i].repeat(32));
+  const calls=[];
+  const api=marketsApi(createApiClient({origin:'http://localhost:3000',fetchImpl:async(url)=>{
+    calls.push(url);const mints=new URL(url).searchParams.get('mints').split(',');
+    assert.ok(mints.length<=10);
+    return Response.json({mode:'PAPER',tokens:mints.map(m=>({...token,mint:m,instrumentId:`solana:${m}`,price:null}))});
+  }}));
+  const [first,second]=await Promise.all([api.tokensByMints([...heldMints,heldMints[0]]),api.tokensByMints(heldMints)]);
+  assert.equal(calls.length,2);assert.equal(first.length,12);assert.deepEqual(first,second);
+  assert.deepEqual(new Set(first.map(t=>t.mint)),new Set(heldMints));
+  const held={...context,holdings:heldMints.map(m=>({instrumentId:`solana:${m}`,mint:m,symbol:'TOKEN',quantity:'1',costBasisUsdc:'1',valueUsdc:null}))};
+  assert.equal(filterTokens(first,held,{category:'All',liquidity:0,sort:'Volume'},true,false,[],'24H').length,12);
+  await assert.rejects(api.tokensByMints(['bad mint']),/Invalid market/);
+  assert.deepEqual(await api.tokensByMints([]),[]);assert.equal(calls.length,2);
+});
+
+test('holding batch rejects unrelated tokens instead of showing another market as a position',async()=>{
+  const api=marketsApi(createApiClient({origin:'http://localhost:3000',fetchImpl:async()=>Response.json({mode:'PAPER',tokens:[token]})}));
+  await assert.rejects(api.tokensByMints(['11111111111111111111111111111111']),e=>e.code==='invalid_response');
+});
 test('market reads work without a session, watchlist uses PUT, uncertain submission retries preserve intent/key', async () => {
   const calls = []; let attempt = 0;
   const api = marketsApi(createApiClient({ origin: 'http://localhost:3000', getAccessToken: async () => 'session', fetchImpl: async (url, options) => {

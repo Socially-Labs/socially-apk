@@ -47,7 +47,7 @@ export default function CaptainMarketsScreen() {
     ...(filters.category !== 'All' ? { category: filters.category === 'Major assets' ? 'major' : filters.category === 'Memecoins' ? 'memecoin' : 'token' } : {}),
     ...(filters.liquidity ? { minLiquidityUsd: String(filters.liquidity) } : {}),
   } : undefined, [discoveryEnabled, tab, savedOnly, feed, period, filters]);
-  const data = useMarkets(debouncedQuery, typeof params.vaultId === 'string' ? params.vaultId : null, discovery, savedOnly), context = data.context;
+  const data = useMarkets(debouncedQuery, typeof params.vaultId === 'string' ? params.vaultId : null, discovery, savedOnly, tab === 'invested'), context = data.context;
   const chooseFeed = (value: 'supported' | 'toptraded' | 'trending' | 'invested' | 'saved') => {
     setTab(value === 'invested' ? 'invested' : 'top'); setSavedOnly(value === 'saved');
     if (value === 'supported' || value === 'toptraded' || value === 'trending') setFeed(value);

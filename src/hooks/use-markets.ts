@@ -5,9 +5,10 @@ import { useFocusEffect } from 'expo-router';
 import { createApiClient, apiOrigin } from '@/api/client';
 import { marketsApi, parsePrice, priceFreshness, type DiscoveryRequest, type Fund, type History, type Price, type Token, type TradingContext } from '@/api/markets';
 import { useAuth } from '@/auth/session';
+import { withVaultIdentity } from '@/api/market-vault';
 
 const message = (e: unknown) => e instanceof Error ? e.message : 'Could not refresh markets.';
-export function useMarkets(query: string, requestedVaultId: string | null = null, discovery?: DiscoveryRequest, includeSaved = false) {
+export function useMarkets(query: string, requestedVaultId: string | null = null, discovery?: DiscoveryRequest, includeSaved = false, investedOnly = false) {
   const discoveryKey = JSON.stringify(discovery ?? null);
   const { accountId, isAuthenticated, getAccessToken } = useAuth();
   const subject = isAuthenticated ? accountId : null;
@@ -15,8 +16,8 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
   const api = useMemo(() => marketsApi(createApiClient({ origin: process.env.EXPO_PUBLIC_API_URL, getAccessToken: () => getter.current() })), []);
   const [selection, setSelection] = useState<{ subject: string | null; requestedVaultId: string | null; id: string } | null>(null);
   const fundId = selection?.subject === subject && selection.requestedVaultId === requestedVaultId ? selection.id : requestedVaultId;
-  const [state, setState] = useState<{ subject: string | null; query: string; discoveryKey: string; feed: MarketList | null; histories: Record<string, History | null>; requestedId: string | null; tokens: Token[]; savedTokens: Token[]; funds: Fund[]; saved: string[]; context: TradingContext | null; error: string | null; privateError: string | null; loading: boolean }>(
-    { subject, query, discoveryKey, feed: null, histories: {}, requestedId: fundId, tokens: [], savedTokens: [], funds: [], saved: [], context: null, error: null, privateError: null, loading: true });
+  const [state, setState] = useState<{ subject: string | null; query: string; discoveryKey: string; feed: MarketList | null; histories: Record<string, History | null>; requestedId: string | null; tokens: Token[]; savedTokens: Token[]; holdingTokens: Token[] | null; funds: Fund[]; saved: string[]; context: TradingContext | null; error: string | null; privateError: string | null; loading: boolean }>(
+    { subject, query, discoveryKey, feed: null, histories: {}, requestedId: fundId, tokens: [], savedTokens: [], holdingTokens: null, funds: [], saved: [], context: null, error: null, privateError: null, loading: true });
   const paging = useRef<{ scope: string; expanded: boolean; busy: boolean; controller: AbortController | null }>({ scope: '', expanded: false, busy: false, controller: null });
   const [loadingMore, setLoadingMore] = useState(false);
   const [marks, setMarks] = useState<Record<string, Price>>({});
@@ -38,7 +39,7 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
     const subscribePrivate=()=>{if(authenticated && selectedVault && socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:'subscribe',channel:'vault.context',vaultId:selectedVault}));};
     const valid = () => !stopped && activeEpoch.current === epoch && !controller.signal.aborted;
     setState(current => ({ ...current, subject, query, discoveryKey, feed: current.discoveryKey === discoveryKey ? current.feed : null, requestedId: fundId, context: current.subject === subject && current.requestedId === fundId ? current.context : null, tokens: current.query === query && current.discoveryKey === discoveryKey ? current.tokens : [],
-      ...(current.subject !== subject ? { funds: [], saved: [], savedTokens: [], context: null } : {}), histories: current.query === query && current.discoveryKey === discoveryKey ? current.histories : {}, loading: !(current.query === query && current.discoveryKey === discoveryKey && current.tokens.length), error: current.query === query && current.discoveryKey === discoveryKey ? current.error : null }));
+      ...(current.subject !== subject ? { funds: [], saved: [], savedTokens: [], context: null } : {}), holdingTokens: null, histories: current.query === query && current.discoveryKey === discoveryKey ? current.histories : {}, loading: !(current.query === query && current.discoveryKey === discoveryKey && current.tokens.length), error: current.query === query && current.discoveryKey === discoveryKey ? current.error : null }));
     const poll = async () => {
       if (!valid() || busy || AppState.currentState && AppState.currentState !== 'active') return;
       busy = true;
@@ -54,7 +55,7 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
         }
       } catch { socket?.close(); }
       try {
-        if (Date.now() >= nextCatalog && !paging.current.expanded && !paging.current.busy) {
+        if (!investedOnly && Date.now() >= nextCatalog && !paging.current.expanded && !paging.current.busy) {
           const options = JSON.parse(discoveryKey) as DiscoveryRequest | null;
           const publishCatalog = (page: { tokens: Token[]; list: MarketList | null }) => {
             if (valid() && !paging.current.expanded && !paging.current.busy) {
@@ -94,8 +95,9 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
           const selected = fundId ? funds.find(fund => fund.id === fundId) : funds.find(fund => fund.status === 'ACTIVE' && (!fund.phase || fund.phase === 'ACTIVE')) ?? funds.find(fund => fund.phase === 'FUNDRAISING') ?? funds[0];
           if(selected?.id!==selectedVault){selectedVault=selected?.id;privateRevision=undefined;privateReady=false;subscribePrivate();}
           const context = selected ? await api.context(selected.id, controller.signal) : null;
-          if (valid()) setState(current => ({ ...current, funds,
-            ...(!saved || saving.current || savedVersion !== watchlistVersion.current ? {} : { saved: saved.mints, savedTokens: saved.tokens }), context: context && selected ? { ...context, fund: { ...context.fund, phase: context.fund.phase ?? selected.phase } } : null, privateError: fundId && !selected ? 'This vault is unavailable or belongs to another Captain. Select one of your vaults.' : null }));
+          const holdingTokens = investedOnly && context ? await api.tokensByMints(context.holdings.flatMap(holding => holding.mint ? [holding.mint] : []), controller.signal) : [];
+          if (valid()) setState(current => ({ ...current, funds, holdingTokens,
+            ...(!saved || saving.current || savedVersion !== watchlistVersion.current ? {} : { saved: saved.mints, savedTokens: saved.tokens }), context: context && selected ? withVaultIdentity(context, selected) : null, privateError: fundId && !selected ? 'This vault is unavailable or belongs to another Captain. Select one of your vaults.' : null }));
         }
       } catch (e) { if (valid()) setState(current => ({ ...current, context: null, privateError: message(e) })); }
       }
@@ -152,13 +154,13 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
       else { clearTimeout(retry); socket?.close(); }
     });
     return () => { paging.current.controller?.abort(); paging.current.busy = false; stopped = true; activeEpoch.current++; controller.abort(); clearInterval(tick); clearInterval(timer); clearTimeout(retry); listener.remove(); socket?.close(); };
-  }, [api, subject, query, fundId, refreshVersion, discoveryKey]));
-  const current = state.subject === subject && state.query === query && state.discoveryKey === discoveryKey && state.requestedId === fundId ? state : { ...state, subject, query, feed: null, histories: {}, tokens: [], savedTokens: [], funds: [], saved: [], context: null, loading: true };
-  const tokens = useMemo(() => [...current.tokens, ...(!query && (!discovery || includeSaved) ? current.savedTokens.filter(saved => !current.tokens.some(token => token.mint === saved.mint)) : [])].map(token => {
+  }, [api, subject, query, fundId, refreshVersion, discoveryKey, investedOnly]));
+  const current = state.subject === subject && state.query === query && state.discoveryKey === discoveryKey && state.requestedId === fundId ? state : { ...state, subject, query, feed: null, histories: {}, tokens: [], savedTokens: [], holdingTokens: null, funds: [], saved: [], context: null, loading: true };
+  const tokens = useMemo(() => (investedOnly ? (current.holdingTokens ?? []).filter(token => !query || token.name.toLowerCase().includes(query.toLowerCase()) || token.symbol.toLowerCase().includes(query.toLowerCase()) || token.mint.includes(query)) : [...current.tokens, ...(!query && (!discovery || includeSaved) ? current.savedTokens.filter(saved => !current.tokens.some(token => token.mint === saved.mint)) : [])]).map(token => {
     const live = marks[token.mint], snapshot = token.price;
     const newest = live && (!snapshot?.sourceAt || !!live.sourceAt && Date.parse(live.sourceAt) >= Date.parse(snapshot.sourceAt)) ? live : snapshot;
     return { ...token, price: priceFreshness(newest, now) };
-  }), [current.tokens, current.savedTokens, query, marks, now, discovery, includeSaved]);
+  }), [current.tokens, current.savedTokens, current.holdingTokens, query, marks, now, discovery, includeSaved, investedOnly]);
   const refresh = useCallback(() => { api.invalidateDiscovery(); paging.current.expanded = false; paging.current.controller?.abort(); paging.current.busy = false; setRefreshVersion(version => version + 1); }, [api]);
   const toggleSaved = async (mint: string) => {
     if (!subject || saving.current) return;
@@ -170,7 +172,7 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
     finally { watchlistVersion.current++; saving.current = false; }
   };
   const loadMore = async () => {
-    if (!current.feed?.nextCursor || !discovery || paging.current.busy || current.loading) return;
+    if (investedOnly || !current.feed?.nextCursor || !discovery || paging.current.busy || current.loading) return;
     const epoch = activeEpoch.current, controller = new AbortController(), cursor = current.feed.nextCursor;
     paging.current.busy = true; paging.current.controller = controller;
     setLoadingMore(true);
@@ -190,5 +192,5 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
       if (epoch === activeEpoch.current) setLoadingMore(false);
     }
   };
-  return { ...current, feed: current.feed ? { ...current.feed, status: now > Date.parse(current.feed.refreshAfter) ? 'STALE' as const : current.feed.status } : null, now, tokens, api, loadMore, loadingMore, subject, selectFund: (id: string) => setSelection({ subject, requestedVaultId, id }), refresh, toggleSaved };
+  return { ...current, error: investedOnly ? null : current.error, loading: investedOnly ? !!subject && current.holdingTokens === null && !current.privateError : current.loading, feed: !investedOnly && current.feed ? { ...current.feed, status: now > Date.parse(current.feed.refreshAfter) ? 'STALE' as const : current.feed.status } : null, now, tokens, api, loadMore, loadingMore, subject, selectFund: (id: string) => setSelection({ subject, requestedVaultId, id }), refresh, toggleSaved };
 }

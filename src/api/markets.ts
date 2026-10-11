@@ -13,7 +13,7 @@ export type Token = { mint: string; instrumentId: string | null; name: string; s
 export type History = { livePoint?: { at: string; price: string }; source?:'JUPITER_PRICE_V3'|'BIRDEYE_TOKEN_USD'; seriesId?:string; backfillStatus?:string; nextRefreshAt?:string; mint: string; instrumentId: string; range: Period; denomination: 'USD'; intervalSeconds: number;
   from: string; to: string; changePercent: string | null; points: { at: string; price: string }[];
   coverage: { start: string | null; end: string | null; status: 'COMPLETE' | 'PARTIAL' | 'UNAVAILABLE'; hasGaps: boolean } };
-export type Fund = { id: string; name: string; status: string; trialEnd: string; phase?: VaultPhase };
+export type Fund = { id: string; name: string; status: string; trialEnd: string; phase?: VaultPhase; avatarUrl?: string | null; bannerUrl?: string | null };
 export type TradingContext = { fund: Fund; cashUsdc: string; navUsdc: string | null; testActivationAllowed?: boolean;
   holdings: { instrumentId: string; mint: string | null; symbol: string; quantity: string; costBasisUsdc: string; valueUsdc: string | null }[];
   policy: { maxOrderBps: number; maxPositionBps: number; allowedInstruments: string[] };
@@ -105,6 +105,7 @@ export function marketsApi(client: ReturnType<typeof createApiClient>) {
   const histories = new Map<string, { at: number; ttl: number; value: Promise<History> }>();
   const pages = new Map<string, { at: number; ttl: number; value: Promise<{ list: MarketList; tokens: Token[] }> }>();
   const batches = new Map<string, { at: number; value: Promise<Record<string, History | null>> }>();
+  const tokenBatches = new Map<string, { at: number; value: Promise<Token[]> }>();
   const consume = <T,>(value: Promise<T>, signal?: AbortSignal): Promise<T> => {
     checkCancelled(signal);
     if (!signal) return value;
@@ -202,6 +203,30 @@ export function marketsApi(client: ReturnType<typeof createApiClient>) {
       const r = envelope(await client.request(`/v0/market/tokens${query ? `?query=${encodeURIComponent(query)}` : ''}`, { signal, authenticated: false }));
       if (!Array.isArray(r.tokens) || r.tokens.length > 100) fail(); return r.tokens.map(token => withIcon(parseToken(token)));
     },
+    async tokensByMints(mints: string[], signal?: AbortSignal): Promise<Token[]> {
+      const addresses = [...new Set(mints)];
+      if (addresses.some(address => !mint(address))) throw new Error('Invalid market mint');
+      const tokens: Token[] = [];
+      for (let offset = 0; offset < addresses.length; offset += 10) {
+        checkCancelled(signal);
+        const batch = addresses.slice(offset, offset + 10).sort(), key = batch.join(',');
+        let entry = tokenBatches.get(key);
+        if (!entry || Date.now() - entry.at >= 15_000) {
+          if (tokenBatches.size >= 16) tokenBatches.delete(tokenBatches.keys().next().value!);
+          const value = client.request(`/v0/market/tokens?mints=${encodeURIComponent(key)}`, { authenticated: false }).then(raw => {
+            const r = envelope(raw);
+            if (!Array.isArray(r.tokens) || r.tokens.length > batch.length) fail();
+            const parsed = r.tokens.map(value => withIcon(parseToken(value)));
+            if (new Set(parsed.map(token => token.mint)).size !== parsed.length || parsed.some(token => !batch.includes(token.mint))) fail();
+            return parsed;
+          });
+          entry = {at: Date.now(), value}; tokenBatches.set(key, entry);
+          void value.catch(() => { if (tokenBatches.get(key)?.value === value) tokenBatches.delete(key); });
+        }
+        tokens.push(...await consume(entry.value, signal));
+      }
+      return tokens;
+    },
     async history(mint: string, range: Period, signal?: AbortSignal, backfill = false) {
       checkCancelled(signal);
       const key = `${mint}:${range}:${backfill}`, now = Date.now();
@@ -231,7 +256,7 @@ export function marketsApi(client: ReturnType<typeof createApiClient>) {
       const rounds = response.vaults.map(parseVaultSummary);
       // Keep known route identities for pending-order recovery across refreshes.
       for (const round of rounds) roundIds.add(round.id);
-      return rounds.map(v => ({ id: v.id, name: v.name, phase: v.phase,
+      return rounds.map(v => ({ id: v.id, name: v.name, phase: v.phase, avatarUrl: v.avatarUrl, bannerUrl: v.bannerUrl,
         status: v.riskState === 'FROZEN' ? 'FROZEN' : v.phase === 'ACTIVE' ? 'ACTIVE' : 'COMPLETED',
         trialEnd: v.tradingEndsAt }));
     },
