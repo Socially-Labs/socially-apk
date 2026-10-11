@@ -1,0 +1,31 @@
+{
+  "generator": "Built-in imagegen",
+  "purpose": "Original pirate vault covers for fictional development fixtures",
+  "assets": [
+    {
+      "key": "silver-tide",
+      "prompt": "Use case: illustration-story. Asset type: landscape vault cover for a sophisticated pirate-themed investment mobile app. Primary request: A graceful weathered pirate brig with ivory sails and a small midnight-blue pennant, sailing toward pale limestone sea cliffs and a distant Mediterranean harbor. Clear blue morning. Navy ocean, silver highlights, ivory and cool sky blue. Ship centered, no people. Style: premium cinematic painted realism with fine readable details, physically believable ships, calm editorial composition, matching realistic pirate Captain portraits. Wide landscape 1536x1024, safe central horizontal band for a short banner crop. Full bleed, one coherent scene. No text, typography, logos, UI, coins, charts, crypto symbols, modern buildings, neon, cartoon or watermark.",
+      "file": "silver-tide.jpg"
+    },
+    {
+      "key": "coral-compass",
+      "prompt": "Use case: illustration-story. Asset type: landscape vault cover for a sophisticated pirate-themed investment mobile app. Primary request: The varnished wooden bow of an elegant pirate sailing ship passing a secluded turquoise cove, coral sandstone arches, distant palms and azure water. A small antique brass compass attached to the deck rail in foreground. Early morning. Deep navy, turquoise, ivory and muted coral. No people. Style: premium cinematic painted realism with fine readable details, physically believable ships, calm editorial composition, matching realistic pirate Captain portraits. Wide landscape 1536x1024, safe central horizontal band for a short banner crop. Full bleed, one coherent scene. No text, typography, logos, UI, coins, charts, crypto symbols, modern buildings, neon, cartoon or watermark.",
+      "file": "coral-compass.jpg"
+    },
+    {
+      "key": "stormwake",
+      "prompt": "Use case: illustration-story. Asset type: landscape vault cover for a sophisticated pirate-themed investment mobile app. Primary request: A dark-hulled pirate schooner cutting through rolling teal swells beneath dramatic slate-blue storm clouds, a warm break of daylight on the distant horizon. Brass details and weathered ivory sails. Adventurous but refined, no horror, no people. Style: premium cinematic painted realism with fine readable details, physically believable ships, calm editorial composition, matching realistic pirate Captain portraits. Wide landscape 1536x1024, safe central horizontal band for a short banner crop. Full bleed, one coherent scene. No text, typography, logos, UI, coins, charts, crypto symbols, modern buildings, neon, cartoon or watermark.",
+      "file": "stormwake.jpg"
+    },
+    {
+      "key": "golden-horizon",
+      "prompt": "Use case: illustration-story. Asset type: landscape vault cover for a sophisticated pirate-themed investment mobile app. Primary request: A magnificent three-masted pirate sailing ship anchored off a sunlit coastal city with pale stone towers, ivory sails, brass rigging and golden reflections. Late afternoon ocean light. Rich navy, muted warm gold, sea blue, ivory. No people. Style: premium cinematic painted realism with fine readable details, physically believable ships, calm editorial composition, matching realistic pirate Captain portraits. Wide landscape 1536x1024, safe central horizontal band for a short banner crop. Full bleed, one coherent scene. No text, typography, logos, UI, coins, charts, crypto symbols, modern buildings, neon, cartoon or watermark.",
+      "file": "golden-horizon.jpg"
+    },
+    {
+      "key": "quiet-harbor",
+      "prompt": "Use case: illustration-story. Asset type: landscape vault cover for a sophisticated pirate-themed investment mobile app. Primary request: A quiet sheltered pirate harbor with a small blue-hulled sailing vessel at an old timber jetty, coiled nautical rope, a lantern, pale stone lighthouse and distant tranquil ocean. Cool dawn blue and ivory with soft amber light. No people. Style: premium cinematic painted realism with fine readable details, physically believable ships, calm editorial composition, matching realistic pirate Captain portraits. Wide landscape 1536x1024, safe central horizontal band for a short banner crop. Full bleed, one coherent scene. No text, typography, logos, UI, coins, charts, crypto symbols, modern buildings, neon, cartoon or watermark.",
+      "file": "quiet-harbor.jpg"
+    }
+  ]
+}

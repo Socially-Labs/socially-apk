@@ -1,0 +1,30 @@
+import { StyleSheet } from 'react-native';
+import { BrandFont,InterFont } from '@/constants/fonts';
+import { DiscoverPalette as D } from '@/constants/theme';
+export const crewStyles=StyleSheet.create({
+ screen:{flex:1,backgroundColor:D.background},content:{width:'100%',maxWidth:560,alignSelf:'center',paddingHorizontal:16,gap:14},
+ row:{flexDirection:'row',alignItems:'center',gap:10},between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
+ title:{fontFamily:BrandFont.editorial,fontSize:46,lineHeight:50,color:D.ink},
+ name:{fontFamily:BrandFont.editorial,fontSize:23,lineHeight:28,color:D.ink},body:{fontFamily:InterFont.regular,fontSize:12,lineHeight:18,color:D.secondary},
+ label:{fontFamily:InterFont.medium,fontSize:11,lineHeight:16,color:D.secondary},value:{fontFamily:BrandFont.editorial,fontSize:16,lineHeight:20,color:D.ink,fontVariant:['tabular-nums']},
+ tabs:{flexDirection:'row',borderBottomWidth:1,borderBottomColor:D.line},tab:{minWidth:100,minHeight:42,borderBottomWidth:2,borderBottomColor:'transparent',justifyContent:'center',alignItems:'center'},activeTab:{borderBottomColor:D.ink},selected:{backgroundColor:D.ink},
+ tabText:{fontFamily:BrandFont.editorial,fontSize:18,color:D.secondary},selectedText:{color:D.heroInk},
+ search:{flex:1,flexDirection:'row',alignItems:'center',gap:9,backgroundColor:D.surface,borderWidth:1,borderColor:D.line,borderRadius:24,paddingHorizontal:13,minHeight:44},
+ input:{flex:1,minWidth:0,fontFamily:InterFont.regular,fontSize:13,color:D.ink,paddingVertical:12,outlineWidth:0},
+ icon:{width:48,height:48,borderRadius:15,alignItems:'center',justifyContent:'center',backgroundColor:D.soft},
+ chips:{gap:7,paddingVertical:2},chip:{minHeight:32,paddingHorizontal:13,borderRadius:20,borderWidth:1,borderColor:D.line,alignItems:'center',justifyContent:'center',backgroundColor:D.surface},chipText:{fontFamily:InterFont.medium,fontSize:11,color:D.ink},
+ card:{backgroundColor:D.surface,borderWidth:1,borderColor:D.line,borderRadius:12,overflow:'hidden'},cardBody:{paddingHorizontal:10,paddingBottom:12,gap:9},
+ identity:{flexDirection:'row',alignItems:'center',gap:9,marginTop:-19},identityCopy:{flex:1,paddingTop:21,minWidth:0},
+ action:{minHeight:36,paddingHorizontal:12,borderWidth:1,borderColor:D.line,borderRadius:20,alignItems:'center',justifyContent:'center',flexDirection:'row',gap:7},actionText:{fontFamily:InterFont.medium,fontSize:12,color:D.ink},
+ primary:{backgroundColor:D.ink,borderColor:D.ink,minHeight:50,borderRadius:16,justifyContent:'center',alignItems:'center',flexDirection:'row',gap:10,paddingHorizontal:20},primaryText:{fontFamily:BrandFont.editorial,fontSize:20,color:D.heroInk},
+ stats:{flexDirection:'row',paddingTop:2},stat:{flex:1,gap:3,paddingHorizontal:8,borderRightWidth:1,borderRightColor:D.line},lastStat:{borderRightWidth:0},
+ badge:{paddingHorizontal:9,paddingVertical:5,borderRadius:9,backgroundColor:D.accentTint},badgeText:{fontFamily:InterFont.medium,fontSize:10,color:D.ink},
+ empty:{padding:24,gap:12,alignItems:'center',backgroundColor:D.surface,borderRadius:20},error:{fontFamily:InterFont.regular,fontSize:12,lineHeight:18,color:D.negative},
+ featured:{borderRadius:19,overflow:'hidden',backgroundColor:D.ink},featuredOverlay:{position:'absolute',top:0,bottom:0,left:0,right:0,backgroundColor:'rgba(7,23,44,0.55)'},featuredContent:{position:'absolute',left:15,right:15,top:0,bottom:0,flexDirection:'row',alignItems:'center',gap:12},
+ sectionTitle:{fontFamily:BrandFont.editorial,fontSize:23,color:D.ink},filterGroup:{gap:10},filterOptions:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ chartPanel:{gap:14},bigReturn:{fontFamily:BrandFont.editorial,fontSize:29,color:D.positive,letterSpacing:-1},
+ subtitle:{fontFamily:BrandFont.editorial,fontSize:21,lineHeight:26,color:D.secondary},
+ ranges:{flexDirection:'row',borderWidth:1,borderColor:D.line,borderRadius:20,overflow:'hidden'},range:{flex:1,minHeight:32,alignItems:'center',justifyContent:'center',borderRadius:20},
+ metric:{flex:1,borderWidth:1,borderColor:D.line,borderRadius:12,padding:12,gap:3},
+ note:{fontFamily:InterFont.regular,fontSize:10,lineHeight:16,color:D.secondary},
+});

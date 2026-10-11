@@ -1,3 +1,4 @@
+import { useKeyboardVisible } from '@/components/shared/keyboard/use-keyboard-visible';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePathname } from 'expo-router';
 import { TabList, TabSlot, TabTrigger, Tabs, type TabTriggerSlotProps } from 'expo-router/ui';
@@ -41,6 +42,7 @@ function VoyageTab({ isFocused, label, icon: Icon, style: _style, compact = fals
 
 export default function VoyageTabs() {
   const insets = useSafeAreaInsets();
+  const keyboardVisible = useKeyboardVisible();
   const { width } = useWindowDimensions();
   const barWidth = Math.min(width - 36, Dashboard.maxWidth);
   const compact = width < 360;
@@ -70,8 +72,9 @@ export default function VoyageTabs() {
         <TabTrigger name="wallet" href="/wallet" />
         <TabTrigger name="settings" href="/settings" />
       </TabList>
-      <View nativeID="voyage-bottom-navigation" pointerEvents="box-none" accessibilityRole="tablist"
-        style={[styles.bar, { width: barWidth, left: (width - barWidth) / 2, bottom: barBottom }]} testID="voyage-tab-bar">
+      <View nativeID="voyage-bottom-navigation" pointerEvents={keyboardVisible ? 'none' : 'box-none'} accessibilityRole="tablist"
+        accessibilityElementsHidden={keyboardVisible} importantForAccessibility={keyboardVisible ? 'no-hide-descendants' : 'auto'}
+        style={[styles.bar, keyboardVisible && { display: 'none' }, { width: barWidth, left: (width - barWidth) / 2, bottom: barBottom }]} testID="voyage-tab-bar">
         <TabTrigger name="home" resetOnFocus={false} asChild><VoyageTab label="Home" icon={House} compact={compact} /></TabTrigger>
         <View style={[styles.iconGroup, compact && styles.compactIconGroup]} testID="nav-icon-group">
           <Animated.View pointerEvents="none" testID="nav-selection-indicator"
@@ -81,7 +84,7 @@ export default function VoyageTabs() {
           <TabTrigger name="settings" resetOnFocus={false} asChild><VoyageTab label="Settings" icon={Settings} /></TabTrigger>
         </View>
       </View>
-      <ConnectionNotice bottom={barBottom + 72} />
+      {!keyboardVisible ? <ConnectionNotice bottom={barBottom + 72} /> : null}
     </Tabs>
   );
 }
