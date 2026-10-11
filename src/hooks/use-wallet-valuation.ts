@@ -1,3 +1,4 @@
+import { getApiOrigin } from '@/api/runtime-origin';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -6,7 +7,7 @@ import { marketsApi, type Price } from '@/api/markets';
 import { walletValueUsd } from '@/components/wallet/wallet-valuation';
 
 export function useWalletValuation(sol: string | null, usdc: string | null) {
-  const api = useMemo(() => marketsApi(createApiClient({ origin: process.env.EXPO_PUBLIC_API_URL, getAccessToken: async () => null, timeoutMs: 10_000 })), []);
+  const api = useMemo(() => marketsApi(createApiClient({ origin: getApiOrigin(), getAccessToken: async () => null, timeoutMs: 10_000 })), []);
   const [prices, setPrices] = useState<Price[]>([]);
   const [now, setNow] = useState(Date.now);
   const [loading, setLoading] = useState(true);

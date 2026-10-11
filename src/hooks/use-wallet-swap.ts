@@ -1,3 +1,4 @@
+import { getApiOrigin } from '@/api/runtime-origin';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { randomUUID } from 'expo-crypto';
 import { AppState } from 'react-native';
@@ -21,12 +22,13 @@ export function useWalletSwap(balances:ReturnType<typeof useSolanaBalance>,activ
   const identity=`${accountId}:${wallet}`,latest=useRef(identity),signer=useRef(auth.signSolanaTransaction),tokenGetter=useRef(auth.getAccessToken);
   useLayoutEffect(()=>{latest.current=identity;signer.current=auth.signSolanaTransaction;tokenGetter.current=auth.getAccessToken;},[identity,auth.signSolanaTransaction,auth.getAccessToken]);
   useLayoutEffect(()=>()=>{latest.current='';},[]);
-  const api=useMemo(()=>swapsApi(createApiClient({origin:process.env.EXPO_PUBLIC_API_URL,getAccessToken:()=>tokenGetter.current(),timeoutMs:45000})),[]);
+  const api=useMemo(()=>swapsApi(createApiClient({origin:getApiOrigin(),getAccessToken:()=>tokenGetter.current(),timeoutMs:45000})),[]);
   const [input,setInput]=useState<SwapToken>('SOL'),[amount,setAmount]=useState(''),[revision,setRevision]=useState(0),[clock,setClock]=useState(Date.now);
   const [quotes,setQuotes]=useState<{key:string;quote:SwapQuote|null;loading:boolean;error:string|null}>({key:'',quote:null,loading:false,error:null});
   const [state,setState]=useState<State>({key:identity,phase:'editing',swap:null,signature:null,error:null});
   const [recovery,setRecovery]=useState({key:'',ready:false,error:null as string|null});
   const [recoveryRevision,setRecoveryRevision]=useState(0);
+  const [checkingIdentity,setCheckingIdentity]=useState<string|null>(null);
   const executing=useRef(false),record=useRef<PendingSwap|null>(null);
   const [foreground,setForeground]=useState(AppState.currentState === 'active');
   const [quotePaused,setQuotePaused]=useState(false);
@@ -34,7 +36,7 @@ export function useWalletSwap(balances:ReturnType<typeof useSolanaBalance>,activ
   function pauseQuoteUpdates(paused:boolean){quotePausedRef.current=paused;setQuotePaused(paused);}
   useEffect(()=>{const subscription=AppState.addEventListener('change',value=>setForeground(value==='active'));return()=>subscription.remove();},[]);
   const current=state.key===identity?state:{key:identity,phase:'editing' as const,swap:null,signature:null,error:null};
-  const phase=current.phase,busy=['preparing','signing','sending'].includes(phase),locked=busy||['pending','confirmed'].includes(phase);
+  const phase=current.phase,busy=checkingIdentity===identity||['preparing','signing','sending'].includes(phase),locked=busy||['pending','confirmed'].includes(phase);
   const recovered=recovery.key===identity&&recovery.ready,quoteKey=`${identity}:${input}:${amount}:${revision}`;
   const quote=current.swap?.quote??(quotes.key===quoteKey?quotes.quote:null);
   // Once prepared, blockhash validity replaces quote TTL; the transaction is never rebuilt while signing.
@@ -132,12 +134,12 @@ export function useWalletSwap(balances:ReturnType<typeof useSolanaBalance>,activ
   async function submit() {
     if(executing.current||busy||!recovered||!accountId||!wallet)return;
     if(phase==='pending'&&current.swap) {
-      executing.current=true;
+      executing.current=true;setCheckingIdentity(identity);setState(p=>({...p,error:null}));
       try {
         const saved=record.current;
         const s=saved?.signedTransaction?await api.submit(current.swap.id,saved.signedTransaction):await api.get(current.swap.id);
         await showSwap(s);
-      }catch(e){if(latest.current===identity)setState(p=>({...p,error:message(e)}));}finally{executing.current=false;}
+      }catch(e){if(latest.current===identity)setState(p=>({...p,error:message(e)}));}finally{executing.current=false;setCheckingIdentity(null);}
       return;
     }
     if(!quote||validation||expired||(!current.swap&&quoteExpired(quote))||!signer.current)return;
