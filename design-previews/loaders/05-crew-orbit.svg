@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Crew orbit loading"><title>Crew orbit</title>
+<style>@keyframes crew{0%,65%,100%{fill:#64758B;opacity:.6}20%,40%{fill:#182B43;opacity:1}}.person{animation:crew 1.5s ease-in-out infinite}.p2{animation-delay:-1s}.p3{animation-delay:-.5s}@media(prefers-reduced-motion:reduce){.person{animation:none;opacity:1}}</style>
+<g fill="none" stroke="#C3D0DE" stroke-width="2" stroke-linecap="round"><path d="M19 16Q8 22 8 34M45 16Q56 22 56 34M21 55Q32 59 43 55"/></g>
+<g class="person"><circle cx="32" cy="9" r="3.5"/><path d="M25 20A7 7 0 0 1 39 20Z"/></g><g class="person p2"><circle cx="9" cy="43" r="3.5"/><path d="M2 54A7 7 0 0 1 16 54Z"/></g><g class="person p3"><circle cx="55" cy="43" r="3.5"/><path d="M48 54A7 7 0 0 1 62 54Z"/></g>
+</svg>

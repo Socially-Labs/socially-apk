@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "checks": [
+    "account setup",
+    "deposit confirming",
+    "payment required keeps QR",
+    "confirmed and expired stop loading",
+    "service error stops loading",
+    "animated SVG",
+    "route blur stops animation",
+    "pull indicator suppresses duplicate loader",
+    "swap preparing and sending",
+    "wallet signing keeps compact feedback",
+    "pending recovery is not endless loading",
+    "swap success removes ship",
+    "320 and 393 widths",
+    "reduced motion",
+    "Discover initial request",
+    "pagination failure releases loader",
+    "pagination retry preserves rows",
+    "no runtime errors"
+  ],
+  "screenshots": "/Users/vikas/dev/socially/apk/design-previews/loaders/sailing-ship/status-panels"
+}

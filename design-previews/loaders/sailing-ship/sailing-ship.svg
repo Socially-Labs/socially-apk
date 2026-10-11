@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="112" viewBox="0 0 240 168" role="img" aria-labelledby="title">
+<title id="title">Sailing ship loading</title>
+<defs>
+ <clipPath id="sea-window"><path d="M17 126Q120 115 224 126V151H17Z"/></clipPath>
+ <linearGradient id="sail" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#DCE8F1"/></linearGradient>
+</defs>
+<style>
+ .ship{transform-origin:124px 116px;animation:pitch 3.2s ease-in-out infinite}
+ .canvas{transform-origin:98px 58px;animation:wind 3.2s ease-in-out infinite}
+ .fore{transform-origin:148px 72px;animation:wind 3.2s -.25s ease-in-out infinite}
+ .pennant{transform-origin:99px 24px;animation:flag 1.1s ease-in-out infinite}
+ .water{animation:current 2.4s linear infinite}
+ .water-back{animation:current 3.8s linear infinite}
+ .foam{animation:foam 1.6s ease-out infinite;transform-origin:174px 127px}
+ .foam-two{animation-delay:-.8s}
+ @keyframes pitch{0%,100%{transform:translateY(1px) rotate(-1.5deg)}50%{transform:translateY(-2px) rotate(1.5deg)}}
+ @keyframes wind{0%,100%{transform:skewX(-1.5deg) scaleX(.98)}50%{transform:skewX(1deg) scaleX(1.02)}}
+ @keyframes flag{0%,100%{transform:scaleY(.8) skewY(-6deg)}50%{transform:scaleY(1) skewY(6deg)}}
+ @keyframes current{from{transform:translateX(0)}to{transform:translateX(-80px)}}
+ @keyframes foam{0%{opacity:0;transform:translateX(0) scaleX(.5)}25%{opacity:.85}100%{opacity:0;transform:translateX(-23px) scaleX(1.3)}}
+ @media(prefers-reduced-motion:reduce){.ship,.canvas,.fore,.pennant,.water,.water-back,.foam{animation:none}.foam{opacity:.5}}
+</style>
+<!-- Distant water moves more slowly than the foreground. -->
+<g clip-path="url(#sea-window)" fill="none" stroke-linecap="round">
+ <g class="water-back" stroke="#C4D5E3" stroke-width="1.4"><path d="M-40 125q20-6 40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0"/></g>
+</g>
+<g class="ship" stroke="#182B43" stroke-linecap="round" stroke-linejoin="round">
+ <!-- Stays, stern rail and long bowsprit establish a real ship silhouette. -->
+ <g fill="none" stroke-width="1.15"><path d="M99 24L56 112M99 26L143 111M148 43L180 111M148 45L111 111M99 26L204 103" opacity=".65"/><path d="M99 23V113M148 43V112" stroke-width="2.3"/><path d="M173 111L213 97" stroke-width="2"/><path d="M49 99H76V108H49ZM54 100V107M63 100V107"/></g>
+ <path class="pennant" d="M100 24Q110 19 123 23L116 27Q108 25 100 28Z" fill="#45698C" stroke="none"/>
+ <!-- Curved canvas, with a slight change of pressure as the ship pitches. -->
+ <g class="canvas" fill="url(#sail)" stroke-width="1.4">
+  <path d="M76 36Q99 40 122 35Q119 48 126 59Q101 55 74 61Q82 49 76 36Z"/>
+  <path d="M68 66Q99 69 128 63Q124 80 133 94Q101 88 65 96Q75 80 68 66Z"/>
+  <path d="M99 39Q104 48 101 56M98 69Q107 81 102 90" fill="none" stroke="#A2B8CA" stroke-width="1"/>
+  <path d="M72 65L129 62M78 35L122 34" fill="none" stroke-width="2"/>
+ </g>
+ <g class="fore" fill="url(#sail)" stroke-width="1.4">
+  <path d="M132 52Q148 55 165 50Q163 61 169 71Q150 67 130 73Q135 62 132 52Z"/>
+  <path d="M127 79Q149 81 171 75Q169 89 178 100Q153 95 125 102Q131 91 127 79Z"/>
+  <path d="M148 55Q152 62 149 69M149 81Q154 90 151 97" fill="none" stroke="#A2B8CA" stroke-width="1"/>
+  <path d="M132 51L165 49M127 78L171 74" fill="none" stroke-width="2"/>
+ </g>
+ <path d="M157 54L201 101Q183 94 174 99Z" fill="#D6E4EE" stroke-width="1.2"/>
+ <!-- Deep hull and raised bow read even at compact loader sizes. -->
+ <path d="M44 108Q98 113 154 110L191 104Q183 119 167 125L72 125Q54 121 44 108Z" fill="#182B43" stroke-width="1.5"/>
+ <path d="M56 112Q111 119 177 110" fill="none" stroke="#94AFBF" stroke-width="1.3"/>
+ <g fill="#DAE6EE" stroke="none"><rect x="77" y="117" width="5" height="2.5" rx="1"/><rect x="95" y="118" width="5" height="2.5" rx="1"/><rect x="113" y="118" width="5" height="2.5" rx="1"/><rect x="131" y="117" width="5" height="2.5" rx="1"/></g>
+</g>
+<!-- The traveling water and dissolving bow wake supply forward motion. -->
+<g clip-path="url(#sea-window)" fill="none" stroke-linecap="round">
+ <g class="water" stroke="#647F98" stroke-width="1.8"><path d="M-40 130q20-7 40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0"/><path d="M-20 140q20-4 40 0t40 0t40 0t40 0t40 0t40 0t40 0t40 0" opacity=".35"/></g>
+ <path class="foam" d="M160 127Q175 122 189 125" stroke="#8CAEC5" stroke-width="2"/>
+ <path class="foam foam-two" d="M152 130Q164 126 177 129" stroke="#8CAEC5" stroke-width="1.5"/>
+</g>
+</svg>
