@@ -12,21 +12,23 @@ import { useWindowDimensions } from 'react-native';
 import { CaptainOverview } from './captain-overview';
 import { HomeHeader } from './home-header';
 import { HomeSheet, type HomeSheetKind } from './home-sheet';
+import { HomeRefreshProvider, useHomeRefresh, useHomeRefreshSource } from './home-refresh-provider';
 import { CrewHome } from './crew-home';
 import type { CaptainPanel } from './captain-home-types';
 import { sampleHomeNotifications } from '@/constants/home-notifications';
+import { useNotifications } from '@/components/notifications/notification-provider';
 import { NotificationPopover, type NotificationAnchor } from './notification-popover';
 
 export default function HomeScreen() {
   const role = useAppRole();
   // Changing the Settings preview starts a fresh Home, including scroll and sheets.
-  return <HomeContent key={role} role={role} />;
+  return <HomeRefreshProvider key={role}><HomeContent role={role} /></HomeRefreshProvider>;
 }
 
 function HomeContent({ role }: { role: AccountRole }) {
   const { email, logout, isAuthenticated } = useAuth();
   const { hasTestAccess, leaveTestApp } = useTestAccess();
-  const { settings, ready: settingsReady, updateProfileDraft } = useAccountSettings();
+  const { settings, fallbackProfile, ready: settingsReady, updateProfileDraft } = useAccountSettings();
   const { height, width } = useWindowDimensions();
   const compact = width < 360;
   const [sheet, setSheet] = useState<HomeSheetKind | null>(null);
@@ -41,10 +43,14 @@ function HomeContent({ role }: { role: AccountRole }) {
   const greeting = firstName.charAt(0).toUpperCase() + firstName.slice(1);
   const heroSpace = Math.max(155, Math.min(height * 0.2, 190));
   const isCaptain = role === 'captain';
-  const notifications = previewing ? sampleHomeNotifications[role] : [];
+  const inbox = useNotifications();
+  const homeRefresh = useHomeRefresh();
+  useHomeRefreshSource(inbox.retry, !previewing && inbox.loading);
+  const notifications = previewing ? sampleHomeNotifications[role] : inbox.notifications;
   const unreadCount = notifications.filter(item => item.unread && !readNotificationIds.has(item.id)).length;
 
   function readNotification(id: string) {
+    if (!previewing) { inbox.read(id); return; }
     setReadNotificationIds(current => current.has(id) ? current : new Set([...current, id]));
   }
 
@@ -63,17 +69,19 @@ function HomeContent({ role }: { role: AccountRole }) {
   }
 
   return (
-    <DashboardShell testID="home-dashboard" variant={isCaptain ? 'captain' : 'crew'}>
-      <HomeHeader name={settings.name} avatar={settings.avatar} photoUri={settings.photoUri} greeting={greeting} role={role}
+    <DashboardShell testID="home-dashboard" variant={isCaptain ? 'captain' : 'crew'} fixed={isCaptain}
+      onRefresh={previewing ? undefined : homeRefresh?.refresh} refreshing={homeRefresh?.refreshing}>
+      <HomeHeader fallbackId={fallbackProfile.id} name={settings.name} avatar={settings.avatar} photoUri={settings.photoUri} greeting={greeting} role={role}
         onProfile={() => setSheet('profile')} onNotifications={setNotificationAnchor} unreadCount={unreadCount} notificationsOpen={notificationAnchor !== null} />
-      {isCaptain ? <CaptainOverview compact={compact} heroSpace={heroSpace} panel={captainPanel} onPanel={setCaptainPanel} />
+      {isCaptain ? <CaptainOverview compact={compact} panel={captainPanel} onPanel={setCaptainPanel} />
         : !previewing ? <VaultHomePanel isCaptain={false} /> : <CrewHome compact={compact} heroSpace={heroSpace} onOverview={hidden => { setPortfolioHidden(hidden); setSheet('portfolio'); }} />}
       <HomeSheet sheet={sheet} greeting={greeting} email={email} bio={settings.bio} pending={pending} error={error}
         previewing={previewing} hidden={!settingsReady || settings.hideBalances || portfolioHidden} onClose={() => setSheet(null)} onSignOut={() => { void signOut(); }}
         onSettings={() => { setSheet(null); router.push('/settings'); }} />
       <NotificationPopover anchor={notificationAnchor} notifications={notifications} readIds={readNotificationIds}
         hidden={!settingsReady || settings.hideBalances || portfolioHidden} onRead={readNotification}
-        onReadAll={() => setReadNotificationIds(new Set(notifications.map(item => item.id)))} onClose={() => setNotificationAnchor(null)}
+        onReadAll={() => previewing ? setReadNotificationIds(new Set(notifications.map(item => item.id))) : inbox.readAll()}
+        loading={!previewing && inbox.loading} error={!previewing ? inbox.error : null} onRetry={inbox.retry} hasMore={!previewing && inbox.hasMore} onLoadMore={inbox.loadMore} onClose={() => setNotificationAnchor(null)}
         onExitRequests={id => setCaptainPanel({ kind: 'exits', id })} />
     </DashboardShell>
   );

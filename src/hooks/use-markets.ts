@@ -1,3 +1,4 @@
+import { getApiOrigin } from '@/api/runtime-origin';
 import type { MarketList } from '@/api/generated/market-contracts';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -13,13 +14,14 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
   const { accountId, isAuthenticated, getAccessToken } = useAuth();
   const subject = isAuthenticated ? accountId : null;
   const getter = useRef(getAccessToken); useEffect(() => { getter.current = getAccessToken; }, [getAccessToken]);
-  const api = useMemo(() => marketsApi(createApiClient({ origin: process.env.EXPO_PUBLIC_API_URL, getAccessToken: () => getter.current() })), []);
+  const api = useMemo(() => marketsApi(createApiClient({ origin: getApiOrigin(), getAccessToken: () => getter.current() })), []);
   const [selection, setSelection] = useState<{ subject: string | null; requestedVaultId: string | null; id: string } | null>(null);
   const fundId = selection?.subject === subject && selection.requestedVaultId === requestedVaultId ? selection.id : requestedVaultId;
   const [state, setState] = useState<{ subject: string | null; query: string; discoveryKey: string; feed: MarketList | null; histories: Record<string, History | null>; requestedId: string | null; tokens: Token[]; savedTokens: Token[]; holdingTokens: Token[] | null; funds: Fund[]; saved: string[]; context: TradingContext | null; error: string | null; privateError: string | null; loading: boolean }>(
     { subject, query, discoveryKey, feed: null, histories: {}, requestedId: fundId, tokens: [], savedTokens: [], holdingTokens: null, funds: [], saved: [], context: null, error: null, privateError: null, loading: true });
   const paging = useRef<{ scope: string; expanded: boolean; busy: boolean; controller: AbortController | null }>({ scope: '', expanded: false, busy: false, controller: null });
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [marks, setMarks] = useState<Record<string, Price>>({});
   const [now, setNow] = useState(() => Date.now());
   const [refreshVersion, setRefreshVersion] = useState(0);
@@ -31,6 +33,7 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
     const scope = JSON.stringify([subject, query, discoveryKey]);
     if (paging.current.scope !== scope) { paging.current.controller?.abort(); paging.current = { scope, expanded: false, busy: false, controller: null }; }
     setLoadingMore(false);
+    setRefreshing(true);
     let stopped = false, busy = false, socket: WebSocket | undefined, retry: ReturnType<typeof setTimeout> | undefined;
     let cursor: string | undefined, nextCatalog = 0,nextPrivate=0,nextMembership=0;
     let privateReady=false,authenticated=false,privateDirty=false,selectedVault:string|undefined;
@@ -101,12 +104,12 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
         }
       } catch (e) { if (valid()) setState(current => ({ ...current, context: null, privateError: message(e) })); }
       }
-      finally { busy = false; if(privateDirty && valid())void poll(); }
+      finally { busy = false; if (valid()) setRefreshing(false); if(privateDirty && valid())void poll(); }
     };
     const connect = () => {
       if (!valid() || AppState.currentState && AppState.currentState !== 'active') return;
       try {
-        const origin = apiOrigin(process.env.EXPO_PUBLIC_API_URL).replace(/^http/, 'ws');
+        const origin = apiOrigin(getApiOrigin()).replace(/^http/, 'ws');
         const ws = new WebSocket(`${origin}/v0/ws`); socket = ws;
         ws.onmessage = event => {
           if (!valid() || socket !== ws) return;
@@ -192,5 +195,5 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
       if (epoch === activeEpoch.current) setLoadingMore(false);
     }
   };
-  return { ...current, error: investedOnly ? null : current.error, loading: investedOnly ? !!subject && current.holdingTokens === null && !current.privateError : current.loading, feed: !investedOnly && current.feed ? { ...current.feed, status: now > Date.parse(current.feed.refreshAfter) ? 'STALE' as const : current.feed.status } : null, now, tokens, api, loadMore, loadingMore, subject, selectFund: (id: string) => setSelection({ subject, requestedVaultId, id }), refresh, toggleSaved };
+  return { ...current, error: investedOnly ? null : current.error, loading: investedOnly ? !!subject && current.holdingTokens === null && !current.privateError : current.loading, feed: !investedOnly && current.feed ? { ...current.feed, status: now > Date.parse(current.feed.refreshAfter) ? 'STALE' as const : current.feed.status } : null, now, tokens, api, loadMore, loadingMore, refreshing, subject, selectFund: (id: string) => setSelection({ subject, requestedVaultId, id }), refresh, toggleSaved };
 }

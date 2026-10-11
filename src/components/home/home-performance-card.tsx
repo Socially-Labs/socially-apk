@@ -1,8 +1,8 @@
 import { Eye, EyeOff, ArrowUpRight } from 'lucide-react-native';
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path, Circle } from 'react-native-svg';
+import { TimeSeriesChart } from '@/components/shared/charts/time-series-chart';
 import { AuthButton } from '@/components/shared/motion';
 import { BrandFont, InterFont } from '@/constants/fonts';
 import { CaptainHomePalette as C, DiscoverPalette as D } from '@/constants/theme';
@@ -14,7 +14,7 @@ type Metric = { label: string; value: string; testID?: string; icon?: ReactNode 
 /** Shared presentation for Captain AUM and Crew personal value. */
 export function HomePerformanceCard({ label, balance, change, changeCaption, positive, values, timestamps, chartDescription,
   metrics, hidden, canToggle, onToggle, onOverview, overviewLabel, period, onPeriod, compact, error,
-  testIDPrefix, summaryTestID, balanceTestID, changeTestID, overviewTestID, badge = 'Sample', chartMessage, variant = 'default' }: {
+  testIDPrefix, summaryTestID, balanceTestID, changeTestID, overviewTestID, badge = 'Sample', chartMessage, variant = 'default', periodOptions = periods, minimumChartRange = 1, formatChartValue }: {
   label: string; balance: string; change: string; changeCaption: string; positive: boolean;
   values: number[]; timestamps?: string[]; chartDescription: string; metrics: readonly [Metric, Metric];
   hidden: boolean; canToggle: boolean; onToggle: () => void; onOverview: () => void; overviewLabel: string;
@@ -22,12 +22,13 @@ export function HomePerformanceCard({ label, balance, change, changeCaption, pos
   testIDPrefix: string; summaryTestID: string; balanceTestID: string; changeTestID: string; overviewTestID: string;
   badge?: string; chartMessage?: string;
   variant?: 'default' | 'frosted' | 'frosted-pills';
+  periodOptions?: readonly HomePeriod[]; minimumChartRange?: number; formatChartValue?: (value: number) => string;
 }) {
   const frosted = variant !== 'default';
   const pillPeriods = variant === 'frosted-pills';
   const color = frosted ? positive ? C.gain : C.loss : positive ? D.heroPositive : D.heroNegative;
   const periodControls = <View accessibilityRole={frosted ? 'tablist' : undefined} accessibilityLabel={frosted ? `${label} chart period` : undefined}
-    style={[styles.periods, frosted && glass.periods, pillPeriods && glass.pillPeriods]}>{periods.map(item => <AuthButton key={item} testID={`${testIDPrefix}-period-${item}`} accessibilityRole={frosted ? 'tab' : 'button'}
+    style={[styles.periods, frosted && glass.periods, pillPeriods && glass.pillPeriods]}>{periodOptions.map(item => <AuthButton key={item} testID={`${testIDPrefix}-period-${item}`} accessibilityRole={frosted ? 'tab' : 'button'}
     accessibilityLabel={`${item === 'ALL' ? 'All time' : item} performance`} accessibilityState={{ selected: item === period }}
     aria-selected={frosted ? item === period : undefined}
     onPress={() => onPeriod(item)} style={[styles.period, frosted && glass.period, pillPeriods && glass.pillPeriod, item === period && (frosted ? glass.selectedPeriod : styles.selectedPeriod), pillPeriods && item === period && glass.selectedPillPeriod]}>
@@ -50,7 +51,7 @@ export function HomePerformanceCard({ label, balance, change, changeCaption, pos
       <Text style={[styles.caption, frosted && glass.secondary]}>{changeCaption}</Text>
     </View>
     {frosted ? periodControls : null}
-    {chartMessage ? <Text style={[styles.chartMessage, frosted && glass.secondary]}>{chartMessage}</Text> : <PortfolioChart values={values} timestamps={timestamps} hidden={hidden} color={frosted ? C.chart : color} description={chartDescription} testID={`${testIDPrefix}-performance-chart`} frosted={frosted} />}
+    {chartMessage ? <Text style={[styles.chartMessage, frosted && glass.secondary]}>{chartMessage}</Text> : <PortfolioChart values={values} timestamps={timestamps} hidden={hidden} color={frosted ? C.chart : color} description={chartDescription} testID={`${testIDPrefix}-performance-chart`} frosted={frosted} minimumRange={minimumChartRange} formatValue={formatChartValue} />}
     {frosted ? null : periodControls}
     <View style={[styles.metrics, frosted && glass.metrics]}>
       {metrics.map((metric, index) => <View key={metric.label} style={[styles.metric, index === 0 && styles.investedMetric, frosted && glass.metric, frosted && index === 0 && glass.firstMetric]}>
@@ -68,26 +69,20 @@ export function HomePerformanceCard({ label, balance, change, changeCaption, pos
   </LinearGradient>;
 }
 
-export function PortfolioChart({ values, timestamps, hidden, color, description, testID, frosted = false, light = false, height = frosted ? 52 : 70 }: {
-  values: number[]; timestamps?: string[]; hidden: boolean; color: string; description: string; testID: string; frosted?: boolean; light?: boolean; height?: number;
+export function PortfolioChart({ values, timestamps, hidden, color, description, testID, frosted = false, light = false, height = 80, minimumRange = 1, formatValue }: {
+  values: number[]; timestamps?: string[]; hidden: boolean; color: string; description: string; testID: string; frosted?: boolean; light?: boolean; height?: number; minimumRange?: number; formatValue?: (value: number) => string;
 }) {
-  if (hidden || values.length < 2) return <View testID={testID} style={[styles.chart, { height }]}><Text style={[styles.chartMessage,{color:frosted?C.secondary:light?D.secondary:D.heroSecondary}]}>{hidden ? 'Chart hidden' : 'History will appear as your vault is valued.'}</Text></View>;
-  const min = Math.min(...values), max = Math.max(...values), range = Math.max(1, max - min);
-  const times = timestamps?.length === values.length ? timestamps.map(value => Date.parse(value)) : null;
-  const span = times ? times[times.length - 1] - times[0] : 0;
-  const points = values.map((value, index) => [4 + (times && Number.isFinite(span) && span > 0 ? (times[index] - times[0]) / span : index / (values.length - 1)) * 312, 75 - (value - min) / range * 58]);
-  const path = points.map(([x, y], index) => `${index ? 'L' : 'M'}${x.toFixed(2)} ${y.toFixed(2)}`).join(' ');
-  const last = points[points.length - 1];
-  const gradientId = `${testID}-fill`;
-  return <View style={[styles.chart, frosted && glass.chart, { height }]} testID={testID} accessible accessibilityRole="image"
-    accessibilityLabel={hidden ? 'Performance chart. Balances hidden.' : description}>
-    <Svg width="100%" height={height} viewBox="0 0 320 88" preserveAspectRatio="none">
-      <Defs><SvgGradient id={gradientId} x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor={frosted ? '#6BA4D5' : color} stopOpacity={0.2} /><Stop offset="1" stopColor={color} stopOpacity={0} /></SvgGradient></Defs>
-      {frosted ? null : <Path d="M4 25 H316 M4 53 H316 M4 81 H316" stroke={light ? D.line : D.heroLine} strokeWidth={0.6} strokeDasharray="3 5" />}
-      <Path d={`${path} L316 88 L4 88 Z`} fill={`url(#${gradientId})`} />
-      <Path d={path} stroke={color} strokeWidth={frosted ? 1.8 : 2.2} fill="none" strokeLinejoin="round" strokeLinecap="round" />
-      {frosted ? null : <Circle cx={last[0]} cy={last[1]} r={5} fill={color} fillOpacity={0.16} />}<Circle cx={last[0]} cy={last[1]} r={frosted ? 2.7 : 2.4} fill={color} />
-    </Svg>
+  const data = useMemo(() => {
+    const times = timestamps?.length === values.length ? timestamps.map(value => Date.parse(value)) : null;
+    const shortDate = (at: number) => new Date(at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return values.map((value, index) => ({ time: times ? times[index] : index, value,
+      label: `${times && Number.isFinite(times[index]) ? shortDate(times[index]) : `Valuation ${index + 1}`} · ${formatValue ? formatValue(value) : value.toLocaleString()}` }));
+  }, [values, timestamps, formatValue]);
+  const date = (at: number | undefined) => at !== undefined && Number.isFinite(at) ? new Date(at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : undefined;
+  if (hidden || data.filter(p => Number.isFinite(p.value) && Number.isFinite(p.time)).length < 2) return <View testID={testID} style={[styles.chart, { minHeight: height }]}><Text style={[styles.chartMessage, { color: frosted ? C.secondary : light ? D.secondary : D.heroSecondary }]}>{hidden ? 'Chart hidden' : 'History will appear as your vault is valued.'}</Text></View>;
+  return <View style={[styles.chart, frosted && glass.chart]}>
+    <TimeSeriesChart data={data} height={height} color={color} description={description} testID={testID} minimumRange={minimumRange}
+      grid={!frosted} startLabel={timestamps ? date(data[0]?.time) : undefined} endLabel={timestamps ? date(data.at(-1)?.time) : undefined} />
   </View>;
 }
 
@@ -102,7 +97,7 @@ const styles = StyleSheet.create({
   return: { fontFamily: InterFont.medium, fontSize: 12, lineHeight: 18, fontVariant: ['tabular-nums'] },
   caption: { fontFamily: InterFont.regular, fontSize: 11, lineHeight: 16, color: D.heroSecondary },
   chartMessage: { fontFamily: InterFont.regular, fontSize: 11, lineHeight: 16, color: C.secondary, minHeight: 52, paddingVertical: 12 },
-  chart: { height: 70, marginTop: 9, marginBottom: 2 },
+  chart: { marginTop: 9, marginBottom: 2 },
   periods: { flexDirection: 'row', justifyContent: 'center', gap: 12 },
   period: { flex: 1, minHeight: 44, maxWidth: 70, justifyContent: 'center', alignItems: 'center', borderRadius: 13 },
   selectedPeriod: { backgroundColor: D.heroPill },
@@ -140,7 +135,7 @@ const glass = StyleSheet.create({
   selectedPeriodText: { fontFamily: InterFont.semiBold, color: C.ink },
   periodIndicator: { position: 'absolute', bottom: 7, width: 17, height: 1.5, backgroundColor: C.chart, alignItems: 'center', justifyContent: 'center' },
   periodDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: C.chart },
-  chart: { height: 52, marginTop: -8, marginBottom: 0 },
+  chart: { marginTop: 4, marginBottom: 4 },
   metrics: { gap: 8, marginTop: 6, paddingTop: 8, borderTopColor: C.line },
   metric: { flex: 1, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'flex-start' },
   firstMetric: { borderRightWidth: 1, borderRightColor: C.line, paddingRight: 8 },

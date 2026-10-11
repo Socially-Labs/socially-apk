@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { selectionFeedback } from '@/components/shared/feedback';
@@ -13,7 +13,7 @@ export function CrewPortfolioDetails({ hidden }: { hidden: boolean }) {
   const [period, setPeriod] = useState<CrewPeriod>('30D');
   const { width } = useWindowDimensions();
   const compact = width < 360;
-  const performance = crewPerformance(period);
+  const performance = useMemo(() => crewPerformance(period), [period]);
   const gainColor = performance.gainCents >= 0 ? S.positive : S.negative;
   const caption = period === 'ALL' ? 'since invested' : `past ${period === '7D' ? '7' : period === '30D' ? '30' : '90'} days`;
   const metrics = [
@@ -32,7 +32,7 @@ export function CrewPortfolioDetails({ hidden }: { hidden: boolean }) {
       <Text style={styles.caption}>{caption}</Text>
     </View>
     <View style={styles.chartPanel}>
-      <PortfolioChart values={performance.values} hidden={hidden} color={performance.gainCents >= 0 ? Dashboard.positive : S.negative}
+      <PortfolioChart values={performance.values} timestamps={performance.timestamps} formatValue={crewMoney} hidden={hidden} color={performance.gainCents >= 0 ? Dashboard.positive : S.negative}
         description={`Sample portfolio ${caption}, from ${crewMoney(performance.values[0])} to ${crewMoney(crewTotalCents)}`}
         testID="portfolio-sheet-chart" light height={compact ? 72 : 104} />
       <View style={styles.periods} accessibilityRole="tablist" accessibilityLabel="Portfolio performance period">
