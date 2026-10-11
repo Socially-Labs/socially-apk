@@ -56,3 +56,6 @@ example
 # generated native folders
 /ios
 /android
+
+# local UI review screenshots
+/.ui-review/

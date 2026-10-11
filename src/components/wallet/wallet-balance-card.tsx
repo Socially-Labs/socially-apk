@@ -23,7 +23,6 @@ export function WalletBalanceCard({ visible, canToggle, compact, error, tradingE
       <AuthButton accessibilityRole="button" accessibilityLabel="Wallet options" testID="wallet-options" onPress={onMore} style={styles.iconButton}><MoreHorizontal size={22} color={W.secondary} /></AuthButton>
     </View>
     <Text style={styles.balance} testID="wallet-balance" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>{!visible ? '••••••' : totalUsd === null ? '—' : `$${formatUsdc(totalUsd)}`}</Text>
-    <View style={styles.changeRow}><Text style={styles.changeCaption}>SOL + USDC · Test balances at market prices</Text></View>
     {visible && totalUsd === null && !error ? <Text style={styles.changeCaption}>{valuationLoading ? 'Fetching wallet valuation…' : 'Fresh market prices unavailable. Pull to refresh.'}</Text> : null}
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     <Text style={styles.tradingHeading}>Paper trading funds · Separate from wallet</Text>
@@ -61,9 +60,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: -6, marginBottom: -2 }, labelRow: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center' },
   label: { flexShrink: 1, fontFamily: BrandFont.editorial, fontSize: 11, color: W.ink, letterSpacing: 0.6 }, preview: { fontFamily: InterFont.regular, fontSize: 10, letterSpacing: 0, color: W.secondary }, iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   balance: { fontFamily: BrandFont.editorial, fontSize: W.balanceSize, fontVariant: ['lining-nums', 'tabular-nums'], lineHeight: 50, letterSpacing: -0.7, color: W.ink, maxWidth: '85%' },
-  changeRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 5, marginBottom: 16 }, changePill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, backgroundColor: W.gainSurface },
-  change: { fontFamily: InterFont.medium, fontSize: 11, color: W.gain }, changeCaption: { fontFamily: InterFont.regular, fontSize: 10, color: W.secondary }, error: { fontFamily: InterFont.regular, fontSize: 11, color: W.error, marginBottom: 10 },
-  tradingHeading: { fontFamily: InterFont.medium, fontSize: 10, lineHeight: 14, color: W.secondary, marginBottom: 8 },
+  changePill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, backgroundColor: W.gainSurface },
+  change: { fontFamily: InterFont.medium, fontSize: 11, color: W.gain }, changeCaption: { fontFamily: InterFont.regular, fontSize: 10, color: W.secondary, marginTop: 5, marginBottom: 16 }, error: { fontFamily: InterFont.regular, fontSize: 11, color: W.error, marginBottom: 10 },
+  tradingHeading: { fontFamily: InterFont.medium, fontSize: 10, lineHeight: 14, color: W.secondary, marginTop: 16, marginBottom: 8 },
   breakdown: { flexDirection: 'row', alignItems: 'center', gap: 8, borderTopWidth: 1, borderTopColor: W.balanceLine, paddingTop: 12 }, bucket: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 44 }, bucketIcon: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: W.balanceIcon },
   bucketCopy: { flex: 1, minWidth: 0, gap: 2 }, bucketValue: { fontFamily: BrandFont.editorial, fontSize: 16, fontVariant: ['lining-nums', 'tabular-nums'], color: W.ink }, bucketLabel: { fontFamily: InterFont.regular, fontSize: 10, lineHeight: 14, color: W.secondary }, divider: { width: 1, height: 23, backgroundColor: W.balanceLine }, vaultArrow: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }, arrowCircle: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: W.balanceIcon },
   compactBreakdown: { gap: 6 }, compactBucket: { gap: 5 }, compactBucketIcon: { width: 24, height: 24, borderRadius: 12 }, compactBucketValue: { fontSize: 14 }, compactBucketLabel: { fontSize: 9, lineHeight: 12 },
