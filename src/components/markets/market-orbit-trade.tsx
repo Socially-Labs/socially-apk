@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight, Info, ListFilter, SlidersHorizontal, Wallet } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Platform, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Keyboard, Platform, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { AuthButton } from '@/components/shared/motion';
 import type { Preview, Token } from '@/api/markets';
@@ -39,7 +39,7 @@ export function OrbitTrade({ token, side, input, quote, loading, balance, disabl
       <Text style={[o.segmentText, side === item && o.selectedText]}>{item === 'BUY' ? 'Buy' : 'Sell'}</Text>
     </AuthButton>)}</View>
     <TextInput testID="market-trade-amount" accessibilityLabel={`Amount in ${unit}`} value={input} onChangeText={onInput}
-      editable={!disabled && !reviewing} keyboardType="decimal-pad" autoCorrect={false} maxLength={40}
+      editable={!disabled && !reviewing} keyboardType="decimal-pad" returnKeyType="done" submitBehavior="blurAndSubmit" onSubmitEditing={Keyboard.dismiss} autoCorrect={false} maxLength={40}
       placeholder="0.00" placeholderTextColor={M.secondary} underlineColorAndroid="transparent"
       style={[o.amount, { fontSize: input.length > 15 ? 24 : input.length > 10 ? 34 : 54 }]} />
     <View style={o.currency} accessible accessibilityLabel={`Pay ${unit}`}>
