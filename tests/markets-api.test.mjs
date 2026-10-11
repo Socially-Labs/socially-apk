@@ -9,6 +9,12 @@ const now = Date.now(), at = new Date(now).toISOString();
 const price = { instrumentId: 'SOL', mint, priceUsd: '100.25', priceUsdc: '99.25', sourceAt: at, receivedAt: at, status: 'CURRENT', reason: null, change24h: '2.25' };
 const token = { mint, instrumentId: 'SOL', symbol: 'SOL', name: 'Solana', decimals: 9, icon: null, category: 'Major assets', tracked: true, tradable: true, tradeReason: null, verified: null, suspicious: false, price,
   metrics: { denomination: 'USD', source: 'JUPITER_TOKENS_V2', at: null, status: 'UNAVAILABLE', volume24h: null, liquidity: null, change1h: null, change24h: null } };
+
+test('omitted instrument filters accept registry snapshots beyond fifty prices',async()=>{
+ const api=marketsApi(createApiClient({origin:'http://localhost:3000',getAccessToken:async()=>null,fetchImpl:async()=>Response.json({mode:'PAPER',prices:Array.from({length:60},()=>price)})}));
+ assert.equal((await api.prices()).length,60);
+ await assert.rejects(api.prices(undefined,['SOL']));
+});
 const context = { mode: 'PAPER', fund: { id, name: 'Vault', status: 'ACTIVE', trialEnd: at }, cashUsdc: '1000.000000', navUsdc: '1000', holdings: [],
   policy: { maxOrderBps: 1000, maxPositionBps: 2500, allowedInstruments: ['SOL'] }, limits: [{ instrumentId: 'SOL', canBuy: true, canSell: false, reason: null, maxBuyNotionalUsdc: '100', maxSellNotionalUsdc: '0', maxSellQuantity: '0.000000000' }], pending: [], capacityIsEstimate: true, asOf: at };
 
