@@ -1,8 +1,13 @@
+import { useHomeRefreshSource } from '@/components/home/home-refresh-provider';
+import { ShipLoader } from '@/components/shared/refresh/ship-loader';
+import { KeyboardScrollView } from '@/components/shared/keyboard/keyboard-scroll-view';
+import { SailingRefresh } from '@/components/shared/refresh/sailing-refresh';
+import { DiscoveryAvatar, DiscoveryBanner } from '@/components/discover/crew-discovery-media';
 import { PaperBalanceSetup } from './paper-balance-setup';
 import { VaultArtwork } from './vault-artwork';
 import { RoundTerms } from './vault-round-terms';
 import { useCallback,useState,type ReactNode } from 'react';
-import { Image,ActivityIndicator,FlatList,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
+import { Image,FlatList,Keyboard,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View } from 'react-native';
 import { router,useFocusEffect,useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVaults } from '@/hooks/use-vaults';
@@ -41,25 +46,26 @@ export function VaultListScreen() {
  const [durationGroup,setDurationGroup]=useState<'all'|'short'|'long'>('all');
  const data=useVaults(undefined,mine==='1',durationGroup),{ settings,ready }=useAccountSettings();
  const hidden=!ready||settings.hideBalances;
- return <Frame title={mine==='1'?'Your vault rounds':'Discover vaults'}><FlatList data={data.vaults} keyExtractor={v=>v.id}
+ return <Frame title={mine==='1'?'Your vault rounds':'Discover vaults'}><SailingRefresh refreshing={data.loading} onRefresh={data.refresh}>{scrollProps => <FlatList {...scrollProps} data={data.vaults} keyExtractor={v=>v.id}
   contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" renderItem={({ item })=><VaultCard vault={item} hidden={hidden} />}
-  refreshing={data.loading} onRefresh={data.refresh} ListHeaderComponent={<View style={s.section}>
+  ListHeaderComponent={<View style={s.section}>
    {!data.config?.walletSnapshotEnabled?<Action secondary onPress={()=>router.push('/vaults/live')}>Your wallet-funded vaults</Action>:null}
    <View style={s.row}>{(['all','short','long'] as const).map(group=><Pressable key={group} accessibilityRole="radio" accessibilityState={{ checked:durationGroup===group }} onPress={()=>setDurationGroup(group)} style={[s.chip,durationGroup===group&&s.chosen]}><Text style={durationGroup===group?s.buttonText:s.copy}>{group==='all'?'All durations':group==='short'?'Under 30 days':'30 days or more'}</Text></Pressable>)}</View>
    <Text style={s.copy}>Fixed funding windows. Transparent paper trading. Capital locked until settlement.</Text>
    <View style={s.row}><Action secondary onPress={()=>router.replace({ pathname:'/vaults',params:{ mine:mine==='1'?'0':'1' } })}>{mine==='1'?'Discover':'Your rounds'}</Action>
    <Action onPress={()=>router.push('/vaults/create')}>Create vault</Action></View>
    <Text style={s.caption}>{data.connected?'Live updates connected':'Refreshing periodically'} · Paper USDC has no redemption value</Text><ErrorText value={data.error} />
-  </View>} ListEmptyComponent={<View style={s.card}>{data.loading?<ActivityIndicator color={C.ink} />:null}<Text style={s.cardTitle}>{data.loading?'Loading vaults…':'No vault rounds yet'}</Text><Text style={s.copy}>Funded vaults appear here after the backend confirms creation.</Text><Action secondary onPress={data.refresh}>Refresh</Action></View>}
-  ListFooterComponent={data.nextCursor?<Action secondary onPress={()=>{ void data.loadMore(); }}>Load more vaults</Action>:null} />
+  </View>} ListEmptyComponent={<View style={s.card}>{data.loading?<ShipLoader label="Loading vaults…" showLabel={false}/>:null}<Text style={s.cardTitle}>{data.loading?'Loading vaults…':'No vault rounds yet'}</Text><Text style={s.copy}>Funded vaults appear here after the backend confirms creation.</Text><Action secondary onPress={data.refresh}>Refresh</Action></View>}
+  ListFooterComponent={data.paging?<ShipLoader compact label="Loading more vaults…"/>:data.nextCursor?<Action secondary onPress={()=>{ void data.loadMore(); }}>Load more vaults</Action>:null} />}</SailingRefresh>
  </Frame>;
 }
 export function VaultHomePanel({ isCaptain }:{ isCaptain:boolean }) {
  const data=useVaults(undefined,true),{ settings,ready }=useAccountSettings();
+ useHomeRefreshSource(data.refresh,data.loading);
  return <View style={s.content}><Text style={s.cardTitle}>{isCaptain?'Lead your next round.':'Your vault investments.'}</Text>
   {!data.config?.walletSnapshotEnabled?<Action secondary onPress={()=>router.push('/vaults/live')}>Your wallet-funded vaults</Action>:null}
   <Text style={s.copy}>Your funded paper rounds and final claims.</Text><ErrorText value={data.error} />
-  {data.loading&&!data.vaults.length?<ActivityIndicator color={C.ink} />:null}
+  {data.loading&&!data.vaults.length?<ShipLoader label="Loading vaults…"/>:null}
   {!data.loading&&!data.vaults.length?<View style={s.card}><Text style={s.copy}>No paper vault investments yet. {isCaptain?'Create your first paper strategy with virtual funds based on your devnet wallet.':'Explore vaults accepting contributions.'}</Text></View>:null}
   {data.vaults.slice(0,5).map(v=><VaultCard key={v.id} vault={v} hidden={!ready||settings.hideBalances} />)}
   <Action onPress={()=>router.push(isCaptain?'/vaults/create':'/vaults')}>{isCaptain?'Create a vault':'Explore vaults'}</Action>
@@ -79,22 +85,23 @@ export function VaultDetailScreen() {
  const serverNow=vault?Date.parse(vault.serverTime)+(data.refreshedAt?now-data.refreshedAt:0):0;
  const funding=!!vault && vault.phase==='FUNDRAISING' && serverNow<Date.parse(vault.fundingClosesAt);
  const saved=intent.attempt?.intent;
- const canAct=intent.ready&&!intent.busy&&fresh;
+ const canAct=!vault?.isDemo&&intent.ready&&!intent.busy&&fresh;
  const submitContribution=async()=>{
   if (!vault) return;
   setLocalError(null);
   try { const quote=await data.api.quote(id,{ amountUsdc:amount,termsHash:vault.termsHash });
    if (!quote.allowed) throw new Error(quote.reason==='capacity_exceeded'?'This vault has insufficient remaining capacity. Your amount has been kept.':`Contribution unavailable: ${quote.reason}`);
-   setReview(true);
+   Keyboard.dismiss();setReview(true);
   } catch (error) { setLocalError(error instanceof Error?error.message:'Could not quote contribution.'); data.refresh(); }
  };
- return <Frame title={vault?.name ?? 'Vault round'}><ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-  {data.loading&&!vault?<ActivityIndicator color={C.ink} />:null}<ErrorText value={data.error} /><ErrorText value={data.privateError} /><ErrorText value={intent.error} /><ErrorText value={localError} />
+ return <Frame title={vault?.name ?? 'Vault round'}><KeyboardScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+  {data.loading&&!vault?<ShipLoader label="Loading vault…"/>:null}<ErrorText value={data.error} /><ErrorText value={data.privateError} /><ErrorText value={intent.error} /><ErrorText value={localError} />
   <Action secondary onPress={data.refresh}>Refresh vault</Action>
+  {data.subject?<Action secondary onPress={()=>router.push('/paper-activity')}>Your paper activity</Action>:null}
   {vault?<>
    <View style={s.card}>
-    {vault.bannerUrl?<Image accessibilityLabel="Vault banner" source={{ uri:vault.bannerUrl }} style={{ width:'100%',height:140,borderRadius:12 }} />:null}
-    {vault.avatarUrl?<Image accessibilityLabel="Vault image" source={{ uri:vault.avatarUrl }} style={{ width:64,height:64,borderRadius:16 }} />:null}
+    {vault.isDemo?<DiscoveryBanner identity={vault.id} uri={vault.bannerUrl} height={140}/>:vault.bannerUrl?<Image accessibilityLabel="Vault banner" source={{ uri:vault.bannerUrl }} style={{ width:'100%',height:140,borderRadius:12 }} />:null}
+    {vault.isDemo?<DiscoveryAvatar identity={vault.id} uri={vault.avatarUrl} vault size={64}/>:vault.avatarUrl?<Image accessibilityLabel="Vault image" source={{ uri:vault.avatarUrl }} style={{ width:64,height:64,borderRadius:16 }} />:null}
     <Text style={s.eyebrow}>{vault.phase} · {vault.riskState} · PAPER</Text><Text style={s.copy}>{vault.description}</Text>
     <Line label="Accepted funding" value={money(vault.acceptedCapitalUsdc,hidden)} /><Line label="Remaining capacity" value={money(vault.remainingCapacityUsdc,hidden)} />
     <Line label="Vault value" value={money(vault.navUsdc,hidden)} /><Text style={s.caption}>{vault.valuationStatus==='CURRENT'?`Valued ${vault.valuedAt?date(vault.valuedAt):'recently'}`:'Valuation unavailable · last known values may be stale'}</Text>
@@ -110,16 +117,16 @@ export function VaultDetailScreen() {
     {funding&&position.shares!=='0.000000'?<Action secondary disabled={!canAct} onPress={()=>{ void intent.submit({ kind:'CANCEL',vaultId:id,body:{} }); }}>{position.isCaptain?'Cancel before any Crew commitment':'Cancel full funding contribution'}</Action>:null}
    </View>:null}
    {data.config?.walletSnapshotEnabled&&funding&&position&&!position.isCaptain&&position.availableUsdc==='0.000000'?<PaperBalanceSetup onReady={data.refresh}/>:null}
-   {saved?<View style={s.card}><Text style={s.cardTitle}>Request awaiting confirmation</Text><Text style={s.copy}>{saved.kind} · Your original request is saved. Retry confirms that same request.</Text><Action disabled={!intent.ready||intent.busy} onPress={()=>{ void intent.submit(saved); }}>{intent.busy?'Confirming…':'Retry saved request'}</Action></View>:funding&&position&&!position.isCaptain?<View style={s.card}>
+   {vault.isDemo?<View style={s.card}><Text style={s.copy}>Read-only demo with simulated performance. Contributions are disabled.</Text></View>:saved?<View style={s.card}><Text style={s.cardTitle}>Request awaiting confirmation</Text><Text style={s.copy}>{saved.kind} · Your original request is saved. Retry confirms that same request.</Text><Action disabled={!intent.ready||intent.busy} onPress={()=>{ void intent.submit(saved); }}>{intent.busy?'Confirming…':'Retry saved request'}</Action></View>:funding&&position&&!position.isCaptain?<View style={s.card}>
     <Text style={s.label}>Contribution in paper USDC</Text>
-    {Number(vault.remainingCapacityUsdc)<50?<Text style={s.copy}>Remaining capacity is below the 50 USDC minimum. No smaller final contribution is accepted.</Text>:null}<TextInput accessibilityLabel="Contribution in paper USDC" keyboardType="decimal-pad" value={amount} onChangeText={value=>{ setAmount(value); setReview(false); }} style={s.input} editable={!intent.busy} maxLength={30} />
+    {Number(vault.remainingCapacityUsdc)<50?<Text style={s.copy}>Remaining capacity is below the 50 USDC minimum. No smaller final contribution is accepted.</Text>:null}<TextInput accessibilityLabel="Contribution in paper USDC" keyboardType="decimal-pad" returnKeyType="done" submitBehavior="blurAndSubmit" onSubmitEditing={Keyboard.dismiss} value={amount} onChangeText={value=>{ setAmount(value); setReview(false); }} style={s.input} editable={!intent.busy} maxLength={30} />
     {review?<><Text style={s.copy}>Invest {amount} paper USDC at 1 USDC per economic share. Capital is locked from the funding deadline until settlement. The amount is checked again when submitted.</Text><Action disabled={!canAct} onPress={()=>{ void intent.submit({ kind:'CONTRIBUTE',vaultId:id,body:{ amountUsdc:amount,termsHash:vault.termsHash } }); }}>{intent.busy?'Confirming…':'Confirm contribution'}</Action></>:<Action disabled={!canAct} onPress={()=>{ void submitContribution(); }}>Review contribution</Action>}
    </View>:null}
    {position?.isCaptain?<View style={s.card}><VaultArtwork key={`${data.subject}:${id}`} api={data.api} id={id} onSaved={data.refresh} /></View>:null}
    {vault.phase==='ACTIVE'&&position?.isCaptain?<Action onPress={()=>router.push({pathname:'/explore',params:{vaultId:id}})}>Open trading markets</Action>:null}
    <View style={s.card}><Text style={s.cardTitle}>Round terms</Text><RoundTerms universeMode={vault.universeMode} /><Text selectable style={s.caption}>Terms v{vault.termsVersion} · {vault.termsHash}</Text></View>
   </>:!data.loading?<Text style={s.copy}>This vault is unavailable. Check the link or return to Discover.</Text>:null}
- </ScrollView></Frame>;
+ </KeyboardScrollView></Frame>;
 }
 const s=StyleSheet.create({
  root:{ flex:1,backgroundColor:C.surface },header:{ flexDirection:'row',alignItems:'center',gap:16,padding:16 },heading:{ flex:1,fontFamily:InterFont.semiBold,fontSize:18,color:C.ink },

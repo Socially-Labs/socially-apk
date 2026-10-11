@@ -1,3 +1,4 @@
+import { getApiOrigin } from '@/api/runtime-origin';
 import { useCallback,useEffect,useMemo,useRef,useState } from 'react';
 import { AppState } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -8,21 +9,22 @@ export function useVaults(id?:string,mine=false,durationGroup:'all'|'short'|'lon
  const { accountId,isAuthenticated,getAccessToken }=useAuth();
  const subject=isAuthenticated?accountId:null;
  const getter=useRef(getAccessToken); useEffect(()=>{ getter.current=getAccessToken; },[getAccessToken]);
- const api=useMemo(()=>vaultsApi(createApiClient({ origin:process.env.EXPO_PUBLIC_API_URL,getAccessToken:()=>getter.current() })),[]);
+ const api=useMemo(()=>vaultsApi(createApiClient({ origin:getApiOrigin(),getAccessToken:()=>getter.current() })),[]);
  const [revision,setRevision]=useState(0);
  const [state,setState]=useState<{ scope:string; config:VaultConfig|null; vaults:VaultSummary[]; vault:VaultSummary|null; position:VaultPosition|null;
-  loading:boolean; error:string|null; privateError:string|null; connected:boolean; refreshedAt:number|null; nextCursor:string|null }>(
-  { scope:'',config:null,vaults:[],vault:null,position:null,loading:true,error:null,privateError:null,connected:false,refreshedAt:null,nextCursor:null });
+  loading:boolean; paging:boolean; error:string|null; privateError:string|null; connected:boolean; refreshedAt:number|null; nextCursor:string|null }>(
+  { scope:'',config:null,vaults:[],vault:null,position:null,loading:true,paging:false,error:null,privateError:null,connected:false,refreshedAt:null,nextCursor:null });
  const scope=`${subject}:${id ?? ''}:${mine}:${durationGroup}`,epoch=useRef(0),cursor=useRef<string|null>(null),loadingMore=useRef(false);
+ const pageRequest=useRef<AbortController|null>(null);
  const refresh=useCallback(()=>setRevision(v=>v+1),[]);
  useFocusEffect(useCallback(()=>{
-  void revision;
+  void revision;pageRequest.current?.abort();loadingMore.current=false;
   const generation=++epoch.current,controller=new AbortController();
   let stopped=false,busy=false,dirty=false,socket:WebSocket|null=null,retry:ReturnType<typeof setTimeout>|undefined,backoff=1000,lastRefresh=0;
   let watched:string[]=[],sequence=new Map<string,string>();
   const valid=()=>!stopped && epoch.current===generation && !controller.signal.aborted;
   const foreground=()=>!AppState.currentState || AppState.currentState==='active';
-  setState(s=>s.scope===scope?{ ...s,loading:true,error:null }:{ scope,config:null,vaults:[],vault:null,position:null,loading:true,error:null,privateError:null,connected:false,refreshedAt:null,nextCursor:null });
+  setState(s=>s.scope===scope?{ ...s,loading:true,paging:false,error:null }:{ scope,config:null,vaults:[],vault:null,position:null,loading:true,paging:false,error:null,privateError:null,connected:false,refreshedAt:null,nextCursor:null });
   cursor.current=null;
   const subscribe=()=>{ if (socket?.readyState===WebSocket.OPEN) socket.send(JSON.stringify({ type:'subscribe',vaultIds:watched })); };
   const read=async()=>{
@@ -48,7 +50,7 @@ export function useVaults(id?:string,mine=false,durationGroup:'all'|'short'|'lon
   const connect=()=>{
    if (!valid() || !foreground()) return;
    try {
-    socket=new WebSocket(`${apiOrigin(process.env.EXPO_PUBLIC_API_URL).replace(/^http/,'ws')}/v1/vaults/ws`);
+    socket=new WebSocket(`${apiOrigin(getApiOrigin()).replace(/^http/,'ws')}/v1/vaults/ws`);
     const own=socket;
     own.onopen=()=>{ if (!valid() || own!==socket) { own.close(); return; } backoff=1000; setState(s=>({ ...s,connected:true })); subscribe(); void read(); };
     own.onmessage=event=>{
@@ -70,15 +72,15 @@ export function useVaults(id?:string,mine=false,durationGroup:'all'|'short'|'lon
    if (status==='active') { void read(); if (!socket || socket.readyState>1) connect(); }
    else { const old=socket; socket=null; old?.close(); if (valid()) setState(s=>({ ...s,connected:false })); }
   });
-  return ()=>{ stopped=true; epoch.current++; controller.abort(); clearInterval(timer); if (retry) clearTimeout(retry); appState.remove(); socket?.close(); };
+  return ()=>{ stopped=true; epoch.current++; controller.abort(); pageRequest.current?.abort();loadingMore.current=false; clearInterval(timer); if (retry) clearTimeout(retry); appState.remove(); socket?.close(); };
  },[api,scope,id,mine,subject,revision,durationGroup]));
  const loadMore=async()=>{
-  if (id || !cursor.current || loadingMore.current) return;
-  const generation=epoch.current; loadingMore.current=true;
-  try { const result=await api.list(mine,cursor.current,undefined,durationGroup); if (epoch.current===generation) { cursor.current=result.nextCursor; setState(s=>({ ...s,vaults:[...s.vaults,...result.vaults.filter(v=>!s.vaults.some(old=>old.id===v.id))],nextCursor:result.nextCursor })); } }
+  if (id || state.scope!==scope || state.loading || !cursor.current || loadingMore.current) return;
+  const generation=epoch.current,controller=new AbortController();pageRequest.current=controller;loadingMore.current=true;setState(s=>({...s,paging:true,error:null}));
+  try { const result=await api.list(mine,cursor.current,controller.signal,durationGroup); if (epoch.current===generation) { cursor.current=result.nextCursor; setState(s=>({ ...s,vaults:[...s.vaults,...result.vaults.filter(v=>!s.vaults.some(old=>old.id===v.id))],nextCursor:result.nextCursor })); } }
   catch (error) { if (epoch.current===generation) setState(s=>({ ...s,error:error instanceof Error?error.message:'Could not load more vaults.' })); }
-  finally { loadingMore.current=false; }
+  finally { if(epoch.current===generation){loadingMore.current=false;setState(s=>({...s,paging:false}));} }
  };
  // Prevent even one render of another account's private position.
- return { ...state,...(state.scope!==scope?{ position:null,vaults:[],vault:null,loading:true }:{}),api,subject,refresh,loadMore };
+ return { ...state,...(state.scope!==scope?{ position:null,vaults:[],vault:null,loading:true,paging:false }:{}),api,subject,refresh,loadMore };
 }

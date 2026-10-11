@@ -1,5 +1,6 @@
+import { ShipLoader } from '@/components/shared/refresh/ship-loader';
 import { useEffect,useState,type ReactNode } from 'react';
-import { ActivityIndicator,Pressable,StyleSheet,Text,View } from 'react-native';
+import { Pressable,StyleSheet,Text,View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight,CalendarDays,ChartNoAxesColumn,Clock3,Coins,Link,LockKeyhole,Percent,Play,ReceiptText,Users,Wallet } from 'lucide-react-native';
 import type { VaultCreateInput,VaultPreview,vaultsApi } from '@/api/vaults';
@@ -28,7 +29,7 @@ export function VaultCreateReview({api,body,disabled,busy,saved,onConfirm,onEdit
  const blocked=preview?!preview.enabled?'New paper vaults are currently unavailable on this backend.':!preview.captainEligible?'Only Captains can create a vault.':BigInt(preview.availableUsdc.replace('.',''))<BigInt(preview.seedUsdc.replace('.',''))?`You need ${money(preview.seedUsdc)} available to create this vault.`:null:null;
  const icon={size:19,color:'#456487'};
  return <>
-  {!preview?<Card>{error?<><Text accessibilityRole="alert" style={s.error}>{error}</Text><Pressable accessibilityRole="button" onPress={()=>{setError(null);setRevision(v=>v+1);}} style={s.edit}><Text style={s.editText}>Retry review</Text></Pressable></>:<><ActivityIndicator color={C.ink}/><Text style={s.label}>Checking your round terms and available funds…</Text></>}</Card>:<>
+  {!preview?<Card>{error?<><Text accessibilityRole="alert" style={s.error}>{error}</Text><Pressable accessibilityRole="button" onPress={()=>{setError(null);setRevision(v=>v+1);}} style={s.edit}><Text style={s.editText}>Retry review</Text></Pressable></>:<><ShipLoader label="Checking your round terms and available funds…" showLabel={false}/><Text style={s.label}>Checking your round terms and available funds…</Text></>}</Card>:<>
    <Card><Text style={s.sectionTitle}>Vault summary</Text>
     <Row label="Funding window" value={`${preview.input.fundingWindowHours} hours`} icon={<CalendarDays {...icon}/>}/>
     <Row label="Trading duration" value={`${preview.input.durationDays} days`} icon={<Clock3 {...icon}/>}/>

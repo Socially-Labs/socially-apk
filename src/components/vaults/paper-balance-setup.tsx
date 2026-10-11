@@ -1,7 +1,9 @@
+import { getApiOrigin } from '@/api/runtime-origin';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/auth/session';
-import { createApiClient } from '@/api/client';
+import { router } from 'expo-router';
+import { ApiError, createApiClient } from '@/api/client';
 import { paperPortfolioApi } from '@/api/paper-portfolio';
 import { DashboardSheetTheme as C } from '@/constants/theme/dashboard';
 import { InterFont } from '@/constants/fonts';
@@ -17,11 +19,12 @@ function Setup({ onReady }: { onReady: () => void }) {
   const notify = useRef(onReady);
   useEffect(() => { notify.current = onReady; }, [onReady]);
   const api = useMemo(() => paperPortfolioApi(createApiClient({
-    origin: process.env.EXPO_PUBLIC_API_URL,
+    origin: getApiOrigin(),
     getAccessToken: auth.getAccessToken,
     timeoutMs: 30000,
   })), [auth.getAccessToken]);
   const [error, setError] = useState<string | null>(null);
+  const [needsFunding, setNeedsFunding] = useState(false);
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
@@ -40,10 +43,12 @@ function Setup({ onReady }: { onReady: () => void }) {
         if (!controller.signal.aborted) {
           if (!portfolio.initialized) throw new Error('Could not prepare your trading balance.');
           setError(null);
+          setNeedsFunding(false);
           notify.current();
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
+          setNeedsFunding(cause instanceof ApiError && cause.code === 'empty_wallet');
           setError(cause instanceof Error ? cause.message : 'Could not load your available balance.');
         }
       }
@@ -54,7 +59,8 @@ function Setup({ onReady }: { onReady: () => void }) {
 
   if (!error) return null;
   return <View style={s.errorRow}>
-    <Text accessibilityRole="alert" style={s.error}>{error}</Text>
+    <Text accessibilityRole="alert" style={s.error}>{needsFunding ? 'Fund your Solana devnet wallet with SOL or USDC, then return and retry. Your starting paper balance is copied once; tokens stay in your wallet.' : error}</Text>
+    {needsFunding ? <Pressable accessibilityRole="button" onPress={()=>router.push('/wallet')} style={s.retry}><Text style={s.retryText}>Open wallet</Text></Pressable> : null}
     <Pressable accessibilityRole="button" accessibilityLabel="Retry available balance" onPress={() => {
       setError(null);
       setRevision(value => value + 1);

@@ -1,6 +1,8 @@
+import { ShipLoader } from '@/components/shared/refresh/ship-loader';
+import { KeyboardScrollView } from '@/components/shared/keyboard/keyboard-scroll-view';
 import { PaperBalanceSetup } from './paper-balance-setup';
 import { useEffect,useRef,useState,type ReactNode } from 'react';
-import { ActivityIndicator,Image,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
+import { Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft,ArrowRight,CalendarDays,Camera,ChevronDown,Clock3,ImagePlus,LockKeyhole } from 'lucide-react-native';
@@ -26,6 +28,7 @@ function Choice({label,value,options,onChange,disabled,icon}:{label:string;value
 export function VaultCreateScreen(){const data=useVaults();return <CreateForm key={data.subject??'signed-out'} data={data}/>;}
 function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
  const insets=useSafeAreaInsets();
+ const descriptionInput=useRef<TextInput>(null);
  const [portfolioReady,setPortfolioReady]=useState(false);
  const [name,setName]=useState(''),[description,setDescription]=useState(''),[hours,setHours]=useState(24),[days,setDays]=useState(14),[review,setReview]=useState(false);
  const [art,setArt]=useState<Record<Artwork,string|null>>({avatar:null,banner:null});
@@ -55,7 +58,7 @@ function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
   return ()=>{active=false;clearTimeout(timer);controller.abort();};
  },[createdId,art,data.api,uploadRevision]);
  async function choose(kind:Artwork){
-  if(locked||pickLock.current)return;pickLock.current=true;setPicking(true);setMediaError(null);
+  if(locked||pickLock.current)return;Keyboard.dismiss();pickLock.current=true;setPicking(true);setMediaError(null);
   try{const uri=await pickProfileMedia(kind==='avatar'?'photo':'banner');if(uri&&mounted.current)setArt(old=>({...old,[kind]:uri}));}
   catch(error){if(mounted.current)setMediaError(error instanceof Error?error.message:'Could not select artwork.');}
   finally{pickLock.current=false;if(mounted.current)setPicking(false);}
@@ -66,15 +69,15 @@ function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
  return <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={s.root}>
   <Image source={harbor} style={s.background} resizeMode="cover" accessibilityIgnoresInvertColors/>
   <LinearGradient colors={['rgba(245,250,255,0.06)','rgba(241,248,255,0.88)','#F5F7FB']} locations={[0,0.4,0.8]} style={StyleSheet.absoluteFill} pointerEvents="none"/>
-  <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={[s.content,{paddingTop:insets.top+14,paddingBottom:insets.bottom+24}]}>
+  <KeyboardScrollView ref={scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={[s.content,{paddingTop:insets.top+14,paddingBottom:insets.bottom+24}]}>
    <Pressable accessibilityRole="button" accessibilityLabel={createdId?'Open created vault':reviewing&&!saved?'Back to vault details':'Back'} disabled={intent.busy||uploading} onPress={()=>createdId?openVault(createdId):reviewing&&!saved?setReview(false):router.canGoBack()?router.back():router.replace('/')} style={s.back}><ArrowLeft size={24} color={C.ink}/></Pressable>
    <Text accessibilityRole="header" style={[s.title,reviewing&&{fontSize:36,lineHeight:40}]}>{createdId?'Vault created':reviewing?'Review your vault':'Create a vault'}</Text>
    <View style={s.badge}><Text style={s.badgeText}>Paper vault</Text></View>
-   {data.loading&&!config?<ActivityIndicator accessibilityLabel="Loading vault configuration" color={C.ink}/>:null}
+   {data.loading&&!config?<ShipLoader label="Loading vault configuration…"/>:null}
    {(data.error||intent.error||mediaError)?<Glass><Text accessibilityRole="alert" style={s.error}>{mediaError??intent.error??data.error}</Text>{data.error&&!createdId?<Button secondary onPress={data.refresh}>Retry loading</Button>:null}</Glass>:null}
    {!data.loading&&config&&!config.enabled&&!createdId?<Glass><Text style={s.copy}>Paper vault creation is currently disabled. Your details are kept; retry when the service is available.</Text></Glass>:null}
    {!data.subject?<Text style={s.copy}>Sign in as a Captain to create your vault.</Text>:null}
-   {createdId?<Glass><Text style={s.cardTitle}>{body.name}</Text><Text style={s.copy}>{uploading?'Saving your vault artwork…':'Your vault is confirmed. Artwork can also be updated from the vault page.'}</Text>{uploading?<ActivityIndicator color={C.ink}/>:<><Button onPress={()=>{setUploading(true);setMediaError(null);setUploadRevision(v=>v+1);}}>Retry artwork</Button><Button secondary onPress={()=>openVault(createdId)}>Open vault</Button></>}</Glass>:<>
+   {createdId?<Glass><Text style={s.cardTitle}>{body.name}</Text><Text style={s.copy}>{uploading?'Saving your vault artwork…':'Your vault is confirmed. Artwork can also be updated from the vault page.'}</Text>{uploading?<ShipLoader label="Saving your vault artwork…" showLabel={false}/>:<><Button onPress={()=>{setUploading(true);setMediaError(null);setUploadRevision(v=>v+1);}}>Retry artwork</Button><Button secondary onPress={()=>openVault(createdId)}>Open vault</Button></>}</Glass>:<>
     <View>
      <Glass style={s.cover}>
       {art.banner?<Image source={{uri:art.banner}} style={s.imageFill} resizeMode="cover" accessibilityLabel="Selected vault banner"/>:<Image source={harbor} style={[s.imageFill,{opacity:0.58}]} resizeMode="cover"/>}
@@ -87,14 +90,14 @@ function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
     </View>
     {config?.walletSnapshotEnabled&&!reviewing?<PaperBalanceSetup onReady={()=>{setPortfolioReady(true);}}/>:null}
     {!reviewing?<>
-     <Glass><Text style={s.label}>Vault name</Text><TextInput accessibilityLabel="Vault name" placeholder="e.g. Horizon Growth" placeholderTextColor="#8194AC" value={name} onChangeText={setName} maxLength={80} editable={!locked} style={s.input}/><Text style={s.label}>Strategy description</Text><TextInput accessibilityLabel="Strategy description" placeholder="Describe your approach to the markets" placeholderTextColor="#8194AC" value={description} onChangeText={setDescription} maxLength={1000} multiline editable={!locked} style={[s.input,s.multiline]}/></Glass>
+     <Glass><Text style={s.label}>Vault name</Text><TextInput accessibilityLabel="Vault name" returnKeyType="next" submitBehavior="submit" onSubmitEditing={()=>descriptionInput.current?.focus()} placeholder="e.g. Horizon Growth" placeholderTextColor="#8194AC" value={name} onChangeText={setName} maxLength={80} editable={!locked} style={s.input}/><Text style={s.label}>Strategy description</Text><TextInput ref={descriptionInput} accessibilityLabel="Strategy description" placeholder="Describe your approach to the markets" placeholderTextColor="#8194AC" value={description} onChangeText={setDescription} maxLength={1000} multiline editable={!locked} style={[s.input,s.multiline]}/></Glass>
      <View style={s.settings}><Choice label="Funding window" value={hours} options={config?.fundingWindowHours??[]} onChange={setHours} disabled={locked||!config} icon={<Clock3 size={24} color="#456487"/>}/><Choice label="Trading duration" value={days} options={config?.durationDays??[]} onChange={setDays} disabled={locked||!config} icon={<CalendarDays size={24} color="#456487"/>}/></View>
      <View style={s.seed}><View style={s.seedRow}><View style={s.lock}><LockKeyhole size={23} color="#00846C"/></View><View style={{flex:1}}><Text style={s.label}>Your seed</Text><Text style={s.seedValue}>{config?`${config.captainSeedUsdc.replace(/\.0+$/,'')} paper USDC`:'Loading…'}</Text></View></View><View style={s.rule}/><Text style={s.caption}>10% fee on positive net round profit</Text><Text style={s.caption}>Capital stays locked during trading</Text></View>
-     <Button disabled={!valid} onPress={()=>setReview(true)}>{picking?'Preparing artwork…':'Review terms'}</Button>
+     <Button disabled={!valid} onPress={()=>{Keyboard.dismiss();setReview(true);}}>{picking?'Preparing artwork…':'Review terms'}</Button>
     </>:<VaultCreateReview key={JSON.stringify(body)} api={data.api} body={body} disabled={!config?.enabled||!!data.error||!intent.ready||picking} busy={intent.busy} saved={!!saved} onConfirm={()=>{void intent.submit({kind:'CREATE',body});}} onEdit={()=>setReview(false)}/>}
     <Text style={[s.caption,{textAlign:'center'}]}>Paper funds only · No real money is used</Text>
    </>}
-  </ScrollView>
+  </KeyboardScrollView>
  </KeyboardAvoidingView>;
 }
 const s=StyleSheet.create({
