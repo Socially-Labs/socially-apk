@@ -33,7 +33,7 @@ export function AuthOtpInput({ input, code, onChange, busy, focused, invalid, te
       autoComplete={Platform.OS === 'ios' ? undefined : 'one-time-code'} textContentType={Platform.OS === 'ios' ? 'oneTimeCode' : undefined}
       autoCapitalize="none" autoCorrect={false} spellCheck={false} maxLength={12}
       caretHidden selectionColor="transparent" underlineColorAndroid="transparent"
-      selectTextOnFocus={invalid} returnKeyType="done" onSubmitEditing={onSubmit} />
+      selectTextOnFocus={invalid} returnKeyType={Platform.OS === 'android' ? 'none' : 'default'} onSubmitEditing={onSubmit} />
   </Animated.View>;
 }
 

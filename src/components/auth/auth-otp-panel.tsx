@@ -1,6 +1,6 @@
 import { useKeyboardVisible } from '@/components/shared/keyboard/use-keyboard-visible';
 import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition, useReducedMotion } from 'react-native-reanimated';
 import { AuthButton } from '@/components/shared/motion';
 import { errorFeedback } from '@/components/shared/feedback';
@@ -43,10 +43,8 @@ export function AuthOtpPanel({ auth, input, focused, busy, testIDPrefix, onFocus
     <AuthOtpInput input={input} code={auth.code} onChange={auth.updateCode} busy={busy} focused={focused} invalid={!!auth.error}
       testIDPrefix={testIDPrefix} onFocus={onFocus} onBlur={onBlur} onSubmit={() => { void auth.submitCode(); }} />
     <View style={[styles.feedback, compact && styles.compactFeedback]} accessibilityLiveRegion="polite">
-      {auth.error ? <Text testID={`${testIDPrefix}-otp-error`} accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.error}>{auth.error}</Text> : <>
-        {auth.pending === 'verify' ? <ActivityIndicator color={A.primary} size="small" /> : null}
-        <Text style={styles.hint}>{auth.pending === 'verify' ? 'Checking your code…' : 'We’ll continue as soon as all six digits are entered.'}</Text>
-      </>}
+      {auth.error ? <Text testID={`${testIDPrefix}-otp-error`} accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.error}>{auth.error}</Text>
+        : auth.pending !== 'verify' ? <Text style={styles.hint}>We’ll continue as soon as all six digits are entered.</Text> : null}
     </View>
     <View style={styles.action}>
       <AuthPrimaryAction testID={`${testIDPrefix}-submit`} label={auth.pending === 'verify' ? 'Verifying…' : auth.error ? 'Try code again' : 'Verify & continue'}
