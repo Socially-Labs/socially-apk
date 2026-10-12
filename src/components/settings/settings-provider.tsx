@@ -7,6 +7,7 @@ import { settingsStorage } from './settings-storage';
 import { defaultUsername, usernameError, type AccountSettings, type ProfileDraft } from './profile-model';
 import { deleteMedia, persistMedia, restoreMediaUri } from './profile-media';
 import { profileFallback } from './profile-fallbacks';
+import { readWithDeadline } from '@/api/read-deadline';
 
 export type { ProfileAvatarKind, AccountSettings, ProfileDraft } from './profile-model';
 type SettingsContextValue = {
@@ -77,7 +78,7 @@ function AccountSettingsProvider({ identity, email, children }: PropsWithChildre
   useEffect(() => {
     let active = true;
     generation.current += 1;
-    settingsStorage.read(storageKey).then(raw => {
+    readWithDeadline(settingsStorage.read(storageKey), 8000, 'Your settings took too long to load. Please try again.').then(raw => {
       if (!active || !raw) return;
       const stored = JSON.parse(raw) as Partial<AccountSettings>;
       if (!stored || typeof stored !== 'object') return;
