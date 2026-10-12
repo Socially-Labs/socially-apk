@@ -1,25 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { Image } from 'expo-image';
-import { ArrowDown, CheckCircle2, ChevronRight, Clock3, Compass, Users, Wallet } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ArrowDown, ChevronRight, Clock3, Compass, List, Users, Wallet } from 'lucide-react-native';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { SheetSurface, sheetMaterialStyle } from '@/components/shared/dashboard/sheet-surface';
 import { AuthButton } from '@/components/shared/motion';
 import type { HomeNotification } from '@/constants/home-notifications';
-import { InterFont } from '@/constants/fonts';
+import { BrandFont, InterFont } from '@/constants/fonts';
 import { Motion } from '@/constants/motion';
 import { NotificationPalette as N } from '@/constants/theme';
+import { NotificationBellIcon, useNotificationBellProgress } from './notification-bell-icon';
+import { notificationPosition, type NotificationAnchor } from './notification-position';
+import { CardSkeleton } from '@/components/shared/refresh/card-skeleton';
 
-type InboxStatus = { loading?: boolean; error?: string | null; hasMore?: boolean; onLoadMore?: () => void; onRetry?: () => void };
-export type NotificationAnchor = { x: number; y: number; width: number; height: number };
+type InboxStatus = { status?: 'idle' | 'loading' | 'success' | 'error'; loading?: boolean; error?: string | null; hasMore?: boolean; onLoadMore?: () => void; onRetry?: () => void };
+export type { NotificationAnchor } from './notification-position';
 
-export function NotificationPopover({ anchor, notifications, readIds, hidden, onRead, onReadAll, onClose, onExitRequests, ...status }: {
+export function NotificationPopover({ anchor, bellProgress, notifications, readIds, hidden, onRead, onReadAll, onClose, onExitRequests, ...status }: {
   anchor: NotificationAnchor | null; notifications: readonly HomeNotification[]; readIds: ReadonlySet<string>; hidden: boolean;
+  bellProgress?: SharedValue<number>;
   onRead: (id: string) => void; onReadAll: () => void; onClose: () => void; onExitRequests: (id: string) => void;
 } & InboxStatus) {
   const pendingExit = useRef<string | null>(null);
+  const localBellProgress = useNotificationBellProgress(anchor !== null);
   function openExitRequests(id: string) {
     // iOS must finish dismissing this native modal before presenting the vault
     // sheet. Android and web can switch their modal windows immediately.
@@ -33,30 +38,24 @@ export function NotificationPopover({ anchor, notifications, readIds, hidden, on
       pendingExit.current = null;
       if (id) onExitRequests(id);
     }}>
-    {anchor ? <PopoverPanel anchor={anchor} notifications={notifications} readIds={readIds} hidden={hidden}
+    {anchor ? <PopoverPanel anchor={anchor} bellProgress={bellProgress ?? localBellProgress} notifications={notifications} readIds={readIds} hidden={hidden}
       onRead={onRead} onReadAll={onReadAll} onClose={onClose} onExitRequests={openExitRequests} {...status} /> : null}
   </Modal>;
 }
 
-function PopoverPanel({ anchor, notifications, readIds, hidden, onRead, onReadAll, onClose, onExitRequests, ...status }: {
+function PopoverPanel({ anchor, bellProgress, notifications, readIds, hidden, onRead, onReadAll, onClose, onExitRequests, ...status }: {
   anchor: NotificationAnchor; notifications: readonly HomeNotification[]; readIds: ReadonlySet<string>; hidden: boolean;
+  bellProgress: SharedValue<number>;
   onRead: (id: string) => void; onReadAll: () => void; onClose: () => void; onExitRequests: (id: string) => void;
 } & InboxStatus) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { width, height } = useWindowDimensions();
+  const [viewport, setViewport] = useState({ width, height });
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const progress = useSharedValue(reduceMotion ? 1 : 0);
   const unreadCount = notifications.filter(item => item.unread && !readIds.has(item.id)).length;
-  const leftInset = Math.max(N.inset, insets.left);
-  const rightInset = Math.max(N.inset, insets.right);
-  const panelWidth = Math.min(N.maxWidth, width - leftInset - rightInset);
-  const left = Math.max(leftInset, Math.min(anchor.x + anchor.width - panelWidth, width - rightInset - panelWidth));
-  const top = anchor.y + anchor.height + 12;
-  // The header stays fixed while only the updates scroll, including in landscape
-  // and with large system text. Never let the panel reach the home indicator.
-  const maxHeight = Math.max(0, Math.min(N.maxHeight, height - top - Math.max(insets.bottom, N.inset)));
-  const pointerLeft = Math.max(20, Math.min(panelWidth - 36, anchor.x + anchor.width / 2 - left - 8));
+  const { left, top, panelWidth, maxHeight, pointerLeft, showPointer } = notificationPosition(anchor, viewport.width, viewport.height, insets, N);
 
   useEffect(() => {
     progress.set(reduceMotion ? 1 : withTiming(1, { duration: Motion.reveal }));
@@ -64,31 +63,39 @@ function PopoverPanel({ anchor, notifications, readIds, hidden, onRead, onReadAl
   }, [progress, reduceMotion]);
   const animated = useAnimatedStyle(() => ({ opacity: progress.get(), transform: [{ translateY: reduceMotion ? 0 : (1 - progress.get()) * -6 }] }));
 
-  return <View style={styles.overlay} testID="notification-overlay">
+  return <View style={styles.overlay} testID="notification-overlay" onLayout={({ nativeEvent: { layout } }) => {
+    setViewport(current => current.width === layout.width && current.height === layout.height
+      ? current : { width: layout.width, height: layout.height });
+  }}>
     <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} accessibilityRole="button" accessibilityLabel="Close notifications"
       testID="notification-dismiss" onPress={onClose} />
     <Animated.View style={[styles.position, { left, top, width: panelWidth }, animated]} accessibilityViewIsModal
       onAccessibilityEscape={onClose} testID="notification-popover">
-      <View style={[styles.pointer, { left: pointerLeft }]} pointerEvents="none" testID="notification-pointer" />
-      <View style={[styles.panel, sheetMaterialStyle, { maxHeight }]}>
-        <SheetSurface />
+      {showPointer ? <View style={[styles.pointer, { left: pointerLeft }]} pointerEvents="none" testID="notification-pointer" /> : null}
+      <View style={[styles.panel, { maxHeight }]}>
+        <LinearGradient colors={N.surface} style={StyleSheet.absoluteFill} pointerEvents="none" accessible={false} />
         <View style={styles.heading}>
           <View style={styles.headingText}>
-            <Text accessibilityRole="header" style={styles.title}>Notifications</Text>
-            <Text style={styles.caption}>Your vault activity</Text>
+            <Text accessibilityRole="header" style={[styles.title, width < 360 && styles.compactTitle]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Notifications</Text>
           </View>
-          <View style={styles.badge} testID="notification-unread-count">
-            <Text style={styles.badgeText} accessibilityLiveRegion="polite">{unreadCount > 0 ? `${unreadCount} new` : 'All read'}</Text>
+          <AuthButton accessibilityRole="button" accessibilityLabel="Close notifications" onPress={onClose} testID="notification-bell-close" style={styles.close}>
+            <NotificationBellIcon progress={bellProgress} open />
+          </AuthButton>
+        </View>
+        <View style={styles.subheading}>
+          <View style={styles.captionGroup}><Text style={styles.caption}>Your vault activity</Text>
+            <View style={styles.badge} testID="notification-unread-count">
+              <Text style={styles.badgeText} accessibilityLiveRegion="polite">{unreadCount > 0 ? `${unreadCount} new` : status.loading && !notifications.length ? 'Loading…' : status.error ? 'Unavailable' : 'All read'}</Text>
+            </View>
           </View>
-          <AuthButton accessibilityRole="button" accessibilityLabel="Mark all notifications as read" disabled={unreadCount === 0}
-            onPress={onReadAll} style={styles.readAll} testID="notification-read-all">
-            <CheckCircle2 size={22} strokeWidth={1.7} color={unreadCount > 0 ? N.secondary : N.positive} />
+          <AuthButton accessibilityRole="button" accessibilityLabel="Mark all notifications as read" disabled={unreadCount === 0} onPress={onReadAll} style={styles.readAll} testID="notification-read-all">
+            <Text style={[styles.readAllText, unreadCount === 0 && styles.disabledText]}>Mark all read</Text>
           </AuthButton>
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.list} bounces={false} nestedScrollEnabled
           showsVerticalScrollIndicator keyboardShouldPersistTaps="handled" testID="notification-list">
-          {status.error ? <View><Text accessibilityRole="alert" style={styles.copy}>{status.error}</Text><AuthButton onPress={status.onRetry} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={styles.copy}>Retry notifications</Text></AuthButton></View> : null}
-          {!notifications.length ? <Text style={[styles.copy, { paddingVertical: 20 }]}>{status.loading ? 'Loading notifications…' : 'You’re all caught up. Vault updates will appear here.'}</Text> : null}
+          {status.error ? <View style={styles.status}><Text accessibilityRole="alert" style={styles.copy}>{status.error}</Text><AuthButton accessibilityRole="button" onPress={status.onRetry} style={styles.readAll}><Text style={styles.readAllText}>Retry notifications</Text></AuthButton></View> : null}
+          {!notifications.length && !status.error ? <View style={styles.status}>{status.loading || status.status === 'idle' || status.status === 'loading' ? <CardSkeleton compact label="Loading notifications…" count={2} /> : (status.status ?? 'success') === 'success' ? <Text style={styles.copy}>You’re all caught up. Vault updates will appear here.</Text> : null}</View> : null}
           {notifications.map((item, index) => {
             const unread = !!item.unread && !readIds.has(item.id);
             const copy = hidden && item.privateCopy ? item.privateCopy : item.copy;
@@ -99,7 +106,7 @@ function PopoverPanel({ anchor, notifications, readIds, hidden, onRead, onReadAl
                 onRead(item.id);
                 setExpandedId(current => current === item.id ? null : item.id);
                 if (item.exitVaultId) onExitRequests(item.exitVaultId);
-              }} style={[styles.row, index > 0 && styles.divider]}>
+              }} style={[styles.row, index > 0 && styles.divider, !!item.exitVaultId && styles.actionRow]}>
               <View style={[styles.icon, item.icon === 'allocation' && styles.positiveIcon, item.icon === 'exit' && styles.riskIcon]}>
                 <NotificationIcon kind={item.icon} />
               </View>
@@ -107,16 +114,16 @@ function PopoverPanel({ anchor, notifications, readIds, hidden, onRead, onReadAl
                 <Text style={[styles.rowTitle, !unread && styles.readTitle]}>{item.title}</Text>
                 <Text style={styles.copy}>{copy}</Text>
                 <Text style={styles.time}>{item.time}</Text>
+                {item.exitVaultId ? <View style={styles.review}><Text style={styles.reviewText}>Review requests</Text><ChevronRight size={14} color={N.risk} /></View> : null}
                 {expandedId === item.id && item.createdAt ? <Text style={styles.time}>{new Date(item.createdAt).toLocaleString()}</Text> : null}
               </View>
               <View style={styles.indicators}>
                 {unread ? <View style={styles.unread} testID={`notification-unread-${item.id}`} /> : null}
-                {item.exitVaultId ? <ChevronRight size={16} color={N.secondary} /> : null}
               </View>
             </AuthButton>;
           })}
-          {status.hasMore ? <AuthButton disabled={status.loading} accessibilityRole="button" onPress={status.onLoadMore} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={styles.copy}>{status.loading ? 'Loading…' : 'Load older notifications'}</Text></AuthButton> : null}
         </ScrollView>
+        {status.hasMore ? <AuthButton disabled={status.loading} accessibilityRole="button" accessibilityLabel="Load older notifications" onPress={status.onLoadMore} style={styles.footer} testID="notification-load-more"><List size={20} color={N.ink} /><Text style={styles.footerText}>{status.loading ? 'Loading…' : 'View older activity'}</Text><ChevronRight size={18} color={N.ink} /></AuthButton> : null}
       </View>
     </Animated.View>
   </View>;
@@ -136,20 +143,32 @@ const styles = StyleSheet.create({
     borderLeftWidth: 8, borderRightWidth: 8, borderBottomWidth: 9,
     borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: N.pointer },
   panel: { borderRadius: N.radius, overflow: 'hidden', borderWidth: 1, borderColor: N.border },
-  heading: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 8, paddingTop: 12, paddingBottom: 10 },
+  heading: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 12, paddingTop: 12 },
   headingText: { flex: 1, minWidth: 0, gap: 2 },
-  title: { fontFamily: InterFont.semiBold, fontSize: 17, lineHeight: 23, color: N.ink },
-  caption: { fontFamily: InterFont.regular, fontSize: 11, lineHeight: 15, color: N.secondary },
+  title: { fontFamily: BrandFont.editorial, fontSize: 32, lineHeight: 38, color: N.ink },
+  compactTitle: { fontSize: 27, lineHeight: 34 },
+  caption: { fontFamily: InterFont.regular, fontSize: 13, lineHeight: 19, color: N.secondary, flexShrink: 1 },
   badge: { backgroundColor: N.positiveSurface, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5 },
   badgeText: { fontFamily: InterFont.semiBold, fontSize: 11, lineHeight: 16, color: N.positive },
-  readAll: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
+  close: { width: 44, height: 44, flexShrink: 0, borderRadius: 22, backgroundColor: N.bellSelected, alignItems: 'center', justifyContent: 'center' },
+  captionGroup: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
+  subheading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingLeft: 16, paddingRight: 16, paddingBottom: 4 },
+  readAll: { minHeight: 44, justifyContent: 'center' },
+  readAllText: { fontFamily: InterFont.medium, fontSize: 12, lineHeight: 18, color: N.action, textDecorationLine: 'underline' },
+  disabledText: { color: N.secondary, textDecorationLine: 'none' },
   scroll: { flexShrink: 1, minHeight: 0 },
-  list: { paddingHorizontal: 16, paddingBottom: 8 },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 16, minHeight: 100 },
+  list: { paddingBottom: 8 },
+  status: { paddingHorizontal: 16, paddingVertical: 24 },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, minHeight: 96 },
   divider: { borderTopWidth: 1, borderColor: N.line },
   icon: { width: 44, height: 44, borderRadius: 22, backgroundColor: N.iconSurface, alignItems: 'center', justifyContent: 'center' },
   positiveIcon: { backgroundColor: N.positiveSurface },
   riskIcon: { backgroundColor: N.riskSurface },
+  actionRow: { backgroundColor: N.riskSurface, borderRadius: 18 },
+  review: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', gap: 4, borderWidth: 1, borderColor: N.riskBorder, borderRadius: 14, paddingHorizontal: 10, minHeight: 36, marginTop: 4 },
+  reviewText: { fontFamily: InterFont.semiBold, fontSize: 12, lineHeight: 18, color: N.risk },
+  footer: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: 1, borderTopColor: N.line, paddingHorizontal: 20 },
+  footerText: { flex: 1, fontFamily: InterFont.medium, fontSize: 13, lineHeight: 19, color: N.ink },
   captain: { width: 34, height: 34 },
   rowText: { flex: 1, minWidth: 0, gap: 4 },
   rowTitle: { fontFamily: InterFont.semiBold, fontSize: 14, lineHeight: 20, color: N.ink },

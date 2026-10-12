@@ -3,17 +3,22 @@ import type { ProfileAvatarKind } from '@/components/settings/settings-provider'
 import { AuthButton } from '@/components/shared/motion';
 import { InterFont } from '@/constants/fonts';
 import { Dashboard, DiscoverPalette, NotificationPalette as N } from '@/constants/theme';
-import { Bell } from 'lucide-react-native';
+import type { SharedValue } from 'react-native-reanimated';
 import { useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NotificationAnchor } from './notification-popover';
+import { NotificationBellIcon, useNotificationBellProgress } from './notification-bell-icon';
 
-export function HomeHeader({ name, avatar, photoUri, fallbackId, greeting, role = 'crew', onProfile, onNotifications, unreadCount, notificationsOpen }: {
+export function HomeHeader({ name, avatar, photoUri, fallbackId, greeting, role = 'crew', onProfile, onNotifications, unreadCount, notificationsOpen, notificationProgress }: {
   name: string; avatar: ProfileAvatarKind; photoUri?: string | null; fallbackId: number; greeting: string; onProfile: () => void;
-  onNotifications: (anchor: NotificationAnchor) => void; unreadCount: number; notificationsOpen: boolean;
+  onNotifications: (anchor: NotificationAnchor | null) => void; unreadCount: number; notificationsOpen: boolean; notificationProgress?: SharedValue<number>;
   role?: 'crew' | 'captain';
 }) {
   const bell = useRef<View>(null);
+  const localProgress = useNotificationBellProgress(notificationsOpen);
+  const copy = role === 'captain'
+    ? { hello: `Hello, ${greeting}`, subtitle: 'Your fleet at a glance' }
+    : { hello: `Hey, ${greeting}`, subtitle: 'Where your money sails' };
   function openNotifications() {
     // Window coordinates place the native Modal under the bell even after Home
     // has scrolled. Keep a native view here so Fabric can measure this anchor.
@@ -27,15 +32,15 @@ export function HomeHeader({ name, avatar, photoUri, fallbackId, greeting, role 
         <ProfileAvatar name={name} avatar={avatar} photoUri={photoUri} fallbackId={fallbackId} size={47} />
       </AuthButton>
       <View style={styles.greeting}>
-        <Text style={styles.hello} accessibilityRole="header">Hello, {greeting}</Text>
-        <Text style={[styles.subtitle, { color: DiscoverPalette.secondary }]}>{role === 'captain' ? 'Your Captain dashboard' : 'Your Crew portfolio'}</Text>
+        <Text style={styles.hello} accessibilityRole="header">{copy.hello}</Text>
+        <Text style={[styles.subtitle, { color: DiscoverPalette.secondary }]}>{copy.subtitle}</Text>
       </View>
       <View ref={bell} collapsable={false} onLayout={() => { if (notificationsOpen) openNotifications(); }}>
-        <AuthButton testID="home-notifications" accessibilityRole="button" accessibilityLabel={`Notifications, ${unreadCount} unread updates`}
-          accessibilityState={{ expanded: notificationsOpen }} aria-expanded={notificationsOpen} onPress={openNotifications}
+        <AuthButton testID="home-notifications" accessibilityRole="button" accessibilityLabel={notificationsOpen ? 'Close notifications' : `Notifications, ${unreadCount} unread updates`}
+          accessibilityState={{ expanded: notificationsOpen }} aria-expanded={notificationsOpen} onPress={() => notificationsOpen ? onNotifications(null) : openNotifications()}
           style={[styles.notification, notificationsOpen && styles.notificationSelected]}>
-          <Bell size={21} color={Dashboard.ink} strokeWidth={1.7} />
-          {unreadCount > 0 ? <View style={styles.notificationDot} testID="home-notification-dot" /> : null}
+          <NotificationBellIcon progress={notificationProgress ?? localProgress} open={notificationsOpen} />
+          {unreadCount > 0 && !notificationsOpen ? <View style={styles.notificationDot} testID="home-notification-dot" /> : null}
         </AuthButton>
       </View>
     </View>
