@@ -64,11 +64,12 @@ export function useSplashController(onComplete: () => void) {
   const [cardMounted, setCardMounted] = useState(false);
   if (showCard && !cardMounted) setCardMounted(true);
 
-  const sceneReady = useCallback((canAnimate: boolean) => {
+  const sceneReady = useCallback((_canAnimate: boolean) => {
     // Late display/error events cannot restart the splash or change its layers mid-flight.
     if (ready.current) return;
     ready.current = true;
-    if (!canAnimate) setReduceMotion(true);
+    // Readiness controls the native handoff only. CoastalScene owns motion and
+    // can recover when its layers finish loading after the poster/failsafe.
     dispatch('mirrorPainted');
   }, []);
 

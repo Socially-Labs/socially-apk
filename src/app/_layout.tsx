@@ -107,9 +107,8 @@ function AppLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <View style={styles.root} collapsable={false}>
         <View
-          style={styles.root}
+          style={[styles.root, { pointerEvents: splashComplete ? 'auto' : 'none' }]}
           collapsable={false}
-          pointerEvents={splashComplete ? 'auto' : 'none'}
           accessibilityElementsHidden={!splashComplete}
           importantForAccessibility={splashComplete ? 'auto' : 'no-hide-descendants'}>
           <IntroCompleteContext.Provider value={splashComplete}>

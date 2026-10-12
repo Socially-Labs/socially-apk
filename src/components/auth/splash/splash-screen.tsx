@@ -11,11 +11,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SplashLockup } from './splash-lockup';
+import { useKeyboardVisible } from '@/components/shared/keyboard/use-keyboard-visible';
 
 export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [layout, setLayout] = useState({ width, height });
+  const keyboardVisible = useKeyboardVisible();
   const { phase, clock, timeline, card, cardMounted, sceneReady, isReady, authGraceOver, traits } = useSplashController(onComplete);
 
   const rootStyle = useAnimatedStyle(() => ({ opacity: 1 - progress(clock.get(), timeline.exit) }));
@@ -26,10 +28,9 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
     // An in-tree overlay covers the navigator without needing a separate window.
     // The native launch screen stays visible until the scene is ready.
     <Animated.View
-      style={[styles.root, rootStyle]}
+      style={[styles.root, rootStyle, { pointerEvents: traits.pointerEvents }]}
       testID="voyage-splash"
       accessibilityViewIsModal
-      pointerEvents={traits.pointerEvents}
       onLayout={({ nativeEvent: { layout: measured } }) => {
         // Android's keyboard resizes the window; keep the scene's framing stable.
         if (cardMounted && measured.width === layout.width) return;
@@ -40,7 +41,7 @@ export function SplashOverlay({ onComplete }: { onComplete: () => void }) {
       <CoastalScene
         width={layout.width}
         height={layout.height}
-        active={phase === 'performing' || phase === 'waiting' || phase === 'leaving'}
+        active={!keyboardVisible && (phase === 'performing' || phase === 'waiting' || phase === 'leaving')}
         testIDPrefix="splash"
         onReady={sceneReady}
       />

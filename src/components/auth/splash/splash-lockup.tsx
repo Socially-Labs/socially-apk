@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import type { ComponentProps } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { AuthPanel } from '@/constants/theme';
 
 const APP_NAME = (Constants.expoConfig?.name ?? 'Socially').trim().toUpperCase() || 'SOCIALLY';
 
@@ -31,15 +32,15 @@ export function SplashLockup({ bottomInset, lockupStyle, cardMounted, loading }:
 const styles = StyleSheet.create({
   lockup: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
-    alignItems: 'center', gap: 10, mixBlendMode: 'multiply',
+    alignItems: 'center', gap: 10,
   },
   icon: { width: 56, height: 56, marginBottom: 4 },
   name: {
     fontFamily: BrandFont.wordmark, fontSize: 34, lineHeight: 42,
-    letterSpacing: 4.5, color: '#303A41', textAlign: 'center',
+    letterSpacing: 4.5, color: AuthPanel.ink, textAlign: 'center',
   },
   tagline: {
     fontFamily: InterFont.light, fontSize: 10, lineHeight: 16,
-    letterSpacing: 4.5, color: '#697780', textAlign: 'center',
+    letterSpacing: 4.5, color: AuthPanel.secondary, textAlign: 'center',
   },
 });
