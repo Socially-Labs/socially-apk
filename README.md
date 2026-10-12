@@ -96,6 +96,75 @@ Request IDs are saved before preparation; intent IDs and signed transaction byte
 
 Run `node --test tests/solana-balance.test.mjs tests/solana-swap.test.mjs tests/swaps-api.test.mjs tests/wallet-funding.test.mjs` for the wallet checks. Native Privy signing still requires a signed-in device for end-to-end validation.
 
+## Android APK builds
+
+[Builds and install links](https://expo.dev/accounts/kreyon/projects/socially-trade/builds)
+
+The EAS workflow in `.eas/workflows/preview.yml` builds a signed, standalone APK
+for each push to `main`. It includes the JavaScript from that commit and does not
+need Expo Go or a running Metro server. Typecheck and lint must pass before native
+compilation. New pushes cancel older workflow runs for the same branch.
+
+One-time setup:
+
+1. In [EAS GitHub settings](https://expo.dev/accounts/kreyon/projects/socially-trade/github),
+   connect `Socially-Labs/socially-apk` through the Expo GitHub app. Linking the
+   local project with `eas init` alone does not enable push triggers.
+2. Configure the EAS `preview` environment with `EXPO_PUBLIC_API_URL`,
+   `EXPO_PUBLIC_PRIVY_APP_ID`, and `EXPO_PUBLIC_PRIVY_CLIENT_ID`. Keep
+   `EXPO_PUBLIC_API_FOLLOW_METRO=false` and `EXPO_PUBLIC_AUTH_PREVIEW=false`.
+   The preview backend is `https://api.socially.trade`. Local `.env` values are
+   not committed and are not available to GitHub builds.
+   Android push notifications additionally need a `GOOGLE_SERVICES_JSON` file
+   variable and FCM credentials; they are optional for building the APK.
+3. Configure Android signing once:
+
+   ```bash
+   npx eas-cli@latest credentials:configure-build --platform android --profile preview
+   ```
+
+   Generate a keystore or select the existing one. Keep that same signing key for
+   subsequent APKs and download a secure backup using `eas credentials`. EAS can
+   manage the key; generating it yourself is not required for future store use.
+4. Commit the build configuration and push it to `main`.
+
+GitHub linking can be completed later. For a manual APK build without it:
+
+```bash
+npx eas-cli@latest build --platform android --profile preview
+```
+
+`.easignore` excludes design previews and other files unnecessary for compilation
+from local build uploads.
+
+To validate or run the workflow manually:
+
+```bash
+npx eas-cli@latest workflow:validate .eas/workflows/preview.yml --non-interactive
+npx eas-cli@latest workflow:run .eas/workflows/preview.yml
+```
+
+Open a finished build in the builds page, copy its install link, and share it with
+testers or hackathon judges. Testers download the APK, allow their browser to
+install apps when Android asks, and install it. Each build has its own link;
+keep the submission's link pointing to the exact APK you want judges to review.
+Confirm unauthenticated access to internal builds is enabled if judges should
+install without an Expo account. Install newer APKs over the old app to retain
+data: the package and signing key must remain the same. Remote version codes
+increment for every build via `autoIncrement: true`.
+
+Each fresh APK consumes an EAS build from the account's allowance. Fingerprint
+reuse alone would serve an older JS bundle because this app has no OTA updater.
+
+The `production` profile creates an AAB for future Google Play submission:
+
+```bash
+npx eas-cli@latest build --platform android --profile production
+```
+
+Configure the separate EAS `production` environment before using it. AABs are
+store upload artifacts; share the `preview` APK for direct installation.
+
 ### Run locally
 
 1. Install dependencies
