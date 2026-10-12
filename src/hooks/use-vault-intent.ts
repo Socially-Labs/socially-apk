@@ -3,8 +3,8 @@ import { CryptoDigestAlgorithm,digestStringAsync,randomUUID } from 'expo-crypto'
 import { ApiError } from '@/api/client';
 import { orderStorage } from '@/api/market-order-storage';
 import { parseVaultAttempt,submitVaultAttempt,type VaultAttempt } from '@/api/vault-journal';
-import type { VaultIntent,vaultsApi } from '@/api/vaults';
-export function useVaultIntent(api:ReturnType<typeof vaultsApi>,subject:string|null,scope:string,onSuccess:(id:string)=>void) {
+import type { VaultIntent,VaultOperation,vaultsApi } from '@/api/vaults';
+export function useVaultIntent(api:ReturnType<typeof vaultsApi>,subject:string|null,scope:string,onSuccess:(id:string,operation:VaultOperation)=>void) {
  const [state,setState]=useState<{ ready:boolean; busy:boolean; attempt:VaultAttempt|null; error:string|null }>({ ready:false,busy:false,attempt:null,error:null });
  const identity=`${subject}:PAPER:${scope}`,boundIdentity=useRef<string|null>(null);
  const epoch=useRef(0),locked=useRef(false),attempt=useRef<VaultAttempt|null>(null),storageKey=useRef<string|null>(null),controller=useRef<AbortController|null>(null);
@@ -30,7 +30,7 @@ export function useVaultIntent(api:ReturnType<typeof vaultsApi>,subject:string|n
       if (result.kind!==saved.intent.kind || saved.intent.kind!=='CREATE' && result.vaultId!==saved.intent.vaultId) throw new Error('Recovered operation does not match this request.');
       await orderStorage.remove(key);
       if (!valid()) return;
-      attempt.current=null; notify.current(result.vaultId);
+      attempt.current=null; notify.current(result.vaultId,result);
      } catch (error) {
       if (error instanceof ApiError && error.code==='vault_request_rejected') {
        await orderStorage.remove(key);
@@ -57,7 +57,7 @@ export function useVaultIntent(api:ReturnType<typeof vaultsApi>,subject:string|n
   try {
    const result=await submitVaultAttempt(api,orderStorage,key,saved,signal);
    if (generation!==epoch.current) return;
-   attempt.current=null; setState({ ready:true,busy:false,attempt:null,error:null }); notify.current(result.vaultId);
+   attempt.current=null; setState({ ready:true,busy:false,attempt:null,error:null }); notify.current(result.vaultId,result);
   } catch (error) {
    if (generation!==epoch.current) return;
    if (error instanceof ApiError && error.code==='vault_request_rejected') attempt.current=null;

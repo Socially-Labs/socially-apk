@@ -1,4 +1,5 @@
 import { ShipLoader } from '@/components/shared/refresh/ship-loader';
+import { CardSkeleton } from '@/components/shared/refresh/card-skeleton';
 import { SailingRefresh } from '@/components/shared/refresh/sailing-refresh';
 import { getApiOrigin } from '@/api/runtime-origin';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -24,16 +25,17 @@ function Activity() {
   const api=useMemo(()=>paperActivityApi(createApiClient({origin:getApiOrigin(),getAccessToken:auth.getAccessToken})),[auth.getAccessToken]);
   const [items,setItems]=useState<PaperActivity[]>([]),[cursor,setCursor]=useState<string|null>(null);
   const [loadKind,setLoadKind]=useState<'refresh'|'page'|null>(null),[error,setError]=useState<string|null>(null);
+  const [status,setStatus]=useState<'loading'|'success'|'error'>('loading');
   const request=useRef<AbortController|null>(null),busy=useRef(false),retryCursor=useRef<string|null>(null);
   const load=useCallback(async(after:string|null)=>{
     if(busy.current||!auth.accountId)return;
     retryCursor.current=after;
-    const controller=new AbortController();request.current=controller;busy.current=true;setLoadKind(after?'page':'refresh');setError(null);
+    const controller=new AbortController();request.current=controller;busy.current=true;setLoadKind(after?'page':'refresh');setError(null);setStatus(previous=>previous==='success'?previous:'loading');
     try {
       const page=await api.list(after,controller.signal);
       if(controller.signal.aborted)return;
-      setItems(prior=>after?[...prior,...page.items.filter(row=>!prior.some(old=>old.id===row.id))]:page.items);setCursor(page.nextCursor);
-    } catch(cause) {if(!controller.signal.aborted)setError(cause instanceof Error?cause.message:'Could not load activity.');}
+      setItems(prior=>after?[...prior,...page.items.filter(row=>!prior.some(old=>old.id===row.id))]:page.items);setCursor(page.nextCursor);setStatus('success');
+    } catch(cause) {if(!controller.signal.aborted){setStatus('error');setError(cause instanceof Error?cause.message:'Could not load activity.');}}
     finally {if(request.current===controller){busy.current=false;setLoadKind(null);}}
   },[api,auth.accountId]);
   useFocusEffect(useCallback(()=>{void load(null);return()=>{request.current?.abort();request.current=null;busy.current=false;};},[load]));
@@ -42,7 +44,7 @@ function Activity() {
     <SailingRefresh refreshing={loadKind==='refresh'} onRefresh={()=>load(null)} enabled={!!auth.accountId}>{scrollProps => <FlatList {...scrollProps} data={items} keyExtractor={row=>row.id} contentContainerStyle={[s.content,{paddingBottom:insets.bottom+32}]}
       onEndReached={()=>{if(cursor&&!error)void load(cursor);}} onEndReachedThreshold={0.2}
       ListHeaderComponent={<Text style={s.copy}>Your trades, vault funding and payouts</Text>}
-      ListEmptyComponent={loadKind==='refresh'&&!items.length?<ShipLoader label="Loading activity…"/>:!loadKind&&!error?<Text style={s.copy}>{auth.accountId?'No paper activity yet.':'Sign in to see your activity.'}</Text>:null}
+      ListEmptyComponent={!auth.accountId?<Text style={s.copy}>Sign in to see your activity.</Text>:status==='loading'?<CardSkeleton label="Loading activity…" count={2} compact/>:status==='success'&&!error?<Text style={s.copy}>No paper activity yet.</Text>:null}
       renderItem={({item})=><View style={s.card}>
         <Text style={s.label}>{labels[item.kind]}{item.symbol?` · ${item.symbol}`:''}</Text>
         <Text style={s.copy}>{item.vault_name}</Text>

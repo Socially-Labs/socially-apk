@@ -12,8 +12,8 @@ export function useVaults(id?:string,mine=false,durationGroup:'all'|'short'|'lon
  const api=useMemo(()=>vaultsApi(createApiClient({ origin:getApiOrigin(),getAccessToken:()=>getter.current() })),[]);
  const [revision,setRevision]=useState(0);
  const [state,setState]=useState<{ scope:string; config:VaultConfig|null; vaults:VaultSummary[]; vault:VaultSummary|null; position:VaultPosition|null;
-  loading:boolean; paging:boolean; error:string|null; privateError:string|null; connected:boolean; refreshedAt:number|null; nextCursor:string|null }>(
-  { scope:'',config:null,vaults:[],vault:null,position:null,loading:true,paging:false,error:null,privateError:null,connected:false,refreshedAt:null,nextCursor:null });
+  configLoading:boolean; configError:string|null; status:'loading'|'success'|'error'; loading:boolean; paging:boolean; error:string|null; privateError:string|null; connected:boolean; refreshedAt:number|null; nextCursor:string|null }>(
+  { scope:'',config:null,configLoading:true,configError:null,vaults:[],vault:null,position:null,status:'loading',loading:true,paging:false,error:null,privateError:null,connected:false,refreshedAt:null,nextCursor:null });
  const scope=`${subject}:${id ?? ''}:${mine}:${durationGroup}`,epoch=useRef(0),cursor=useRef<string|null>(null),loadingMore=useRef(false);
  const pageRequest=useRef<AbortController|null>(null);
  const refresh=useCallback(()=>setRevision(v=>v+1),[]);
@@ -24,28 +24,31 @@ export function useVaults(id?:string,mine=false,durationGroup:'all'|'short'|'lon
   let watched:string[]=[],sequence=new Map<string,string>();
   const valid=()=>!stopped && epoch.current===generation && !controller.signal.aborted;
   const foreground=()=>!AppState.currentState || AppState.currentState==='active';
-  setState(s=>s.scope===scope?{ ...s,loading:true,paging:false,error:null }:{ scope,config:null,vaults:[],vault:null,position:null,loading:true,paging:false,error:null,privateError:null,connected:false,refreshedAt:null,nextCursor:null });
+  setState(s=>s.scope===scope?{ ...s,status:s.status==='success'?'success':'loading',loading:true,configLoading:true,paging:false,error:null }:{ scope,config:null,configLoading:true,configError:null,vaults:[],vault:null,position:null,status:'loading',loading:true,paging:false,error:null,privateError:null,connected:false,refreshedAt:null,nextCursor:null });
   cursor.current=null;
   const subscribe=()=>{ if (socket?.readyState===WebSocket.OPEN) socket.send(JSON.stringify({ type:'subscribe',vaultIds:watched })); };
   const read=async()=>{
    if (!valid() || !foreground()) return;
    if (busy) { dirty=true; return; }
    busy=true; dirty=false;
+   // Configuration controls creation; it must not block browsing confirmed vaults.
+   const configRead=api.config(controller.signal).then(config=>{if(valid())setState(s=>({...s,config,configLoading:false,configError:null}));})
+    .catch(error=>{if(valid())setState(s=>({...s,configLoading:false,configError:error instanceof Error?error.message:'Could not load vault configuration.'}));});
    try {
-    const [config,data]=await Promise.all([api.config(controller.signal),id?api.detail(id,controller.signal):api.list(mine,undefined,controller.signal,durationGroup)]);
+    const data=await (id?api.detail(id,controller.signal):api.list(mine,undefined,controller.signal,durationGroup));
     if (!valid()) return;
     const vault=id?data as VaultSummary:null,list=id?[]:(data as { vaults:VaultSummary[] }).vaults;
     const next=id?null:(data as { nextCursor:string|null }).nextCursor;
     const ids=id?[id]:list.map(v=>v.id).slice(0,20);
     if (JSON.stringify(ids)!==JSON.stringify(watched)) { watched=ids; subscribe(); }
     lastRefresh=Date.now(); cursor.current=next;
-    setState(s=>({ ...s,config,vault,vaults:list,loading:false,error:null,refreshedAt:lastRefresh,nextCursor:next }));
+    setState(s=>({ ...s,vault,vaults:list,status:'success',loading:false,error:null,refreshedAt:lastRefresh,nextCursor:next }));
     if (subject && id) {
      try { const position=await api.position(id,controller.signal); if (valid()) setState(s=>({ ...s,position,privateError:null })); }
-     catch (error) { if (valid()) setState(s=>({ ...s,position:null,privateError:error instanceof Error?error.message:'Could not refresh your position.' })); }
+     catch (error) { if (valid()) setState(s=>({ ...s,privateError:error instanceof Error?error.message:'Could not refresh your position.' })); }
     }
-   } catch (error) { if (valid()) setState(s=>({ ...s,loading:false,error:error instanceof Error?error.message:'Could not load vaults.' })); }
-   finally { busy=false; if (dirty && valid()) { dirty=false; void read(); } }
+   } catch (error) { if (valid()) setState(s=>({ ...s,status:'error',loading:false,error:error instanceof Error?error.message:'Could not load vaults.' })); }
+   finally { await configRead; busy=false; if (dirty && valid()) { dirty=false; void read(); } }
   };
   const connect=()=>{
    if (!valid() || !foreground()) return;
@@ -82,5 +85,5 @@ export function useVaults(id?:string,mine=false,durationGroup:'all'|'short'|'lon
   finally { if(epoch.current===generation){loadingMore.current=false;setState(s=>({...s,paging:false}));} }
  };
  // Prevent even one render of another account's private position.
- return { ...state,...(state.scope!==scope?{ position:null,vaults:[],vault:null,loading:true,paging:false }:{}),api,subject,refresh,loadMore };
+ return { ...state,...(state.scope!==scope?{ config:null,configLoading:true,configError:null,position:null,vaults:[],vault:null,status:'loading' as const,loading:true,paging:false,error:null,privateError:null,refreshedAt:null,nextCursor:null }:{}),api,subject,refresh,loadMore };
 }

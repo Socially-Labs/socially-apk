@@ -63,7 +63,7 @@ function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
   catch(error){if(mounted.current)setMediaError(error instanceof Error?error.message:'Could not select artwork.');}
   finally{pickLock.current=false;if(mounted.current)setPicking(false);}
  }
- const valid=(!config?.walletSnapshotEnabled||portfolioReady)&&!!config?.enabled&&!data.error&&!!data.subject&&intent.ready&&!locked&&body.name.length>=3&&config.fundingWindowHours.includes(hours)&&config.durationDays.includes(days);
+ const valid=(!config?.walletSnapshotEnabled||portfolioReady)&&!!config?.enabled&&!data.error&&!data.configError&&!data.configLoading&&!!data.subject&&intent.ready&&!locked&&body.name.length>=3&&config.fundingWindowHours.includes(hours)&&config.durationDays.includes(days);
  const reviewing=review||!!saved;
  useEffect(()=>{scroll.current?.scrollTo({y:0,animated:false});},[reviewing,createdId]);
  return <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={s.root}>
@@ -73,9 +73,9 @@ function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
    <Pressable accessibilityRole="button" accessibilityLabel={createdId?'Open created vault':reviewing&&!saved?'Back to vault details':'Back'} disabled={intent.busy||uploading} onPress={()=>createdId?openVault(createdId):reviewing&&!saved?setReview(false):router.canGoBack()?router.back():router.replace('/')} style={s.back}><ArrowLeft size={24} color={C.ink}/></Pressable>
    <Text accessibilityRole="header" style={[s.title,reviewing&&{fontSize:36,lineHeight:40}]}>{createdId?'Vault created':reviewing?'Review your vault':'Create a vault'}</Text>
    <View style={s.badge}><Text style={s.badgeText}>Paper vault</Text></View>
-   {data.loading&&!config?<ShipLoader label="Loading vault configuration…"/>:null}
-   {(data.error||intent.error||mediaError)?<Glass><Text accessibilityRole="alert" style={s.error}>{mediaError??intent.error??data.error}</Text>{data.error&&!createdId?<Button secondary onPress={data.refresh}>Retry loading</Button>:null}</Glass>:null}
-   {!data.loading&&config&&!config.enabled&&!createdId?<Glass><Text style={s.copy}>Paper vault creation is currently disabled. Your details are kept; retry when the service is available.</Text></Glass>:null}
+   {data.configLoading&&!config?<ShipLoader label="Loading vault configuration…"/>:null}
+   {(data.error||data.configError||intent.error||mediaError)?<Glass><Text accessibilityRole="alert" style={s.error}>{mediaError??intent.error??data.configError??data.error}</Text>{(data.error||data.configError)&&!createdId?<Button secondary onPress={data.refresh}>Retry loading</Button>:null}</Glass>:null}
+   {!data.configLoading&&config&&!config.enabled&&!createdId?<Glass><Text style={s.copy}>Paper vault creation is currently disabled. Your details are kept; retry when the service is available.</Text></Glass>:null}
    {!data.subject?<Text style={s.copy}>Sign in as a Captain to create your vault.</Text>:null}
    {createdId?<Glass><Text style={s.cardTitle}>{body.name}</Text><Text style={s.copy}>{uploading?'Saving your vault artwork…':'Your vault is confirmed. Artwork can also be updated from the vault page.'}</Text>{uploading?<ShipLoader label="Saving your vault artwork…" showLabel={false}/>:<><Button onPress={()=>{setUploading(true);setMediaError(null);setUploadRevision(v=>v+1);}}>Retry artwork</Button><Button secondary onPress={()=>openVault(createdId)}>Open vault</Button></>}</Glass>:<>
     <View>
@@ -94,7 +94,7 @@ function CreateForm({data}:{data:ReturnType<typeof useVaults>}){
      <View style={s.settings}><Choice label="Funding window" value={hours} options={config?.fundingWindowHours??[]} onChange={setHours} disabled={locked||!config} icon={<Clock3 size={24} color="#456487"/>}/><Choice label="Trading duration" value={days} options={config?.durationDays??[]} onChange={setDays} disabled={locked||!config} icon={<CalendarDays size={24} color="#456487"/>}/></View>
      <View style={s.seed}><View style={s.seedRow}><View style={s.lock}><LockKeyhole size={23} color="#00846C"/></View><View style={{flex:1}}><Text style={s.label}>Your seed</Text><Text style={s.seedValue}>{config?`${config.captainSeedUsdc.replace(/\.0+$/,'')} paper USDC`:'Loading…'}</Text></View></View><View style={s.rule}/><Text style={s.caption}>10% fee on positive net round profit</Text><Text style={s.caption}>Capital stays locked during trading</Text></View>
      <Button disabled={!valid} onPress={()=>{Keyboard.dismiss();setReview(true);}}>{picking?'Preparing artwork…':'Review terms'}</Button>
-    </>:<VaultCreateReview key={JSON.stringify(body)} api={data.api} body={body} disabled={!config?.enabled||!!data.error||!intent.ready||picking} busy={intent.busy} saved={!!saved} onConfirm={()=>{void intent.submit({kind:'CREATE',body});}} onEdit={()=>setReview(false)}/>}
+    </>:<VaultCreateReview key={JSON.stringify(body)} api={data.api} body={body} disabled={!config?.enabled||!!data.error||!!data.configError||data.configLoading||!intent.ready||picking} busy={intent.busy} saved={!!saved} onConfirm={()=>{void intent.submit({kind:'CREATE',body});}} onEdit={()=>setReview(false)}/>}
     <Text style={[s.caption,{textAlign:'center'}]}>Paper funds only · No real money is used</Text>
    </>}
   </KeyboardScrollView>
