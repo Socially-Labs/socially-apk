@@ -24,6 +24,7 @@ function session(wallets, linkedAddress = address, status = 'connected') {
   vm.runInNewContext(outputText, { exports, require(name) {
     if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
     if (name === 'react') return { useEffect: () => {}, useRef: () => ({ current: null }) };
+    if (name === '@/api/notification-push') return { revokeNotificationPush: async () => {} };
     if (name === './config') return { privyConfig: { appId: 'test', clientId: 'test' } };
     if (name === './session') return { AuthContext: { Provider: 'context' } };
     if (name === './solana-address') return { linkedSolanaAddress };

@@ -1,3 +1,4 @@
+import { revokeNotificationPush } from '@/api/notification-push';
 import { PrivyProvider, useEmbeddedSolanaWallet, useLoginWithEmail, useLoginWithOAuth, usePrivy } from '@privy-io/expo';
 import { useEffect, useRef, type PropsWithChildren } from 'react';
 
@@ -55,7 +56,7 @@ function SessionBridge({ children }: PropsWithChildren) {
       },
       oauthPending: oauthState.status === 'loading',
       oauthError: oauthState.status === 'error' ? oauthState.error : null,
-      logout,
+      logout: async () => { await revokeNotificationPush().catch(() => undefined); await logout(); },
       getAccessToken,
     }}>
       {children}
