@@ -2,13 +2,12 @@ import { AuthIcon } from '@/components/auth/auth-icons';
 import { AuthButton, AuthReveal } from '@/components/shared/motion';
 import { InterFont } from '@/constants/fonts';
 import { AuthPanel } from '@/constants/theme';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import type { AuthControlAnimation, AuthTestIDPrefix } from './auth-control-types';
 
-export function AuthEntryControls({ progress, testIDPrefix, busy, googleBusy, onGoogle, enter, exit, layout }: AuthControlAnimation & {
-  progress: SharedValue<number>; testIDPrefix: AuthTestIDPrefix; busy: boolean; googleBusy: boolean;
-  onGoogle: () => void;
+export function AuthEntryControls({ progress, testIDPrefix, enter, exit, layout }: AuthControlAnimation & {
+  progress: SharedValue<number>; testIDPrefix: AuthTestIDPrefix;
 }) {
   return (
     <Animated.View key="social" entering={enter} exiting={exit} layout={layout}>
@@ -19,15 +18,14 @@ export function AuthEntryControls({ progress, testIDPrefix, busy, googleBusy, on
       </AuthReveal>
       <AuthReveal progress={progress} order={3}>
         <AuthButton
-          testID={`${testIDPrefix}-google`} accessibilityRole="button"
-          accessibilityLabel="Continue with Google"
-          accessibilityState={{ disabled: busy, busy: googleBusy }}
-          disabled={busy} onPress={onGoogle}
+          testID={`${testIDPrefix}-connect-wallet`} accessibilityRole="button"
+          accessibilityLabel="Connect wallet"
+          accessibilityHint="Wallet connection is coming soon."
+          accessibilityState={{ disabled: true }}
+          disabled
           style={styles.socialButton}>
-          {googleBusy
-            ? <ActivityIndicator color={AuthPanel.primary} size="small" />
-            : <AuthIcon name="google" size={24} />}
-          <Text style={styles.socialText}>Continue with Google</Text>
+          <AuthIcon name="wallet" size={24} />
+          <Text style={styles.socialText}>Connect wallet</Text>
         </AuthButton>
       </AuthReveal>
       <AuthReveal progress={progress} order={4}>

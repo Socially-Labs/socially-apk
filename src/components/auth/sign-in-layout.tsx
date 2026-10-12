@@ -29,7 +29,7 @@ export function SignInLayout({ reveal, testIDPrefix, enabled = true }: {
   const compact = keyboardVisible || height < 600;
   const scroll = useRef<ScrollView>(null);
   useEffect(() => {
-    // The compact form fits from its top; discard the tall-layout offset once.
+    // Discard the tall-layout scroll offset when switching to the compact form.
     if (compact) scroll.current?.scrollTo({ y: 0, animated: false });
   }, [compact]);
 
@@ -54,13 +54,12 @@ export function SignInLayout({ reveal, testIDPrefix, enabled = true }: {
   }));
 
   return (
-    <KeyboardAvoidingView style={StyleSheet.absoluteFill}
-      pointerEvents={enabled ? 'box-none' : 'none'}
+    <KeyboardAvoidingView style={[StyleSheet.absoluteFill, { pointerEvents: enabled ? 'box-none' : 'none' }]}
       accessibilityElementsHidden={!enabled}
       importantForAccessibility={enabled ? 'auto' : 'no-hide-descendants'}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <KeyboardScrollView ref={scroll} focusClearance={compact ? 120 : 160} style={styles.scroll}
-        contentContainerStyle={[styles.content, {
+        contentContainerStyle={[styles.content, keyboardVisible && styles.keyboardContent, {
           paddingTop: compact ? insets.top + 8 : Math.max(insets.top + 20, 44),
           paddingBottom: compact ? 16 : Math.max(insets.bottom + 12, 24),
         }]}
@@ -88,6 +87,7 @@ const styles = StyleSheet.create({
   compactDismiss: { flex: 0, minHeight: 0 },
   compactCard: { paddingTop: 12 },
   content: { flexGrow: 1, paddingHorizontal: 14 },
+  keyboardContent: { justifyContent: 'flex-end' },
   dismissArea: { flex: 1, minHeight: 36 },
   card: {
     width: '100%', maxWidth: 420, alignSelf: 'center', overflow: 'hidden',

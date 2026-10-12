@@ -6,6 +6,7 @@ import { AuthPanel } from '@/constants/theme';
 // Render vectors directly on native and web instead of passing SVG data URLs
 // through platform image decoders. All icons are bundled and work offline.
 const paths = {
+  wallet: `<g fill="none" stroke="${AuthPanel.secondary}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8V6a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h14v10H6a3 3 0 0 1-3-3V7"/><path d="M20 12h-4v4h4m-3-2h.01"/></g>`,
   mail: `<g fill="none" stroke="${AuthPanel.secondary}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></g>`,
   arrow: '<path d="M4 12h15m-6-6 6 6-6 6" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
   back: `<path d="M20 12H5m6-6-6 6 6 6" fill="none" stroke="${AuthPanel.secondary}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,

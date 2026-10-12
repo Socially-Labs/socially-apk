@@ -151,12 +151,8 @@ function CredentialsPanel({ progress, testIDPrefix = 'auth', onFocusChange }: {
         </AuthReveal>
       </View>
 
-      <AuthEntryControls key="social" progress={progress} testIDPrefix={testIDPrefix} busy={busy} googleBusy={auth.pending === 'google'}
-          enter={enter} exit={exit} layout={layout} onGoogle={() => {
-            Keyboard.dismiss();
-            if (AUTH_TEST_MODE) continuePreview();
-            else void auth.requestSocial('google');
-          }} />
+      <AuthEntryControls key="social" progress={progress} testIDPrefix={testIDPrefix}
+          enter={enter} exit={exit} layout={layout} />
     </View>
   );
 }
