@@ -29,6 +29,6 @@ export const sampleHomeNotifications: Record<AccountRole, readonly HomeNotificat
     { id: 'captain-crew', icon: 'crew', title: 'Your Crew is growing', copy: '2 members joined Solana Current.', time: '1 hr ago', unread: true },
     { id: 'captain-exits', icon: 'exit', title: 'Exit requests to review', copy: 'The Long View has 2 requests awaiting liquidity.', time: '2 hr ago', unread: true, exitVaultId: 'long-view' },
     { id: 'captain-vault', icon: 'captain', title: 'Your vaults are under way', copy: 'Manage your strategies from Home.', time: 'Yesterday' },
-    { id: 'captain-welcome', icon: 'compass', title: 'Welcome aboard', copy: 'Trade. Grow. Build your Crew.', time: '2 days ago' },
+    { id: 'captain-welcome', icon: 'compass', title: 'Welcome aboard', copy: 'Your Crew put their capital in your hands. Put it to work.', time: '2 days ago' },
   ],
 };

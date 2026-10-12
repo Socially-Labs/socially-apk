@@ -10,6 +10,12 @@ test('investment notices preserve small USDC amounts, username, date and hidden-
   assert.equal(n.createdAt, at);
   assert.equal(n.unread, true);
 });
+test('crew arrivals show the fleet message without disclosing the contributed amount', () => {
+  const n = homeNotification({ ...notification, type: 'crew_joined' });
+  assert.equal(n.copy, '@poteto joined your fleet');
+  assert.equal(n.icon, 'crew');
+  assert.equal(n.copy.includes('0.000001'), false);
+});
 test('relative timestamps cover just now, hours, days and older dates', () => {
   const ago = seconds => relativeNotificationTime(at, Date.parse(at) + seconds * 1000);
   assert.equal(ago(0), 'Just now'); assert.equal(ago(4 * 3600), '4 hrs ago');
@@ -21,4 +27,12 @@ test('notification contract rejects malformed cursors and timestamps', () => {
   assert.deepEqual(parseNotifications(page), page);
   assert.throws(() => parseNotifications({ ...page, nextCursor: 'oops' }));
   assert.throws(() => parseNotifications({ ...page, notifications: [{ ...notification, createdAt: 'invalid' }] }));
+});
+test('account wallet receipts preserve atomic precision and explicitly identify devnet',()=>{
+ const n={...notification,fundId:null,cursor:'8',type:'wallet_received',payload:{token:'SOL',amountAtomic:'1',network:'devnet'}};
+ assert.equal(parseNotifications({notifications:[n],nextCursor:null,hasMore:false}).notifications[0].fundId,null);
+ assert.equal(homeNotification(n).copy,'0.000000001 SOL received on devnet');
+ assert.equal(homeNotification(n).privateCopy,'SOL received in your wallet on devnet');
+ assert.equal(homeNotification({...n,payload:{...n.payload,amountAtomic:'10000000000'}}).copy,'10 SOL received on devnet');
+ assert.throws(()=>parseNotifications({notifications:[{...n,cursor:'-1'}],nextCursor:null,hasMore:false}));
 });
