@@ -25,7 +25,7 @@ function VoyageTab({ isFocused, label, icon: Icon, style: _style, compact = fals
       style={isHome ? [styles.home, isFocused && styles.selectedHome, compact && styles.compactHome] : styles.iconTab}>
       {isHome ? <>
         {/* Clip the painted surface separately so the outer shadow/focus ring stays round and visible. */}
-        <View style={[StyleSheet.absoluteFill, styles.homeSurface]} pointerEvents="none">
+        <View style={[StyleSheet.absoluteFill, styles.homeSurface, { pointerEvents: 'none' }]}>
           <LinearGradient colors={isFocused ? N.activeGradient : N.homeInactiveGradient}
             style={[StyleSheet.absoluteFill, styles.homeGradient]} />
         </View>
@@ -72,13 +72,13 @@ export default function VoyageTabs() {
         <TabTrigger name="wallet" href="/wallet" />
         <TabTrigger name="settings" href="/settings" />
       </TabList>
-      <View nativeID="voyage-bottom-navigation" pointerEvents={keyboardVisible ? 'none' : 'box-none'} accessibilityRole="tablist"
+      <View nativeID="voyage-bottom-navigation" accessibilityRole="tablist"
         accessibilityElementsHidden={keyboardVisible} importantForAccessibility={keyboardVisible ? 'no-hide-descendants' : 'auto'}
-        style={[styles.bar, keyboardVisible && { display: 'none' }, { width: barWidth, left: (width - barWidth) / 2, bottom: barBottom }]} testID="voyage-tab-bar">
+        style={[styles.bar, { pointerEvents: keyboardVisible ? 'none' : 'box-none' }, keyboardVisible && { display: 'none' }, { width: barWidth, left: (width - barWidth) / 2, bottom: barBottom }]} testID="voyage-tab-bar">
         <TabTrigger name="home" resetOnFocus={false} asChild><VoyageTab label="Home" icon={House} compact={compact} /></TabTrigger>
         <View style={[styles.iconGroup, compact && styles.compactIconGroup]} testID="nav-icon-group">
-          <Animated.View pointerEvents="none" testID="nav-selection-indicator"
-            style={[styles.selectedCircle, { left: 7 + (cellWidth - 40) / 2 }, indicatorStyle]} />
+          <Animated.View testID="nav-selection-indicator"
+            style={[styles.selectedCircle, { pointerEvents: 'none' }, { left: 7 + (cellWidth - 40) / 2 }, indicatorStyle]} />
           <TabTrigger name="explore" resetOnFocus={false} asChild><VoyageTab label="Discover" icon={Compass} /></TabTrigger>
           <TabTrigger name="wallet" resetOnFocus={false} asChild><VoyageTab label="Wallet" icon={Wallet} /></TabTrigger>
           <TabTrigger name="settings" resetOnFocus={false} asChild><VoyageTab label="Settings" icon={Settings} /></TabTrigger>
