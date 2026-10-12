@@ -1,0 +1,9 @@
+{
+  "tool": "built-in imagegen",
+  "reference": "design-previews/captain-vault-cards/batch-3-21-25/23-floating-profile.png",
+  "prompt": "Reproduce only the approved card's Mediterranean harbor photograph as a standalone 3:1 full-bleed banner. Gentle blue daytime sky, mountainous bay left, white moored sailing yachts on calm water, stone coastal village with terracotta roofs and slender bell tower right. No UI, text, borders, rounding, or graphics.",
+  "output": "vault-harbor.webp",
+  "width": 1200,
+  "height": 400,
+  "purpose": "Default vault artwork; selected vault banners override it."
+}
