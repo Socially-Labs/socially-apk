@@ -1,0 +1,42 @@
+{
+  "tool": "built-in image_gen",
+  "purpose": "Five Crew home empty-state design concepts; images only, no app implementation.",
+  "commonPrompt": "Use case: ui-mockup. Create a polished full-screen portrait mobile app screenshot at approximately 393x852 logical pixels, rendered sharply at high resolution, edge-to-edge screen, no physical phone frame, no external presentation background. App: Socially Solana, a mobile investment app whose users are Crew members joining Captain-managed vault rounds. This is the FIRST HOME SCREEN of a new authenticated Crew user who has NEVER INVESTED, not a login screen. Match the established APK visual identity: airy light pearl #F5F7FB, navy #182B43 text, subtle ice-blue frosted glass panels with white rims and large rounded corners, restrained soft shadows, photorealistic calm Mediterranean harbor with sailboats and pale mountains at the top fading into pearl below, Cormorant Garamond-like editorial serif for the hero headline, Inter-like sans serif for readable body and controls. Existing bottom navigation must remain identical in all concepts: a separate selected dark navy capsule at lower left containing a house outline and the word Home; to its right a separate rounded pearl capsule holding compass, wallet, and settings outline icons, in that order. Keep enough bottom padding that content never hides behind this navigation. Small safe-area status bar with time 9:41. Top header circular avatar at left, Hello, Maya with small Crew account subtitle, bell icon in a pale circular button at right. No keyboard or debug UI. User has zero investments but may have wallet funds; do not equate no investments with zero wallet balance. These are PAPER investing features: clearly display a small calm Paper mode label, not real-money investing. Contributions minimum 50 paper USDC, only fundraising rounds accept contributions; fixed duration; lock once trading starts until settlement. No guaranteed profit, fake user returns, invented available wallet balance, automatic personalization, rewards, follow/watchlist features, or connect-wallet action. No charts for this empty user. Do not show a past funded portfolio or gains. Do not show a demo vault with an Invest action. Every text element must be crisp, correct English, readable at phone size. Design only, not implementation.",
+  "concepts": [
+    {
+      "file": "01-first-voyage.png",
+      "name": "First voyage",
+      "prompt": "Concept 1 of 5. A welcoming spacious home centered on one next step, preserve the harbor and sailboat hero prominently. Large editorial headline exact: \"Your first voyage\\nstarts here.\" Supporting line: \"Explore Captains. Find a vault that fits your timeline.\" Below hero a beautiful large ice-blue glass empty investment card with a subtle line-art sailboat above exact text \"No investments yet\" and small \"Your vaults will appear here after you join a round.\" Full-width navy primary button \"Explore vaults\" with small right arrow. Below card a quiet horizontal \"Meet the Captains\" text link, then small low-emphasis note \"Paper mode · Start from 50 USDC\". Balanced whitespace, elegant simple hierarchy, warm reassuring feeling, practical touch targets. This should feel directly native to the current coastal app, not a generic banking dashboard."
+    },
+    {
+      "file": "02-discover-first.png",
+      "name": "Discover first",
+      "prompt": "Concept 2 of 5, clearly different from a centered empty-state card. Give immediate discovery content within the new user's home. More compact harbor header with large serif \"Find your first\\nCaptain.\" A small glass strip \"Your investments\" and \"Nothing invested yet\" with an understated empty circle icon, no monetary balance. Primary navy button \"Explore vaults\". Below, a section \"Meet the Captains\" with \"View all\" text link. Two compact horizontal white rounded Captain profile rows with realistic maritime avatar portraits, example names \"Maya Chen\" and \"Lucas Marin\", handles \"@maya\" and \"@lucas\", short text \"View strategy and vaults\", chevrons; no claimed returns or recommended/safe badges. Tiny section caption \"Example profiles\" makes illustrative content explicit. Closing quiet note \"Review the round duration and terms before joining.\" Small Paper mode badge. Maintain editorial coastal aesthetic and existing bottom navigation."
+    },
+    {
+      "file": "03-guided-start.png",
+      "name": "Guided start",
+      "prompt": "Concept 3 of 5, a progressive first-use guide within the home screen, visually distinct from both a plain empty card and a Captain directory. Editorial headline \"Welcome to\\nthe Crew.\" Harbor vista and a sailing vessel visible behind upper half. Subline \"A clear path to your first vault.\" One large frosted panel headed \"Your first investment\" with a clean vertical numbered sequence and thin connecting lines: \"1 Explore Captains\" / \"See their strategies and history.\"; \"2 Review a vault\" / \"Check the duration, fees and terms.\"; \"3 Join a round\" / \"Start from 50 paper USDC.\" Neutral numbered steps, no false completed checkmarks. Wide navy button \"Explore vaults\" below the steps. Quiet small footer text in card \"No investments yet. Take your time.\" Small explanatory note outside card \"Paper mode · Funds lock when trading starts.\" Avoid onboarding carousel, modal, additional navigation or backend-dependent saved progress. Preserve existing floating bottom tabs."
+    },
+    {
+      "file": "04-portfolio-ready.png",
+      "name": "Portfolio ready",
+      "prompt": "Concept 4 of 5, a restrained portfolio-shaped empty home rather than a large marketing hero. Smaller serif headline \"A fresh start.\" with sentence \"Your portfolio begins with your first vault.\" Harbor photograph behind top third. Large frosted rounded portfolio panel title \"Your investments\" and small pill \"Paper mode\". Main editorial display \"0 vaults\" rather than dollar values, no graph and no percentage. Below a fine divider, a roomy empty illustration of a compass with a tiny sail outline, text \"Nothing invested yet\" and small text \"Explore open rounds to begin.\" Bottom of same panel a wide navy \"Explore vaults\" button. Beneath it two clean small light rows with left icons: \"Discover Captains\" with subtitle \"Explore strategies and track records\" and chevron; \"Your wallet\" with subtitle \"View your SOL and USDC balances\" and chevron. No displayed wallet balance, no fake portfolio returns, no unimplemented interaction features. Existing floating bottom navigation and legible soft navy type."
+    },
+    {
+      "file": "05-terms-first.png",
+      "name": "Know your voyage",
+      "prompt": "Concept 5 of 5, build confidence by explaining the investment model immediately, distinctly different layout from a vertical numbered checklist. Large editorial headline \"Choose your\\nfirst voyage.\" and subline \"Know the terms before you join.\" Compact softly fading harbor hero. A translucent horizontal ribbon \"Your investments · None yet\". Below, a white/ice-blue rounded information card titled \"A vault, in plain words\" with one short paragraph \"A Captain manages a strategy. You choose a round and contribute paper USDC.\" Under it three clearly aligned compact icon-and-label rows with readable explanations: coin icon \"From 50 paper USDC\"; calendar icon \"Choose a fixed duration\"; lock icon \"Locked during trading\". A quiet caption \"Claims open after settlement.\" Wide navy main button \"Explore fundraising vaults\". Under the card a modest text link \"Meet the Captains →\". Small badge \"Paper mode\". No financial return claims, no live-money promise, no extra Learn tab. Maintain airy coastal glass identity, existing split bottom navigation, clear readable large type, full usable screen height without crowding."
+    }
+  ],
+  "references": [
+    "assets/readme/screenshots/crew-home.webp",
+    "assets/readme/screenshots/discover.webp",
+    "design-previews/crew-discover/implemented-concept-05/captains-393.png"
+  ],
+  "advisor": {
+    "tool": "grok-designer direction",
+    "status": "not_authorized",
+    "fallback": "Built-in image generator using inspected project references and backend rules."
+  }
+}

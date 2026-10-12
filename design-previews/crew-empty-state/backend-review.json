@@ -1,0 +1,127 @@
+{
+  "scope": "Source review of Crew-relevant backend flows and current APK integration for new users with no investments. Not a full security audit, database integration run, or production certification.",
+  "reviewed": [
+    {
+      "area": "Account and onboarding",
+      "source": "backend/apps/api/src/account-routes.ts",
+      "finding": "Privy account, profile and Crew role are available. App home differs between authenticated users and developer preview."
+    },
+    {
+      "area": "Current Crew home",
+      "source": "apk/src/components/home/home-screen.tsx",
+      "finding": "Authenticated Crew users render VaultHomePanel; the elaborate sample portfolio renders for preview access."
+    },
+    {
+      "area": "Empty state",
+      "source": "apk/src/components/vaults/vault-screens.tsx",
+      "finding": "Success with no personal vaults shows basic no-investments text and Explore vaults. Keep loading and errors separate from genuine empty state."
+    },
+    {
+      "area": "Discovery",
+      "source": "backend/apps/api/src/crew-discovery.ts",
+      "finding": "Captain directory and public profiles support username search, pagination and sorting; stale metrics become unavailable. No personalized recommendation or follow API was found in reviewed paths."
+    },
+    {
+      "area": "Vault discovery and details",
+      "source": "backend/apps/api/src/vault-routes.ts",
+      "finding": "Public list, name search, phase and duration filters, Captain filtering, details and performance; private own-vault list and position data. Demo vaults are read-only."
+    },
+    {
+      "area": "Paper funds",
+      "source": "backend/apps/api/src/paper-portfolio.ts",
+      "finding": "Wallet-snapshot mode can initialize virtual funds once from linked devnet SOL/USDC holdings. Source tokens remain in the wallet. Initialization checks linked-wallet ownership and rejects empty wallet. Do not hardcode a starting cash amount or combine paper and real wallet balance."
+    },
+    {
+      "area": "Contribution rules",
+      "source": "backend/packages/domain/src/vault-rounds.ts",
+      "finding": "50 paper USDC minimum Crew contribution; 30,000 total round capacity; only before funding closes in FUNDRAISING. Captain cannot contribute via Crew route. 10% performance fee on total net round profit at final settlement."
+    },
+    {
+      "area": "Money operations",
+      "source": "backend/apps/api/src/vaults.ts",
+      "finding": "Contribution checks current terms hash, time/phase/capacity, available paper cash and paused-contribution flag. Uses idempotent operations and financial locks; this source observation is not a complete security guarantee."
+    },
+    {
+      "area": "Cancellation and claims",
+      "source": "backend/apps/api/src/vaults.ts",
+      "finding": "Crew cancellation before fundraising deadline; funds locked during trading; claims only after final settlement with ownership and duplicate-claim checks."
+    },
+    {
+      "area": "Activity",
+      "source": "backend/apps/api/src/paper-activity.ts",
+      "finding": "Authenticated, paginated personal vault-operation activity can distinguish a genuinely new user from one with historical/cancelled investments."
+    },
+    {
+      "area": "Legacy Crew routes",
+      "source": "backend/apps/api/src/fund-routes.ts",
+      "finding": "Older v0 join/exit and paper-position routes coexist with v1 rounds. New empty-state CTAs should use current round flow rather than imply legacy anytime exits."
+    },
+    {
+      "area": "Chat membership",
+      "source": "backend/apps/api/src/social.ts",
+      "finding": "Fund chat posting requires Captain or a current shareholding member. New-user designs should not imply existing membership."
+    },
+    {
+      "area": "Notifications",
+      "source": "backend/apps/api/src/notifications.ts",
+      "finding": "Authenticated personal notification feed and read actions exist; do not invent new unread events for first-use screens."
+    },
+    {
+      "area": "Wallet",
+      "source": "backend/apps/api/src/wallet-routes.ts",
+      "finding": "Paper wallet summary is separate from direct devnet balances; external wallet connection UI currently remains a disabled placeholder."
+    },
+    {
+      "area": "Live vault scope",
+      "source": "backend/apps/api/src/live-vault-routes.ts",
+      "finding": "Separate devnet onchain creation and exit flow is Captain-gated for creation; do not present it as proof of a general live Crew investment journey."
+    }
+  ],
+  "checks": {
+    "command": "node --test apps/api/test/vault-rounds-domain.test.mjs",
+    "result": "4 passed, 0 failed",
+    "coverage": [
+      "Minimums, capacity, deadline and Captain role",
+      "Phase transitions and trading constraints",
+      "Whole-round fee examples",
+      "1000 randomized settlement conservation vectors"
+    ],
+    "limitation": "Tests imported existing compiled domain output; source constants were inspected independently. No DB-backed integration tests or production calls were run."
+  },
+  "stateGuidance": [
+    "Show first-use empty state only after successful authenticated data load.",
+    "An empty investment list does not imply an empty wallet.",
+    "Show separate load-error/retry and no-investable-vault states.",
+    "Returning users without current positions should retain history access.",
+    "Use backend paper-mode/configuration flags; show setup when required.",
+    "Use public discovery and review terms before contributing; no forced funding before exploration."
+  ],
+  "recommendation": {
+    "concept": "01-first-voyage.png",
+    "reason": "One clear first action, no invented portfolio metrics, close fit to existing coastal home identity.",
+    "alternative": "03-guided-start.png for users who need more explanation.",
+    "implementationStatus": "No app or backend code changed."
+  },
+  "deliverables": [
+    {
+      "name": "First voyage",
+      "file": "01-first-voyage.png"
+    },
+    {
+      "name": "Discover first",
+      "file": "02-discover-first.png"
+    },
+    {
+      "name": "Guided start",
+      "file": "03-guided-start.png"
+    },
+    {
+      "name": "Portfolio ready",
+      "file": "04-portfolio-ready.png"
+    },
+    {
+      "name": "Know your voyage",
+      "file": "05-terms-first.png"
+    }
+  ]
+}
