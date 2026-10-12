@@ -17,8 +17,8 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
   const api = useMemo(() => marketsApi(createApiClient({ origin: getApiOrigin(), getAccessToken: () => getter.current() })), []);
   const [selection, setSelection] = useState<{ subject: string | null; requestedVaultId: string | null; id: string } | null>(null);
   const fundId = selection?.subject === subject && selection.requestedVaultId === requestedVaultId ? selection.id : requestedVaultId;
-  const [state, setState] = useState<{ subject: string | null; query: string; discoveryKey: string; feed: MarketList | null; histories: Record<string, History | null>; requestedId: string | null; tokens: Token[]; savedTokens: Token[]; holdingTokens: Token[] | null; funds: Fund[]; saved: string[]; context: TradingContext | null; error: string | null; privateError: string | null; loading: boolean }>(
-    { subject, query, discoveryKey, feed: null, histories: {}, requestedId: fundId, tokens: [], savedTokens: [], holdingTokens: null, funds: [], saved: [], context: null, error: null, privateError: null, loading: true });
+  const [state, setState] = useState<{ subject: string | null; query: string; discoveryKey: string; feed: MarketList | null; histories: Record<string, History | null>; requestedId: string | null; tokens: Token[]; savedTokens: Token[]; holdingTokens: Token[] | null; funds: Fund[]; saved: string[]; context: TradingContext | null; error: string | null; privateError: string | null; privateSettled: boolean; loading: boolean }>(
+    { subject, query, discoveryKey, feed: null, histories: {}, requestedId: fundId, tokens: [], savedTokens: [], holdingTokens: null, funds: [], saved: [], context: null, error: null, privateError: null, privateSettled: false, loading: true });
   const paging = useRef<{ scope: string; expanded: boolean; busy: boolean; controller: AbortController | null }>({ scope: '', expanded: false, busy: false, controller: null });
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -42,7 +42,9 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
     const subscribePrivate=()=>{if(authenticated && selectedVault && socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:'subscribe',channel:'vault.context',vaultId:selectedVault}));};
     const valid = () => !stopped && activeEpoch.current === epoch && !controller.signal.aborted;
     setState(current => ({ ...current, subject, query, discoveryKey, feed: current.discoveryKey === discoveryKey ? current.feed : null, requestedId: fundId, context: current.subject === subject && current.requestedId === fundId ? current.context : null, tokens: current.query === query && current.discoveryKey === discoveryKey ? current.tokens : [],
-      ...(current.subject !== subject ? { funds: [], saved: [], savedTokens: [], context: null } : {}), holdingTokens: null, histories: current.query === query && current.discoveryKey === discoveryKey ? current.histories : {}, loading: !(current.query === query && current.discoveryKey === discoveryKey && current.tokens.length), error: current.query === query && current.discoveryKey === discoveryKey ? current.error : null }));
+      ...(current.subject !== subject ? { funds: [], saved: [], savedTokens: [], context: null } : {}),
+      ...(current.subject !== subject || current.requestedId !== fundId ? { privateSettled: false, privateError: null } : {}),
+      holdingTokens: current.subject === subject && current.requestedId === fundId ? current.holdingTokens : null, histories: current.query === query && current.discoveryKey === discoveryKey ? current.histories : {}, loading: !(current.query === query && current.discoveryKey === discoveryKey && current.tokens.length), error: current.query === query && current.discoveryKey === discoveryKey ? current.error : null }));
     const poll = async () => {
       if (!valid() || busy || AppState.currentState && AppState.currentState !== 'active') return;
       busy = true;
@@ -57,7 +59,7 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
           priceSelection = selection;
         }
       } catch { socket?.close(); }
-      try {
+      await Promise.allSettled([(async () => { try {
         if (!investedOnly && Date.now() >= nextCatalog && !paging.current.expanded && !paging.current.busy) {
           const options = JSON.parse(discoveryKey) as DiscoveryRequest | null;
           const publishCatalog = (page: { tokens: Token[]; list: MarketList | null }) => {
@@ -76,8 +78,8 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
           setState(current => valid() ? { ...current, tokens, histories: { ...current.histories, ...histories }, feed: result?.list ?? null, loading: false, error: null } : current);
           nextCatalog = Math.max(Date.now()+15_000,result ? Date.parse(result.list.refreshAfter) : Date.now()+60_000);
         }
-      } catch (e) { nextCatalog = Date.now() + 30000; if (valid()) setState(current => ({ ...current, loading: false, error: message(e) })); }
-      try {
+      } catch (e) { nextCatalog = Date.now() + 30000; if (valid()) setState(current => ({ ...current, loading: false, error: message(e) })); } })(),
+      (async () => { try {
         if (!socket || socket.readyState !== WebSocket.OPEN) {
           const prices = await api.prices(controller.signal,api.priceInstruments());
           if (valid()) setMarks(prior => {
@@ -86,8 +88,8 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
             return next;
           });
         }
-      } catch { /* Existing marks age into STALE while the server is unreachable. */ }
-      try {
+      } catch { /* Existing marks age into STALE while the server is unreachable. */ } })(),
+      (async () => { try {
         if (subject && (Date.now()>=nextPrivate || privateDirty)) {
           privateDirty=false;
           const savedVersion = watchlistVersion.current;
@@ -99,10 +101,10 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
           if(selected?.id!==selectedVault){selectedVault=selected?.id;privateRevision=undefined;privateReady=false;subscribePrivate();}
           const context = selected ? await api.context(selected.id, controller.signal) : null;
           const holdingTokens = investedOnly && context ? await api.tokensByMints(context.holdings.flatMap(holding => holding.mint ? [holding.mint] : []), controller.signal) : [];
-          if (valid()) setState(current => ({ ...current, funds, holdingTokens,
+          if (valid()) setState(current => ({ ...current, funds, holdingTokens, privateSettled: true,
             ...(!saved || saving.current || savedVersion !== watchlistVersion.current ? {} : { saved: saved.mints, savedTokens: saved.tokens }), context: context && selected ? withVaultIdentity(context, selected) : null, privateError: fundId && !selected ? 'This vault is unavailable or belongs to another Captain. Select one of your vaults.' : null }));
         }
-      } catch (e) { if (valid()) setState(current => ({ ...current, context: null, privateError: message(e) })); }
+      } catch (e) { if (valid()) setState(current => ({ ...current, context: null, privateSettled: true, privateError: message(e) })); } })()]);
       }
       finally { busy = false; if (valid()) setRefreshing(false); if(privateDirty && valid())void poll(); }
     };
@@ -158,7 +160,7 @@ export function useMarkets(query: string, requestedVaultId: string | null = null
     });
     return () => { paging.current.controller?.abort(); paging.current.busy = false; stopped = true; activeEpoch.current++; controller.abort(); clearInterval(tick); clearInterval(timer); clearTimeout(retry); listener.remove(); socket?.close(); };
   }, [api, subject, query, fundId, refreshVersion, discoveryKey, investedOnly]));
-  const current = state.subject === subject && state.query === query && state.discoveryKey === discoveryKey && state.requestedId === fundId ? state : { ...state, subject, query, feed: null, histories: {}, tokens: [], savedTokens: [], holdingTokens: null, funds: [], saved: [], context: null, loading: true };
+  const current = state.subject === subject && state.query === query && state.discoveryKey === discoveryKey && state.requestedId === fundId ? state : { ...state, subject, query, feed: null, histories: {}, tokens: [], savedTokens: [], holdingTokens: null, funds: [], saved: [], context: null, privateSettled: false, privateError: null, error: null, loading: true };
   const tokens = useMemo(() => (investedOnly ? (current.holdingTokens ?? []).filter(token => !query || token.name.toLowerCase().includes(query.toLowerCase()) || token.symbol.toLowerCase().includes(query.toLowerCase()) || token.mint.includes(query)) : [...current.tokens, ...(!query && (!discovery || includeSaved) ? current.savedTokens.filter(saved => !current.tokens.some(token => token.mint === saved.mint)) : [])]).map(token => {
     const live = marks[token.mint], snapshot = token.price;
     const newest = live && (!snapshot?.sourceAt || !!live.sourceAt && Date.parse(live.sourceAt) >= Date.parse(snapshot.sourceAt)) ? live : snapshot;

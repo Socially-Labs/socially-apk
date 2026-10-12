@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Search, X } from 'lucide-react-native';
 import { memo, useEffect } from 'react';
@@ -18,10 +17,9 @@ import { marketStyles as s } from './market-styles';
 
 export function MarketHero({ top, query, onQuery }: { top: number; query: string; onQuery: (value: string) => void }) {
   return <View style={[s.hero, { paddingTop: top }]}>
-    <Image source={require('../../../assets/images/discover/investment-coast.webp')} contentFit="cover" contentPosition="right top" style={s.heroArt} accessible={false} />
-    <LinearGradient colors={['rgba(245,247,251,0.84)', 'rgba(245,247,251,0.62)', D.background]} style={s.heroArt} pointerEvents="none" />
+    <Text style={s.eyebrow}>CAPTAIN DISCOVER</Text>
     <Text style={s.heading} accessibilityRole="header">Markets</Text>
-    <Text style={s.intro}>Find your next move. Trade from your vault.</Text>
+    <Text style={s.intro}>Trade from your vault.</Text>
     <View style={s.search}>
       <Search size={18} color={D.secondary} />
       <TextInput testID="market-search" accessibilityLabel="Search token or mint address" placeholder="Search token or mint address" placeholderTextColor={D.secondary} value={query} onChangeText={onQuery} autoCapitalize="none" autoCorrect={false} returnKeyType="search" style={s.searchInput} />

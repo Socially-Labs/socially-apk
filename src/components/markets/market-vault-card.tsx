@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronDown, Compass, Eye, EyeOff, Sailboat } from 'lucide-react-native';
+import { ChevronDown, Eye, EyeOff, Sailboat } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { TradingContext } from '@/api/markets';
@@ -10,25 +10,25 @@ import { AuthButton } from '@/components/shared/motion';
 import { BrandFont, InterFont } from '@/constants/fonts';
 import { CaptainMarketsPalette as M } from '@/constants/theme/captain-markets';
 
-export function MarketVaultCard({ context, hidden, canToggle, onToggle, onSelect, onInvested, now }: {
+export function MarketVaultCard({ context, hidden, canToggle, onToggle, onSelect, onInvested, now, loading = false, error = null }: {
   context: TradingContext | null; hidden: boolean; canToggle: boolean; onToggle: () => void;
-  onSelect: () => void; onInvested: () => void; now?: number;
+  onSelect: () => void; onInvested: () => void; now?: number; loading?: boolean; error?: string | null;
 }) {
-  const fund = context?.fund, name = fund?.name ?? 'Select your vault';
+  const fund = context?.fund, name = fund?.name ?? (loading ? 'Loading your vault…' : error ? 'Vault unavailable' : 'Select your vault');
   const [failedAvatar, setFailedAvatar] = useState<string | null>(null);
   const [failedBanner, setFailedBanner] = useState<string | null>(null);
   const avatar = fund?.avatarUrl && fund.avatarUrl !== failedAvatar ? fund.avatarUrl : null;
   const banner = fund?.bannerUrl && fund.bannerUrl !== failedBanner ? fund.bannerUrl : null;
   const cash = vaultBuyingPower(context, now);
   const balance = cash === null ? '—' : hidden ? '••••••' : `${formatUsdc(cash)} USDC`;
-  const stacked = name.length > 24 || balance.length > 18;
-  const notice = !context ? 'Create or select a vault to trade' : fund?.phase === 'FUNDRAISING' ? 'Trading opens after successful fundraising'
+  const stacked = balance.length > 18;
+  const notice = !context ? loading ? 'Fetching your trading vault' : error ? 'Retry loading your trading vault' : 'Create or select a vault to trade' : fund?.phase === 'FUNDRAISING' ? 'Trading opens after successful fundraising'
     : fund?.status === 'FROZEN' ? 'Buys paused · eligible sells available' : cash === null ? 'Trading is closed'
     : context.pending.length ? `${context.pending.length} pending ${context.pending.length === 1 ? 'order' : 'orders'}` : null;
   return <View style={s.card} testID="market-vault-card">
     <AuthButton accessibilityRole="button" accessibilityLabel={`Select trading vault, ${name}`} onPress={onSelect} style={s.cover} testID="market-vault-cover-select">
       <LinearGradient colors={M.marketGlass} style={StyleSheet.absoluteFill} />
-      <Compass size={46} color={M.sail} style={s.coverCompass} aria-hidden />
+      <Image source={require('../../../assets/images/discover/vault-harbor.webp')} contentFit="cover" style={StyleSheet.absoluteFill} accessible={false} testID="market-vault-default-banner" />
       {banner ? <Image key={`${fund?.id}:${banner}`} source={{ uri: banner }} contentFit="cover" cachePolicy="memory-disk" recyclingKey={`${fund?.id}:${banner}`} onError={() => setFailedBanner(banner)} style={StyleSheet.absoluteFill} accessible={false} testID="market-vault-banner" /> : null}
     </AuthButton>
     <View style={s.body}>
@@ -36,7 +36,7 @@ export function MarketVaultCard({ context, hidden, canToggle, onToggle, onSelect
         <Text style={s.initial} accessible={false}>{fund?.name.trim().slice(0, 1).toUpperCase() || 'V'}</Text>
         {avatar ? <Image key={`${fund?.id}:${avatar}`} source={{ uri: avatar }} contentFit="cover" cachePolicy="memory-disk" recyclingKey={`${fund?.id}:${avatar}`} onError={() => setFailedAvatar(avatar)} style={StyleSheet.absoluteFill} accessible={false} testID="market-vault-avatar-image" /> : null}
       </View>
-      <View style={[s.details, stacked && s.stackedDetails]}>
+      <View style={s.details}>
         <View style={s.identity}>
           <AuthButton accessibilityRole="button" accessibilityLabel={`Select trading vault, ${name}`} testID="market-vault-select" onPress={onSelect} style={s.selector}>
             <Text numberOfLines={2} style={s.name}>{name}</Text><ChevronDown size={17} color={M.secondary} />
@@ -56,24 +56,22 @@ export function MarketVaultCard({ context, hidden, canToggle, onToggle, onSelect
 
 const s = StyleSheet.create({
   card: { borderRadius: 24, borderCurve: 'continuous', backgroundColor: '#FCFEFF', borderWidth: 1, borderColor: M.border, overflow: 'hidden', boxShadow: M.shadow },
-  cover: { height: 104, overflow: 'hidden' },
-  coverCompass: { position: 'absolute', right: 62, top: 29 },
-  body: { paddingHorizontal: 14, paddingTop: 31, paddingBottom: 14 },
-  avatar: { position: 'absolute', left: 14, top: -25, width: 56, height: 56, borderRadius: 18, borderCurve: 'continuous', borderWidth: 3, borderColor: '#FCFEFF', backgroundColor: M.ink, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  initial: { fontFamily: BrandFont.editorial, color: '#FFFFFF', fontSize: 37, lineHeight: 44 },
-  details: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  stackedDetails: { flexDirection: 'column', alignItems: 'stretch' },
-  stackedReserve: { flex: 0, alignItems: 'flex-start', marginTop: 6 },
-  stackedBalance: { textAlign: 'left' },
-  largeBalance: { fontSize: 11 },
-  identity: { flex: 1, minWidth: 0, alignItems: 'flex-start' },
-  selector: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, width: '100%' },
-  name: { fontFamily: BrandFont.editorial, color: M.ink, fontSize: 24, lineHeight: 25, flexShrink: 1 },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 14, backgroundColor: M.tokenTile },
-  badgeText: { fontFamily: InterFont.medium, color: M.secondary, fontSize: 10, lineHeight: 14 },
-  reserve: { flex: 1, minWidth: 0, minHeight: 48, justifyContent: 'center', alignItems: 'flex-end' },
-  label: { fontFamily: InterFont.medium, fontSize: 10, lineHeight: 16, color: M.secondary },
-  balance: { fontFamily: InterFont.semiBold, fontSize: 17, lineHeight: 26, color: M.ink, fontVariant: ['tabular-nums'], textAlign: 'right', width: '100%' },
+  cover: { height: 120, overflow: 'hidden' },
+  body: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 8 },
+  avatar: { position: 'absolute', left: 16, top: -43, width: 60, height: 60, borderRadius: 19, borderCurve: 'continuous', borderWidth: 2, borderColor: '#FCFEFF', backgroundColor: M.ink, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  initial: { fontFamily: BrandFont.editorial, color: '#FFFFFF', fontSize: 42, lineHeight: 50 },
+  details: { gap: 8 },
+  stackedReserve: { flexDirection: 'column', alignItems: 'stretch', gap: 2, paddingVertical: 8 },
+  stackedBalance: { textAlign: 'left', flex: 0, fontSize: 16 },
+  largeBalance: { fontSize: 12 },
+  identity: { minWidth: 0, alignItems: 'flex-start' },
+  selector: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, maxWidth: '100%' },
+  name: { fontFamily: BrandFont.editorial, color: M.ink, fontSize: 30, lineHeight: 34, flexShrink: 1 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, backgroundColor: M.tokenTile },
+  badgeText: { fontFamily: InterFont.medium, color: M.secondary, fontSize: 12, lineHeight: 16 },
+  reserve: { minWidth: 0, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderTopWidth: 1, borderTopColor: M.line, marginTop: 2 },
+  label: { fontFamily: InterFont.regular, fontSize: 12, lineHeight: 18, color: M.secondary },
+  balance: { flex: 1, minWidth: 0, fontFamily: InterFont.semiBold, fontSize: 20, lineHeight: 28, color: M.ink, fontVariant: ['tabular-nums'], textAlign: 'right' },
   notice: { fontFamily: InterFont.regular, color: M.secondary, fontSize: 10, lineHeight: 16, marginTop: 10 },
   visibility: { position: 'absolute', top: 8, right: 8, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(248,252,255,0.9)', alignItems: 'center', justifyContent: 'center' },
 });
