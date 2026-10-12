@@ -1,3 +1,5 @@
+import { useFocusEffect } from 'expo-router';
+import { subscribeWalletChanges } from '@/api/wallet-changes';
 import { getApiOrigin } from '@/api/runtime-origin';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -12,8 +14,8 @@ export function useWalletFunding() {
   useEffect(() => { tokenGetter.current = getAccessToken; }, [getAccessToken]);
   const api = useMemo(() => walletApi(createApiClient({ origin: getApiOrigin(),
     getAccessToken: () => tokenGetter.current() })), []);
-  const [state, setState] = useState<{ subject: string | null; summary: WalletSummary | null; error: string | null }>(
-    { subject: null, summary: null, error: null });
+  const [state, setState] = useState<{ subject: string | null; summary: WalletSummary | null; status: 'loading' | 'success' | 'error'; error: string | null }>(
+    { subject: null, summary: null, status: 'loading', error: null });
   const [generation] = useState(() => ({ value: 0 }));
   const controllers = useRef(new Set<AbortController>());
   const refreshing = useRef<Promise<void> | null>(null);
@@ -25,9 +27,9 @@ export function useWalletFunding() {
     const pending = (async () => {
       try {
         const summary = await api.summary(controller.signal);
-        if (epoch === generation.value) setState({ subject, summary, error: null });
+        if (epoch === generation.value) setState({ subject, summary, status: 'success', error: null });
       } catch (error) {
-        if (epoch === generation.value && !controller.signal.aborted) setState(current => ({ ...current, subject,
+        if (epoch === generation.value && !controller.signal.aborted) setState(current => ({ ...current, subject, status: 'error',
           error: error instanceof Error ? error.message : 'Couldn’t refresh your wallet.' }));
       } finally {
         controllers.current.delete(controller);
@@ -37,23 +39,26 @@ export function useWalletFunding() {
     refreshing.current = pending;
     return pending;
   }, [api, subject, generation]);
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     generation.value++; refreshing.current = null;
-    setState({ subject, summary: null, error: null });
+    setState(current => current.subject === subject ? current : { subject, summary: null, status: 'loading', error: null });
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       if (AppState.currentState === 'active' || AppState.currentState === null) await refresh();
-      if (!stopped) timer = setTimeout(() => { void poll(); }, 5_000);
+      if (!stopped) timer = setTimeout(() => { void poll(); }, 60_000);
     };
     void poll();
     const listener = AppState.addEventListener('change', next => { if (next === 'active') void refresh(); });
+    const unsubscribe = subject ? subscribeWalletChanges(subject, () => {
+      if (AppState.currentState !== 'background' && AppState.currentState !== 'inactive') void refresh();
+    }) : () => {};
     const activeControllers = controllers.current;
     return () => {
-      stopped = true; clearTimeout(timer); listener.remove(); generation.value++;
+      stopped = true; clearTimeout(timer); listener.remove(); unsubscribe(); generation.value++;
       for (const controller of activeControllers) controller.abort(); activeControllers.clear();
     };
-  }, [subject, refresh, generation]);
-  const current = state.subject === subject ? state : { subject, summary: null, error: null };
-  return { ...current, error: !subject ? 'Sign in to view your trading balances.' : current.error, refresh };
+  }, [subject, refresh, generation]));
+  const current = state.subject === subject ? state : { subject, summary: null, status: 'loading' as const, error: null };
+  return { ...current, loading: !!subject && current.status === 'loading', error: !subject ? 'Sign in to view your trading balances.' : current.error, refresh };
 }

@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { subscribeWalletChanges } from '@/api/wallet-changes';
+import { useCallback, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useAuth } from '@/auth/session';
 import { isSolanaAddress, readCircleUsdcBalance, readSolBalance } from '@/api/solana-balance';
@@ -13,9 +15,10 @@ export function useSolanaBalance() {
   // Await the actual read, including a poll already in progress, so pull-to-refresh
   // and post-swap refreshes share one request rather than restarting each other.
   const refresh = useCallback(() => reader.current?.key === key ? reader.current.run() : Promise.resolve(), [key]);
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (!address || !key) return;
     let stopped = false;
+    let dirty = false;
     let request: AbortController | null = null;
     let pending: Promise<void> | null = null;
     let pollTimer: ReturnType<typeof setTimeout> | undefined;
@@ -31,25 +34,31 @@ export function useSolanaBalance() {
           const [amount, usdcAmount] = await Promise.all([readSolBalance(address!, controller.signal), readCircleUsdcBalance(address!, controller.signal)]);
           if (!stopped && !controller.signal.aborted) setState({ key, amount, usdcAmount, loading: false, error: null });
         } catch {
-          if (!stopped) setState({ key, amount: null, usdcAmount: null, loading: false, error: 'Couldn’t refresh your devnet wallet balances. Try again.' });
+          if (!stopped) setState(current => ({ key, amount: current.key === key ? current.amount : null, usdcAmount: current.key === key ? current.usdcAmount : null, loading: false, error: 'Couldn’t refresh your devnet wallet balances. Try again.' }));
         } finally {
           clearTimeout(timeout); request = null; pending = null;
-          if (!stopped) pollTimer = setTimeout(() => { void poll(); }, 15_000);
+          if (!stopped) {
+            if (dirty) { dirty = false; queueMicrotask(() => { void poll(); }); }
+            else pollTimer = setTimeout(() => { void poll(); }, 60_000);
+          }
         }
       })();
       return pending;
     }
     reader.current = { key, run: poll };
     void poll();
+    const unsubscribe = accountId ? subscribeWalletChanges(accountId, () => {
+      if (pending) dirty = true; else void poll();
+    }) : () => {};
     const listener = AppState.addEventListener('change', next => {
       if (next === 'active') void poll();
       else { clearTimeout(pollTimer); request?.abort(); }
     });
     return () => {
-      stopped = true; clearTimeout(pollTimer); request?.abort(); listener.remove();
+      stopped = true; clearTimeout(pollTimer); request?.abort(); listener.remove(); unsubscribe();
       if (reader.current?.key === key) reader.current = null;
     };
-  }, [address, key]);
+  }, [accountId, address, key]));
   const current = key && state.key === key ? state : { amount: null, usdcAmount: null, loading: !!address, error: null };
   return { address, ...current, refresh };
 }
