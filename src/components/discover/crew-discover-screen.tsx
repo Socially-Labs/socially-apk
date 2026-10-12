@@ -1,4 +1,5 @@
 import { ShipLoader } from '@/components/shared/refresh/ship-loader';
+import { CardSkeleton } from '@/components/shared/refresh/card-skeleton';
 import { SailingRefresh } from '@/components/shared/refresh/sailing-refresh';
 import { useEffect, useState } from 'react';
 import { FlatList, Keyboard, ScrollView, Text, TextInput, View } from 'react-native';
@@ -45,7 +46,7 @@ function CaptainCard({captain}:{captain:CrewCaptain}){return <View style={s.card
      <AuthButton accessibilityRole="button" accessibilityLabel={`View @${captain.username} profile`} onPress={()=>openCaptain(captain.id)} style={{flex:1,minWidth:90}}><Text style={[s.name,{fontSize:21,lineHeight:24}]} numberOfLines={1}>{captain.displayName||captain.username}</Text><Text style={s.label}>@{captain.username}</Text></AuthButton>
      <AuthButton accessibilityRole="button" accessibilityLabel={`View @${captain.username} vaults`} onPress={()=>router.navigate({pathname:'/explore',params:{tab:'vaults',captainId:captain.id}})} style={[s.action,{paddingHorizontal:10}]}><Text style={[s.actionText,{fontSize:10}]}>View vaults</Text><ArrowRight size={13} color={D.ink}/></AuthButton>
     </View>
-    <View style={s.stats}><View style={[s.stat,{paddingLeft:0,flex:0.8}]}><Text style={[s.value,{color:captain.netReturnPercent==null?D.secondary:captain.netReturnPercent.startsWith('-')?D.negative:D.positive}]}>{portfolioPercent(captain.netReturnPercent)}</Text><Text style={s.label}>30D net return</Text></View><DiscoveryStat value={discoveryUsdc(captain.aumUsdc)} label="AUM" last/></View>
+    <View style={s.stats}><View style={[s.stat,{paddingLeft:0,flex:0.8}]}><Text style={[s.value,{color:captain.netReturnPercent==null?D.secondary:captain.netReturnPercent.startsWith('-')?D.negative:D.positive}]}>{portfolioPercent(captain.netReturnPercent)}</Text><Text style={s.label}>30D net return</Text></View><DiscoveryStat value={discoveryUsdc(captain.aumUsdc).replace(/ USDC$/, '')} label="AUM · USDC" last/></View>
    </View>
   </View>
   <View style={{paddingTop:12}} testID={`discover-performance-${captain.id}`}>
@@ -83,7 +84,7 @@ function CrewDiscoverContent(){
  return <View style={s.screen} testID="crew-discover"><SailingRefresh key={tab} refreshing={data.loading} onRefresh={data.refresh} topInset={insets.top}>{scrollProps => <FlatList {...scrollProps} key={tab} data={cards} keyExtractor={v=>v.id} renderItem={({item})=><View style={{marginBottom:14}}>{isCaptain(item)?<CaptainCard captain={item}/>:<CrewVaultCard vault={item}/>}</View>}
   ListHeaderComponent={header} contentContainerStyle={[s.content,{paddingTop:Math.max(insets.top+12,40),paddingBottom:Math.max(insets.bottom+110,140),gap:0}]} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}
   onEndReached={()=>{if(!data.error)void data.loadMore();}} onEndReachedThreshold={0.5}
-  ListEmptyComponent={data.loading?<ShipLoader label={tab==='captains'?'Loading captains…':'Loading vaults…'}/>:<View style={s.empty}><Text style={s.sectionTitle}>{data.error?'Discover is unavailable':`No ${tab} found`}</Text><Text style={s.body}>{query?'Try a different search.':tab==='captains'?'Captains will appear here once they set up their profiles.':'Try another phase or duration.'}</Text></View>}
+  ListEmptyComponent={data.status==='loading'?<CardSkeleton label={tab==='captains'?'Loading captains…':'Loading vaults…'} count={2}/>:data.error?<View style={s.empty}><Text style={s.sectionTitle}>Discover is unavailable</Text></View>:data.status==='success'?<View style={s.empty}><Text style={s.sectionTitle}>{`No ${tab} found`}</Text><Text style={s.body}>{query?'Try a different search.':tab==='captains'?'Captains will appear here once they set up their profiles.':'Try another phase or duration.'}</Text></View>:null}
   ListFooterComponent={data.loadingMore?<ShipLoader compact label={tab==='captains'?'Loading more captains…':'Loading more vaults…'}/>:data.nextCursor?<AuthButton accessibilityRole="button" onPress={()=>{void data.loadMore();}} style={s.action}><Text style={s.actionText}>Load more</Text></AuthButton>:null}/>}</SailingRefresh>
  <DashboardSheet visible={sheet} title="Filter vaults" onClose={()=>setSheet(false)} footer={<AuthButton testID="crew-apply-filters" onPress={()=>{setFilters(draft);setSheet(false);}} style={s.primary} accessibilityRole="button"><Text style={s.primaryText}>Apply filters</Text></AuthButton>}>
   <View style={{gap:22}}><View style={s.between}><Text style={s.body}>Find a round that fits your timeline.</Text><AuthButton onPress={()=>setDraft(defaults)} accessibilityRole="button" style={s.action}><Text style={s.actionText}>Clear</Text></AuthButton></View>

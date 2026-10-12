@@ -6,7 +6,7 @@ export const crewStyles=StyleSheet.create({
  row:{flexDirection:'row',alignItems:'center',gap:10},between:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
  title:{fontFamily:BrandFont.editorial,fontSize:46,lineHeight:50,color:D.ink},
  name:{fontFamily:BrandFont.editorial,fontSize:23,lineHeight:28,color:D.ink},body:{fontFamily:InterFont.regular,fontSize:12,lineHeight:18,color:D.secondary},
- label:{fontFamily:InterFont.medium,fontSize:11,lineHeight:16,color:D.secondary},value:{fontFamily:BrandFont.editorial,fontSize:16,lineHeight:20,color:D.ink,fontVariant:['tabular-nums']},
+ label:{fontFamily:InterFont.medium,fontSize:11,lineHeight:16,color:D.secondary},value:{fontFamily:InterFont.semiBold,fontSize:16,lineHeight:22,color:D.ink,fontVariant:['tabular-nums']},
  tabs:{flexDirection:'row',borderBottomWidth:1,borderBottomColor:D.line},tab:{minWidth:100,minHeight:42,borderBottomWidth:2,borderBottomColor:'transparent',justifyContent:'center',alignItems:'center'},activeTab:{borderBottomColor:D.ink},selected:{backgroundColor:D.ink},
  tabText:{fontFamily:BrandFont.editorial,fontSize:18,color:D.secondary},selectedText:{color:D.heroInk},
  search:{flex:1,flexDirection:'row',alignItems:'center',gap:9,backgroundColor:D.surface,borderWidth:1,borderColor:D.line,borderRadius:24,paddingHorizontal:13,minHeight:44},

@@ -5,17 +5,18 @@ import { type DiscoveryItem, type DiscoveryFilters, fetchCaptains, fetchDiscover
 
 export function useCrewDiscovery(tab:'captains'|'vaults',query:string,filters:DiscoveryFilters,captainId?:string,sort='RECENT'){
  const scope=JSON.stringify([tab,query,filters.phase,filters.duration,filters.sort,captainId,sort]);
- const [state,setState]=useState<{scope:string;items:DiscoveryItem[];nextCursor:string|null;loading:boolean;loadingMore:boolean;error:string|null}>({scope:'',items:[],nextCursor:null,loading:true,loadingMore:false,error:null});
+ const [state,setState]=useState<{scope:string;items:DiscoveryItem[];nextCursor:string|null;status:'loading'|'success'|'error';loading:boolean;loadingMore:boolean;error:string|null}>({scope:'',items:[],nextCursor:null,status:'loading',loading:true,loadingMore:false,error:null});
  const [revision,setRevision]=useState(0);
  const epoch=useRef(0),active=useRef<AbortController|null>(null),moreLock=useRef(false),refreshing=useRef(false),pages=useRef(1);
  const read=useCallback((after:string|null,signal:AbortSignal)=>tab==='captains'?fetchCaptains(query,after,signal,sort):fetchDiscoveryVaults(query,{phase:filters.phase,duration:filters.duration,sort:filters.sort},captainId,after,signal),[tab,query,filters.phase,filters.duration,filters.sort,captainId,sort]);
  useFocusEffect(useCallback(()=>{
   void revision;pages.current=1;
-  setState(s=>s.scope===scope?{...s,loading:true,loadingMore:false,error:null}:{scope,items:[],nextCursor:null,loading:true,loadingMore:false,error:null});
+  setState(s=>s.scope===scope?{...s,status:s.status==='success'?'success':'loading',loading:true,loadingMore:false,error:null}:{scope,items:[],nextCursor:null,status:'loading',loading:true,loadingMore:false,error:null});
   const foreground=()=>AppState.currentState==null||AppState.currentState==='active';
   const refresh=async()=>{
    if(!foreground()||moreLock.current||refreshing.current)return;
    refreshing.current=true;active.current?.abort();
+   setState(s=>({...s,loading:true}));
    const generation=++epoch.current,controller=new AbortController();active.current=controller;
    try{
     // Reload the loaded page chain atomically. Polling must not discard page two
@@ -25,8 +26,8 @@ export function useCrewDiscovery(tab:'captains'|'vaults',query:string,filters:Di
      const page=await read(nextCursor,controller.signal);items.push(...page.items.filter(v=>!items.some(old=>old.id===v.id)));
      nextCursor=page.nextCursor;loaded++;
     }while(nextCursor&&loaded<pages.current);
-    if(epoch.current===generation&&!controller.signal.aborted){pages.current=loaded;setState({scope,items,nextCursor,loading:false,loadingMore:false,error:null});}
-   }catch(e){if(epoch.current===generation&&!controller.signal.aborted)setState(s=>({...s,loading:false,error:e instanceof Error?e.message:'Could not load Discover.'}));}
+    if(epoch.current===generation&&!controller.signal.aborted){pages.current=loaded;setState({scope,items,nextCursor,status:'success',loading:false,loadingMore:false,error:null});}
+   }catch(e){if(epoch.current===generation&&!controller.signal.aborted)setState(s=>({...s,status:'error',loading:false,error:e instanceof Error?e.message:'Could not load Discover.'}));}
    finally{if(epoch.current===generation)refreshing.current=false;}
   };
   void refresh();const timer=setInterval(()=>{void refresh();},30000);
@@ -44,5 +45,5 @@ export function useCrewDiscovery(tab:'captains'|'vaults',query:string,filters:Di
   catch(e){if(epoch.current===generation)setState(s=>({...s,loadingMore:false,error:e instanceof Error?e.message:'Could not load more.'}));}
   finally{if(epoch.current===generation)moreLock.current=false;}
  };
- return {...state,...(state.scope!==scope?{items:[],nextCursor:null,loading:true,error:null}:{}),loadMore,refresh:()=>setRevision(v=>v+1)};
+ return {...state,...(state.scope!==scope?{items:[],nextCursor:null,status:'loading' as const,loading:true,error:null}:{}),loadMore,refresh:()=>setRevision(v=>v+1)};
 }
