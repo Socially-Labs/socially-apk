@@ -28,11 +28,15 @@ export function KeyboardScrollView({ ref, focusClearance = 16, onFocus, onLayout
       }
       const input = TextInput.State.currentlyFocusedInput();
       if (!input || input !== focused.current) return;
-      // Measure the field whose focus bubbled through this scroll view.
-      input.measureLayout(container.getInnerViewNode(), () => {
-        container.getNativeScrollRef()?.measureInWindow((_x, top, _width, height) => {
+      const nativeScroll = container.getNativeScrollRef();
+      if (!nativeScroll) return;
+      // Fabric requires a native host ref, not the numeric handle returned by
+      // getInnerViewNode. Measuring against this ancestor also scopes the field
+      // to the scroll view whose focus event we received.
+      input.measureLayout(nativeScroll, () => {
+        nativeScroll.measureInWindow((_x, top, _width, height) => {
           input.measureInWindow((_ix, fieldTop, _iw, fieldHeight) => {
-            if (scroll.current !== container || TextInput.State.currentlyFocusedInput() !== input) return;
+            if (scroll.current !== container || container.getNativeScrollRef() !== nativeScroll || TextInput.State.currentlyFocusedInput() !== input) return;
             const bottom = Math.min(top + height, Keyboard.metrics()?.screenY ?? Infinity);
             const delta = focusedFieldScrollDelta(top, bottom, fieldTop, fieldHeight, focusClearance);
             if (delta) container.scrollTo({ y: Math.max(0, offset.current + delta), animated: false });
