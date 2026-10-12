@@ -2,7 +2,7 @@ import { useKeyboardVisible } from '@/components/shared/keyboard/use-keyboard-vi
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState, PanResponder, StyleSheet, Text, View, type ScrollViewProps } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { InterFont } from '@/constants/fonts';
 import { DiscoverPalette as C } from '@/constants/theme';
 import { selectionFeedback } from '@/components/shared/feedback';
@@ -17,13 +17,15 @@ type Props = {
   children: (props: ScrollProps) => ReactNode;
   topInset?: number;
   enabled?: boolean;
+  pullDistance?: SharedValue<number>;
 };
 
 /** Custom top pull indicator. The scroll view remains virtualized and owns ordinary scrolling. */
-export function SailingRefresh({ refreshing, onRefresh, children, topInset = 0, enabled = true }: Props) {
+export function SailingRefresh({ refreshing, onRefresh, children, topInset = 0, enabled = true, pullDistance }: Props) {
   const keyboardVisible = useKeyboardVisible();
   const reducedMotion = useReducedMotion();
-  const distance = useSharedValue(0);
+  const localDistance = useSharedValue(0);
+  const distance = pullDistance ?? localDistance;
   // The moving page must clear the entire indicator below the status-bar inset.
   const restingDistance = Math.max(0, topInset) + REFRESH_REST;
   const [phase, setPhase] = useState<'idle' | 'pull' | 'refresh'>('idle');

@@ -7,6 +7,7 @@ import { Platform, ScrollView, StyleSheet, View, useWindowDimensions, type Scrol
 import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { REFRESH_THRESHOLD } from '@/components/shared/refresh/pull-refresh-gesture';
 import { SailingRefresh } from '@/components/shared/refresh/sailing-refresh';
 import { Dashboard, DiscoverPalette, WalletPalette } from '@/constants/theme';
 import { Motion } from '@/constants/motion';
@@ -22,6 +23,11 @@ export function DashboardShell({ children, testID, variant = 'default', keyboard
   const sceneryHeight = scenicHome ? Math.max(390, Math.min(480, height * 0.55)) : Math.max(370, height * 0.52);
   const reduceMotion = useReducedMotion();
   const opacity = useSharedValue(1);
+  const pullDistance = useSharedValue(0);
+  const refreshSceneryStyle = useAnimatedStyle(() => ({
+    opacity: Math.max(0, Math.min(1, pullDistance.get() / REFRESH_THRESHOLD)),
+  }));
+  const scenerySource = captain ? require('@/assets/images/home/captain-helm.webp') : crew ? require('@/assets/images/home/crew-harbor.webp') : require('@/assets/images/auth/voyage-blue.png');
   useFocusEffect(useCallback(() => {
     // The screen stays mounted, so filters and scroll position survive tab changes.
     opacity.set(reduceMotion ? 1 : 0.92);
@@ -32,9 +38,15 @@ export function DashboardShell({ children, testID, variant = 'default', keyboard
   const scenery = (
       <View testID="dashboard-scenery" style={StyleSheet.absoluteFill} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Image
-          source={captain ? require('@/assets/images/home/captain-helm.webp') : crew ? require('@/assets/images/home/crew-harbor.webp') : require('@/assets/images/auth/voyage-blue.png')}
+          source={scenerySource}
           style={[styles.artwork, { height: sceneryHeight }]}
           contentFit={scenicHome ? 'cover' : 'fill'} contentPosition={scenicHome ? { left: '60%', top: '50%' } : 'center'} transition={0} />
+        {scenicHome && onRefresh ? <Animated.View testID="home-refresh-scenery" style={[styles.artwork, { height: sceneryHeight }, refreshSceneryStyle]}>
+          {/* Blend a pre-blurred copy; the gesture animates opacity without reprocessing the bitmap each frame. */}
+          <Image testID="home-refresh-blurred-photo" source={scenerySource} blurRadius={4}
+            style={StyleSheet.absoluteFill} contentFit="cover" contentPosition={{ left: '60%', top: '50%' }} transition={0} />
+          <View style={[StyleSheet.absoluteFill, styles.refreshTint]} />
+        </Animated.View> : null}
         <View style={[styles.veil, { height: sceneryHeight }, scenicHome && { backgroundColor: 'transparent' }, variant === 'wallet' && { backgroundColor: WalletPalette.veil }]} />
         {scenicHome ? <LinearGradient colors={captain ? DiscoverPalette.captainSceneryVeil : DiscoverPalette.sceneryVeil} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[styles.artwork, { height: sceneryHeight }]} /> : null}
         <LinearGradient
@@ -65,7 +77,7 @@ export function DashboardShell({ children, testID, variant = 'default', keyboard
     <View style={styles.screen} testID={testID}>
       <StatusBar style="dark" />
       {scenery}
-      {onRefresh ? <SailingRefresh refreshing={refreshing} onRefresh={onRefresh} topInset={insets.top}>
+      {onRefresh ? <SailingRefresh refreshing={refreshing} onRefresh={onRefresh} topInset={insets.top} pullDistance={pullDistance}>
         {scrollProps => content(scrollProps)}
       </SailingRefresh> : content()}
     </View>
@@ -74,6 +86,7 @@ export function DashboardShell({ children, testID, variant = 'default', keyboard
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Dashboard.background },
+  refreshTint: { backgroundColor: 'rgba(245,247,251,0.12)' },
   artwork: { position: 'absolute', top: 0, left: 0, width: '100%' },
   veil: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: 'rgba(255,255,255,0.43)' },
   fade: { position: 'absolute', left: 0, right: 0 },
