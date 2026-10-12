@@ -8,19 +8,23 @@ import { createApiClient, apiOrigin } from '@/api/client';
 import { captainDashboardApi, type CaptainDashboard, type CaptainRange, type CaptainMember, type CaptainEarning } from '@/api/captain-dashboard';
 import { captainPortfolioApi, type CaptainPortfolio, type VaultPerformance } from '@/api/captain-portfolio';
 import type { VaultSummary } from '@/api/vaults';
+import { createPortfolioCache } from '@/api/captain-portfolio-cache';
 
 type State = {
   subject: string | null; dashboard: CaptainDashboard | null; portfolio: CaptainPortfolio | null;
   vaults: VaultSummary[]; crew: CaptainMember[]; earnings: CaptainEarning[]; contributions: VaultPerformance[];
   vaultCursor: string | null; crewCursor: string | null; earningsCursor: string | null; contributionCursor: string | null;
   contributionRange: CaptainRange | null; contributionRevision: string | null;
+  detailKey: string | null;
   loading: boolean; portfolioLoading: boolean; detailLoading: boolean; loadingMore: boolean;
   error: string | null; portfolioError: string | null; detailError: string | null;
+  portfolioDelayed: boolean;
 };
 const empty: State = {
   subject: null, dashboard: null, portfolio: null, vaults: [], crew: [], earnings: [], contributions: [],
   vaultCursor: null, crewCursor: null, earningsCursor: null, contributionCursor: null, contributionRange: null, contributionRevision: null,
   loading: true, portfolioLoading: true, detailLoading: false, loadingMore: false, error: null, portfolioError: null, detailError: null,
+  portfolioDelayed: false, detailKey: null,
 };
 const message = (e: unknown) => e instanceof Error ? e.message : 'Could not load your Captain dashboard.';
 
@@ -33,6 +37,7 @@ export function useCaptainDashboard(range: CaptainRange, panel: string | null) {
     return { dashboard: captainDashboardApi(client), portfolio: captainPortfolioApi(client) };
   }, []);
   const [state, setState] = useState<State>(empty), [revision, setRevision] = useState(0);
+  const portfolioCache = useMemo(createPortfolioCache, []);
   const controller = useRef<AbortController | null>(null), pageController = useRef<AbortController | null>(null), paging = useRef(false);
   const refresh = useCallback(() => setRevision(v => v + 1), []);
   const detail = ['overview', 'manage', 'crew', 'earnings'].includes(panel ?? '') ? panel : null;
@@ -43,8 +48,11 @@ export function useCaptainDashboard(range: CaptainRange, panel: string | null) {
     let timer: ReturnType<typeof setTimeout> | undefined, reading = false, dirty = false;
     let stopStream: (() => void) | undefined, activeRead: AbortController | undefined;
     const valid = () => !request.signal.aborted;
-    setState(s => s.subject === subject ? { ...s, loading: true, portfolioLoading: true, portfolioError: null,
-      detailLoading: !!detail, detailError: null, loadingMore: false } : { ...empty, subject });
+    if (!subject) portfolioCache.clear();
+    const cached = subject ? portfolioCache.read(subject, range) : null;
+    setState(s => s.subject === subject ? { ...s, portfolio: cached ?? (s.portfolio?.range === range ? s.portfolio : null),
+      loading: true, portfolioLoading: true, portfolioError: null,
+      detailKey: detail === 'overview' ? `${detail}:${range}` : detail, detailLoading: !!detail, detailError: null, loadingMore: false } : { ...empty, subject, detailKey: detail === 'overview' ? `${detail}:${range}` : detail, detailLoading: !!detail });
     const schedule = (delay: number) => { clearTimeout(timer); if (valid()) timer = setTimeout(() => void read(), delay); };
     const invalidate = () => { if (!valid()) return; if (reading) { dirty = true; return; } schedule(250); };
     const startStream = () => {
@@ -60,8 +68,11 @@ export function useCaptainDashboard(range: CaptainRange, panel: string | null) {
       const tasks: Promise<unknown>[] = [
         apis.dashboard.dashboard(current.signal).then(dashboard => commit({ dashboard, loading: false, error: null }))
           .catch(e => commit({ loading: false, error: message(e) })),
-        apis.portfolio.summary(range, current.signal).then(portfolio => commit({ portfolio, portfolioLoading: false, portfolioError: null }))
-          .catch(e => commit({ portfolioLoading: false, portfolioError: message(e) })),
+        apis.portfolio.summary(range, current.signal).then(portfolio => {
+          if (valid() && !current.signal.aborted) commit({ ...portfolioCache.accept(subject, portfolio), portfolioLoading: false, portfolioError: null });
+        })
+          .catch(e => commit({ portfolio: portfolioCache.read(subject, range), portfolioDelayed: true,
+            portfolioLoading: false, portfolioError: message(e) })),
       ];
       if (detail) {
         commit({ detailLoading: true });
@@ -96,7 +107,7 @@ export function useCaptainDashboard(range: CaptainRange, panel: string | null) {
       else { activeRead?.abort(); pageController.current?.abort(); stopStream?.(); stopStream = undefined; clearTimeout(timer); }
     });
     return () => { request.abort(); activeRead?.abort(); pageController.current?.abort(); clearTimeout(timer); stopStream?.(); listener.remove(); };
-  }, [apis, subject, range, detail, revision, auth.isReady]));
+  }, [apis, subject, range, detail, revision, auth.isReady, portfolioCache]));
 
   const loadMore = async (kind: 'vaults' | 'crew' | 'earnings' | 'contributions') => {
     const request = controller.current;
@@ -127,6 +138,10 @@ export function useCaptainDashboard(range: CaptainRange, panel: string | null) {
     }
   };
   const scoped = state.subject === subject ? state : empty;
-  return { ...scoped, contributions: scoped.contributionRange === range ? scoped.contributions : [],
+  const detailKey = detail === 'overview' ? `${detail}:${range}` : detail;
+  return { ...scoped, detailLoading: !!subject && !!detail && (scoped.detailKey !== detailKey || scoped.detailLoading),
+    portfolio: scoped.portfolio?.range === range ? scoped.portfolio : null,
+    portfolioLoading: scoped.portfolioLoading || !!subject && scoped.portfolio?.range !== range && !scoped.portfolioError,
+    contributions: scoped.contributionRange === range ? scoped.contributions : [],
     contributionCursor: scoped.contributionRange === range ? scoped.contributionCursor : null, refresh, loadMore };
 }

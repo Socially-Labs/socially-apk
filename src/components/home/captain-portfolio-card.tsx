@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type { CaptainPortfolio } from '@/api/captain-portfolio';
 import type { CaptainRange } from '@/api/captain-dashboard';
-import { amountSign, periodLabel, portfolioMoney, portfolioPercent } from '@/api/captain-portfolio-display';
+import { amountSign, freshnessLabel, periodLabel, portfolioMoney, portfolioPercent } from '@/api/captain-portfolio-display';
 import { AuthButton } from '@/components/shared/motion';
 import { BrandFont, InterFont } from '@/constants/fonts';
 import { CaptainHomePalette as C } from '@/constants/theme';
@@ -12,7 +12,8 @@ import { CaptainPortfolioChart } from './captain-portfolio-chart';
 const periods = ['7D', '30D', 'ALL'] as const;
 const noPoints: CaptainPortfolio['points'] = [];
 const tone = (value: string | null | undefined) => amountSign(value) === -1 ? C.loss : amountSign(value) === 1 ? C.gain : C.secondary;
-export function CaptainPortfolioCard({ portfolio, period, loading, hidden, canToggle, compact, error, onPeriod, onToggle, onRetry }: {
+export function CaptainPortfolioCard({ portfolio, delayed = false, period, loading, hidden, canToggle, compact, error, onPeriod, onToggle, onRetry }: {
+  delayed?: boolean;
   portfolio: CaptainPortfolio | null; period: CaptainRange; loading: boolean; hidden: boolean; canToggle: boolean; compact: boolean;
   error: string | null; onPeriod: (period: CaptainRange) => void; onToggle: () => void; onRetry: () => void;
 }) {
@@ -23,6 +24,10 @@ export function CaptainPortfolioCard({ portfolio, period, loading, hidden, canTo
   const pnl = selected?.netPnlUsdc, percent = selected?.netReturnPercent;
   const money = (value: string | null | undefined, signed = false) => hidden ? '••••' : portfolioMoney(value, signed);
   const status = portfolio?.valuationStatus;
+  const statusLabel = waiting ? 'Updating portfolio…' : delayed && portfolio
+    ? `Updates delayed · ${freshnessLabel(portfolio)}`
+    : error ? 'Portfolio update unavailable' : portfolio?.aumUsdc == null ? freshnessLabel(portfolio)
+      : selected?.netPnlUsdc == null || selected?.netReturnPercent == null ? 'Performance history incomplete' : freshnessLabel(portfolio);
   return <LinearGradient colors={C.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[s.card, dense && s.denseCard, tiny && s.tinyCard]} testID="captain-aum-card">
     <View style={s.heading}><Text style={s.label}>Total assets managed <Text style={s.paper}>· Paper</Text></Text>
       <AuthButton testID="captain-balance-visibility" accessibilityRole="button" accessibilityLabel={hidden ? 'Show portfolio balances' : 'Hide portfolio balances'} disabled={!canToggle}
@@ -43,7 +48,8 @@ export function CaptainPortfolioCard({ portfolio, period, loading, hidden, canTo
       <View style={[s.metric, s.firstMetric]}><Text style={s.metricLabel}>Settled vault P&amp;L</Text><Text testID="captain-settled-pnl" adjustsFontSizeToFit minimumFontScale={0.7} numberOfLines={1} style={[s.metricValue, { color: hidden ? C.secondary : tone(selected?.settledVaultPnlUsdc) }]}>{money(selected?.settledVaultPnlUsdc, true)}</Text></View>
       <View style={s.metric}><Text style={s.metricLabel}>Open vault P&amp;L</Text><Text testID="captain-open-pnl" adjustsFontSizeToFit minimumFontScale={0.7} numberOfLines={1} style={[s.metricValue, { color: hidden ? C.secondary : tone(selected?.openVaultPnlUsdc) }]}>{money(selected?.openVaultPnlUsdc, true)}</Text></View>
     </View> : null}
-    {error ? <View style={s.footer}><AuthButton accessibilityRole="button" accessibilityLabel="Retry" accessibilityHint={error} onPress={onRetry} style={s.retry}><Text style={s.retryText}>Retry</Text></AuthButton></View> : null}
+    <View style={s.footer}><Text testID="captain-portfolio-freshness" style={s.freshness} numberOfLines={2}>{statusLabel}</Text>
+      {error || delayed || status !== 'CURRENT' ? <AuthButton accessibilityRole="button" accessibilityLabel="Retry" accessibilityHint={error ?? undefined} onPress={onRetry} style={s.retry}><Text style={s.retryText}>Retry</Text></AuthButton> : null}</View>
   </LinearGradient>;
 }
 const s = StyleSheet.create({
@@ -72,5 +78,6 @@ const s = StyleSheet.create({
   metricLabel: { fontFamily: InterFont.regular, color: C.secondary, fontSize: 9, lineHeight: 12 },
   metricValue: { fontFamily: BrandFont.editorial, fontSize: 19, lineHeight: 22, fontVariant: ['lining-nums', 'tabular-nums'] },
   footer: { flex: 1, minHeight: 40, flexDirection: 'row', alignItems: 'center' },
+  freshness: { flex: 1, fontFamily: InterFont.regular, color: C.secondary, fontSize: 10, lineHeight: 14 },
   retry: { minWidth: 44, minHeight: 40, alignItems: 'center', justifyContent: 'center' }, retryText: { fontFamily: InterFont.semiBold, color: C.ink, fontSize: 11 },
 });
