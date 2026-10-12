@@ -50,11 +50,11 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#A6C7E5",
+          "backgroundColor": "#E4EDF5",
           "image": "./assets/images/splash-transparent.png",
           "imageWidth": 4,
           "dark": {
-            "backgroundColor": "#A6C7E5",
+            "backgroundColor": "#E4EDF5",
             "image": "./assets/images/splash-transparent.png"
           }
         }
@@ -67,11 +67,23 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "privy": {
+        "appId": "",
+        "clientId": ""
+      },
+      "router": {},
+      "eas": {
+        "projectId": "0a05c628-0f0d-4701-962d-49f0cab30f8f"
+      }
+    },
+    "owner": "kreyon"
   }
 }

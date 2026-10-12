@@ -1,0 +1,26 @@
+name: Preview APK
+
+on:
+  push:
+    branches: ['main']
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ workflow.filename }}-${{ github.ref }}
+  cancel_in_progress: true
+
+jobs:
+  # Every commit needs a fresh JS bundle: this app does not use OTA updates.
+  build_android:
+    name: Build Android APK
+    type: build
+    environment: preview
+    params:
+      platform: android
+      profile: preview
+    hooks:
+      after_install_node_modules:
+        - name: Typecheck
+          run: npm run typecheck
+        - name: Lint
+          run: npm run lint
