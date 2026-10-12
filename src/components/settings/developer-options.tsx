@@ -4,9 +4,10 @@ import { AuthButton } from '@/components/shared/motion';
 import { InterFont } from '@/constants/fonts';
 import { SettingsPalette as S } from '@/constants/theme';
 import { StyleSheet, Text, View } from 'react-native';
+import type { ToastPreviewKind } from '@/components/notifications/notification-provider';
 
 /** Local UI preview only; never writes the account's signup role. */
-export function DeveloperOptions() {
+export function DeveloperOptions({ onPreviewToast }: { onPreviewToast?: (kind: ToastPreviewKind) => void }) {
   const { role: previewRole, setRole } = useHomePreview();
   const { settings } = useAccountSettings();
   const role = previewRole ?? settings.role ?? 'crew';
@@ -23,6 +24,18 @@ export function DeveloperOptions() {
         <Text style={[styles.label, role === value && styles.selectedLabel]}>{value === 'captain' ? 'Captain' : 'Crew'}</Text>
       </AuthButton>)}
     </View>
+    {onPreviewToast ? <>
+      <Text style={styles.title}>Notification preview</Text>
+      <Text style={styles.caption}>Try the pearl toast and its light sweep. These examples don’t create account activity.</Text>
+      <View style={styles.controls}>
+        <AuthButton testID="preview-toast-crew" accessibilityRole="button" onPress={() => onPreviewToast('crew')} style={styles.option}>
+          <Text style={styles.label}>Crew joined</Text>
+        </AuthButton>
+        <AuthButton testID="preview-toast-sol" accessibilityRole="button" onPress={() => onPreviewToast('sol')} style={styles.option}>
+          <Text style={styles.label}>SOL added</Text>
+        </AuthButton>
+      </View>
+    </> : null}
   </View>;
 }
 
