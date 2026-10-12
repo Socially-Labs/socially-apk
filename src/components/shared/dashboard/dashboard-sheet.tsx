@@ -16,13 +16,13 @@ import { Motion } from '@/constants/motion';
 import { Dashboard, DashboardSheetTheme as S } from '@/constants/theme';
 import { SheetSurface, sheetMaterialStyle } from './sheet-surface';
 
-type SheetProps = { visible: boolean; title: string; header?: ReactNode; onClose: () => void; onDismiss?: () => void; children: ReactNode; footer?: ReactNode };
+type SheetProps = { visible: boolean; title: string; header?: ReactNode; onClose: () => void; onDismiss?: () => void; dismissible?: boolean; children: ReactNode; footer?: ReactNode };
 const SETTLE = { duration: S.openDuration, dampingRatio: 0.94 };
 const EXIT = Easing.bezier(0.4, 0, 1, 1);
 
 export function DashboardSheet(props: SheetProps) {
-  const { onDismiss, onClose } = props;
-  const close = useCallback(() => { Keyboard.dismiss(); onClose(); }, [onClose]);
+  const { onDismiss, onClose, dismissible = true } = props;
+  const close = useCallback(() => { if (dismissible) { Keyboard.dismiss(); onClose(); } }, [dismissible, onClose]);
   const [presented, setPresented] = useState(props.visible);
   const visible = useRef(props.visible);
   useLayoutEffect(() => { visible.current = props.visible; }, [props.visible]);
@@ -41,7 +41,7 @@ export function DashboardSheet(props: SheetProps) {
   );
 }
 
-function SheetPanel({ visible, title, header, children, footer, onClose, onExited }: SheetProps & { onExited: () => void }) {
+function SheetPanel({ visible, title, header, children, footer, onClose, onExited, dismissible = true }: SheetProps & { onExited: () => void }) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
@@ -89,7 +89,7 @@ function SheetPanel({ visible, title, header, children, footer, onClose, onExite
     opacity: Math.min(1, Math.max(0, progress.get() * (1 - Math.max(0, drag.get()) / sheetHeight.get()))),
   }));
 
-  const pan = Gesture.Pan().enabled(visible).activeOffsetY([-6, 6])
+  const pan = Gesture.Pan().enabled(visible && dismissible).activeOffsetY([-6, 6])
     .onStart(() => { cancelAnimation(drag); dragStart.set(drag.get()); crossedThreshold.set(false); })
     .onUpdate(event => {
       const distance = dragStart.get() + event.translationY;
@@ -117,13 +117,13 @@ function SheetPanel({ visible, title, header, children, footer, onClose, onExite
     <GestureHandlerRootView style={styles.root} testID="dashboard-sheet-overlay">
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.available} onLayout={event => setAvailableHeight(event.nativeEvent.layout.height)}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} pointerEvents="none"
+      <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle, { pointerEvents: 'none' }]}
         testID="dashboard-sheet-backdrop" />
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} disabled={!visible}
+      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} disabled={!visible || !dismissible}
         accessibilityLabel="Dismiss details" accessibilityRole="button" testID="dashboard-sheet-dismiss" />
-      <Animated.View style={[styles.sheet, sheetMaterialStyle, { maxHeight, marginBottom: bottom }, panelStyle]}
+      <Animated.View style={[styles.sheet, sheetMaterialStyle, { maxHeight, marginBottom: bottom, pointerEvents: visible ? 'auto' : 'none' }, panelStyle]}
         onLayout={event => sheetHeight.set(event.nativeEvent.layout.height)}
-        accessibilityViewIsModal testID="dashboard-sheet" pointerEvents={visible ? 'auto' : 'none'}>
+        accessibilityViewIsModal testID="dashboard-sheet">
         <SheetSurface />
         <GestureDetector gesture={pan}>
           <View>
