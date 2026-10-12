@@ -1,0 +1,70 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+.agents/*
+.claude/
+.vscode/
+
+.env
+
+scripts/*
+!scripts/prepare-app-icons.cjs
+!scripts/export-brand-assets.cjs
+!scripts/splash-timeline-check.mjs
+!scripts/android-crash-log.sh
+
+/docs/*
+!/docs/privy-auth-integration-plan.md
+
+skills-lock.json
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+example
+
+# generated native folders
+/ios
+/android
+
+# local UI review screenshots
+/.ui-review/
+
+# Build uploads only need app source and runtime assets.
+/.git/
+/design-previews/
+/output/
+/assets/readme/
+/coverage/
+.env*
+!.env.example
